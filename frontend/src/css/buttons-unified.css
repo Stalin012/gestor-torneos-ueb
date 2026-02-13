@@ -1,0 +1,449 @@
+/* =========================================
+   UNIFIED BUTTONS & RESPONSIVE STYLES
+   Master file for all button styles
+   ========================================= */
+
+/* ===== GLOBAL BUTTON DEFAULTS ===== */
+button,
+input[type="button"],
+input[type="submit"],
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 0.5rem;
+  white-space: nowrap;
+  text-decoration: none;
+  min-height: 44px;
+  /* Accessibility: minimum touch target */
+}
+
+/* ===== PRIMARY BUTTON ===== */
+.btn-primary,
+button.primary,
+.btn.btn-primary {
+  background: linear-gradient(135deg, #0366d6 0%, #1f6feb 100%);
+  color: white;
+  border: 2px solid #0366d6;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(3, 102, 214, 0.25);
+}
+
+.btn-primary:hover,
+button.primary:hover,
+.btn.btn-primary:hover {
+  background: linear-gradient(135deg, #033bad 0%, #0556d1 100%);
+  border-color: #033bad;
+  box-shadow: 0 6px 20px rgba(3, 102, 214, 0.35);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active,
+button.primary:active,
+.btn.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(3, 102, 214, 0.2);
+}
+
+.btn-primary:disabled,
+button.primary:disabled,
+.btn.btn-primary:disabled {
+  background: linear-gradient(135deg, #eaeaea 0%, #e3eaf5 100%);
+  border-color: #eaeaea;
+  color: #7d8fa3;
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* ===== SECONDARY BUTTON ===== */
+.btn-secondary,
+button.secondary,
+.btn.btn-secondary {
+  background-color: white;
+  color: #0366d6;
+  border: 2px solid #0366d6;
+  font-weight: 600;
+}
+
+.btn-secondary:hover,
+button.secondary:hover,
+.btn.btn-secondary:hover {
+  background-color: rgba(3, 102, 214, 0.08);
+  border-color: #1f6feb;
+  color: #1f6feb;
+  box-shadow: 0 4px 12px rgba(3, 102, 214, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-secondary:active,
+button.secondary:active,
+.btn.btn-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(3, 102, 214, 0.15);
+}
+
+/* ===== DANGER BUTTON ===== */
+.btn-danger,
+button.danger,
+.btn.btn-danger {
+  background: linear-gradient(135deg, #e63946 0%, #f24146 100%);
+  color: white;
+  border: 2px solid #e63946;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25);
+}
+
+.btn-danger:hover,
+button.danger:hover,
+.btn.btn-danger:hover {
+  background: linear-gradient(135deg, #c1121f 0%, #d62828 100%);
+  border-color: #c1121f;
+  box-shadow: 0 6px 20px rgba(230, 57, 70, 0.35);
+  transform: translateY(-2px);
+}
+
+/* ===== SUCCESS BUTTON ===== */
+.btn-success,
+button.success,
+.btn.btn-success {
+  background: linear-gradient(135deg, #1a7f64 0%, #26a69a 100%);
+  color: white;
+  border: 2px solid #1a7f64;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(26, 127, 100, 0.25);
+}
+
+.btn-success:hover,
+button.success:hover,
+.btn.btn-success:hover {
+  background: linear-gradient(135deg, #0d5f52 0%, #168b7a 100%);
+  border-color: #0d5f52;
+  box-shadow: 0 6px 20px rgba(26, 127, 100, 0.35);
+  transform: translateY(-2px);
+}
+
+/* ===== WARNING BUTTON ===== */
+.btn-warning,
+button.warning,
+.btn.btn-warning {
+  background: linear-gradient(135deg, #d97706 0%, #356ed8 100%);
+  color: white;
+  border: 2px solid #d97706;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+}
+
+.btn-warning:hover,
+button.warning:hover,
+.btn.btn-warning:hover {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+  border-color: #b45309;
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
+  transform: translateY(-2px);
+}
+
+/* ===== SIZE VARIANTS ===== */
+.btn-sm,
+button.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  min-height: 36px;
+}
+
+.btn-lg,
+button.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+  min-height: 48px;
+}
+
+.btn-xl,
+button.btn-xl {
+  padding: 1.25rem 2.5rem;
+  font-size: 1.25rem;
+  min-height: 56px;
+}
+
+/* ===== ICON BUTTON ===== */
+.btn-icon,
+button.btn-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== RESPONSIVE BUTTONS ===== */
+/* Mobile (< 768px) */
+@media (max-width: 768px) {
+  button,
+  input[type="button"],
+  input[type="submit"],
+  .btn {
+    width: auto;
+    max-width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .btn-block,
+  button.btn-block {
+    width: 100%;
+  }
+
+  /* Stack buttons in modals/forms on mobile */
+  .modal-footer .btn,
+  .form-actions .btn,
+  .form-actions button {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Tablet (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  button,
+  input[type="button"],
+  input[type="submit"],
+  .btn {
+    padding: 0.75rem 1.25rem;
+  }
+}
+
+/* Desktop (> 1024px) */
+@media (min-width: 1024px) {
+  button,
+  input[type="button"],
+  input[type="submit"],
+  .btn {
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+/* ===== FULL-WIDTH BUTTON ===== */
+.btn-block,
+button.btn-block {
+  width: 100%;
+  display: flex;
+}
+
+/* ===== LOADING STATE ===== */
+.btn.loading,
+button.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+  position: relative;
+}
+
+.btn.loading::after,
+button.loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== TABLE ACTION BUTTONS ===== */
+.table-btn {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #eaeaea;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #0a0e27;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px;
+}
+
+.table-btn:hover {
+  background-color: #0366d6;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 102, 214, 0.25);
+  border-color: #0366d6;
+}
+
+.table-btn.danger:hover {
+  background-color: #e63946;
+  border-color: #e63946;
+}
+
+.table-btn.warning:hover {
+  background-color: #d97706;
+  border-color: #d97706;
+}
+
+.table-btn.success:hover {
+  background-color: #1a7f64;
+  border-color: #1a7f64;
+}
+
+/* ===== MODAL ACTION BUTTONS ===== */
+.modal-footer button,
+.modal-actions button {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+/* ===== FORM ACTION BUTTONS ===== */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.form-actions button {
+  padding: 0.75rem 1.5rem;
+  min-height: 44px;
+}
+
+/* Mobile form buttons */
+@media (max-width: 768px) {
+  .form-actions {
+    justify-content: stretch;
+    gap: 0.5rem;
+  }
+
+  .form-actions button {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ===== BUTTON GROUP ===== */
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-group.vertical {
+  flex-direction: column;
+}
+
+.btn-group .btn {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== DARK THEME BUTTONS ===== */
+.dark-theme .btn-secondary,
+.dark-theme button.secondary,
+.dark-theme .btn.btn-secondary {
+  background-color: #1a1f3a;
+  color: #0366d6;
+  border-color: #0366d6;
+}
+
+.dark-theme .btn-secondary:hover,
+.dark-theme button.secondary:hover,
+.dark-theme .btn.btn-secondary:hover {
+  background-color: #252d47;
+}
+
+.dark-theme .table-btn {
+  background-color: #1a1f3a;
+  color: #f0f4f8;
+  border-color: #334155;
+}
+
+.dark-theme .table-btn:hover {
+  background-color: #0366d6;
+  color: white;
+  border-color: #0366d6;
+}
+
+/* ===== ACCESSIBILITY ===== */
+button:focus,
+input[type="button"]:focus,
+input[type="submit"]:focus,
+.btn:focus {
+  outline: 2px solid #0366d6;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline when navigating with mouse */
+button:focus:not(:focus-visible),
+input[type="button"]:focus:not(:focus-visible),
+input[type="submit"]:focus:not(:focus-visible),
+.btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ===== UTILITY BUTTONS ===== */
+.btn-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+.btn-transparent {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: #ffffff;
+}
+
+.btn-transparent:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dark-theme .btn-transparent:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== DISABLED STATE ===== */
+button:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ===== BUTTON WITH ICON ===== */
+.btn .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.btn .icon-left {
+  margin-right: 0.5rem;
+}
+
+.btn .icon-right {
+  margin-left: 0.5rem;
+}

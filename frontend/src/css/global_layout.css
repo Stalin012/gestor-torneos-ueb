@@ -1,0 +1,250 @@
+/* =========================================
+   GLOBAL LAYOUT STYLES - PROFESSIONAL DASHBOARD
+   ========================================= */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Inter, Segoe UI, Roboto, sans-serif;
+  background-color: var(--background-page);
+}
+
+/* LAYOUT CONTAINER */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+.global-sidebar {
+  width: 270px;
+  background-color: var(--background-dark);
+  color: var(--text-white);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease, transform 0.3s ease;
+  flex-shrink: 0;
+  overflow: hidden;
+  z-index: 50;
+}
+
+.global-sidebar.collapsed {
+  width: 80px;
+}
+
+.global-sidebar.collapsed .brand-logo span,
+.global-sidebar.collapsed .nav-link span,
+.global-sidebar.collapsed .sidebar-footer span {
+  display: none;
+}
+
+.global-sidebar.collapsed .nav-link,
+.global-sidebar.collapsed .sidebar-footer button {
+  justify-content: center !important;
+  padding: 0.75rem 0;
+}
+
+.sidebar-header {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid rgba(var(--text-white-rgb), 0.1);
+}
+
+.brand-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-white);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 1.5rem 0.75rem;
+  overflow-y: auto;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: var(--text-white);
+  text-decoration: none;
+  transition: all 0.2s;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  background-color: var(--background-dark);
+  color: var(--text-white);
+}
+
+.nav-link.active {
+  background-color: var(--primary);
+  color: var(--text-white);
+}
+
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid rgba(var(--text-white-rgb), 0.1);
+}
+
+/* MAIN CONTENT AREA */
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--background-dark);
+  position: relative;
+}
+
+/* NAVBAR / HEADER */
+.global-header {
+  height: 70px;
+  background-color: var(--background-dark);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  z-index: 10;
+}
+
+.header-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-white);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s;
+}
+
+.user-profile:hover {
+  background-color: var(--border);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  background-color: var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: var(--text-color);
+}
+
+/* CONTENT SURFACE */
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  position: relative;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+
+@media (max-width: 768px) {
+  .app-layout {
+    position: relative;
+  }
+
+  .global-sidebar {
+    position: absolute;
+    height: 100%;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    width: 270px !important;
+    /* Force full width on mobile when open */
+    box-shadow: 4px 0 15px rgba(var(--text-color-rgb), 0.3);
+  }
+
+  .global-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* When sidebar is collapsed on desktop, it might be 'collapsed' class, 
+     but on mobile we toggle 'open' class usually. 
+     Wait, UnifiedLayout uses isOpen state.
+     If isOpen is true, we want it shown.
+     If isOpen is false, we want it hidden (translateX -100%).
+  */
+
+  .global-sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 270px;
+    /* Reset width when hidden */
+  }
+
+  /* Override the desktop collapsed behavior which just shrinks width */
+  .global-sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+
+  /* We need a backdrop when sidebar is open on mobile */
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(var(--text-color-rgb), 0.5);
+    z-index: 40;
+    display: none;
+  }
+
+  .sidebar-backdrop.visible {
+    display: block;
+  }
+
+  .global-header {
+    padding: 0 1rem;
+  }
+
+  .page-content {
+    padding: 1rem;
+  }
+
+  .header-title {
+    font-size: 1.1rem;
+  }
+}

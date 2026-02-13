@@ -1,0 +1,11 @@
+{
+  "hmr": {
+    "port": 24678,
+    "overlay": false
+  },
+  "server": {
+    "watch": {
+      "ignored": ["**/node_modules/**", "**/dist/**"]
+    }
+  }
+}

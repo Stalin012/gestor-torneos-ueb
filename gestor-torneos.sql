@@ -2,12 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict 1uxwA1DScJK8MgMn6jfj5AAeTCb7ZgRZ7p9TCEdSrxhdMegCla0biM7SSbcW9Pb
+-- Dumped from database version 18.1
+-- Dumped by pg_dump version 18.1
 
--- Dumped from database version 17.7
--- Dumped by pg_dump version 17.7
-
--- Started on 2025-11-26 17:03:51
+-- Started on 2026-02-12 07:37:42
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -26,22 +24,68 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- TOC entry 239 (class 1259 OID 30720)
+-- TOC entry 219 (class 1259 OID 16389)
 -- Name: arbitros; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.arbitros (
     cedula character(10) NOT NULL,
     experiencia integer DEFAULT 0 NOT NULL,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    especialidad character varying(255),
+    estado character varying(255) DEFAULT 'Certificado'::character varying
 );
 
 
 ALTER TABLE public.arbitros OWNER TO postgres;
 
 --
--- TOC entry 221 (class 1259 OID 30561)
+-- TOC entry 220 (class 1259 OID 16395)
+-- Name: auditoria; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.auditoria (
+    id bigint NOT NULL,
+    "timestamp" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    usuario_cedula character varying(10),
+    accion character varying(255) NOT NULL,
+    entidad character varying(255) NOT NULL,
+    entidad_id character varying(255),
+    detalle text,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+ALTER TABLE public.auditoria OWNER TO postgres;
+
+--
+-- TOC entry 221 (class 1259 OID 16405)
+-- Name: auditoria_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.auditoria_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.auditoria_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5205 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: auditoria_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.auditoria_id_seq OWNED BY public.auditoria.id;
+
+
+--
+-- TOC entry 222 (class 1259 OID 16406)
 -- Name: cache; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -55,7 +99,7 @@ CREATE TABLE public.cache (
 ALTER TABLE public.cache OWNER TO postgres;
 
 --
--- TOC entry 222 (class 1259 OID 30568)
+-- TOC entry 223 (class 1259 OID 16414)
 -- Name: cache_locks; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -69,23 +113,24 @@ CREATE TABLE public.cache_locks (
 ALTER TABLE public.cache_locks OWNER TO postgres;
 
 --
--- TOC entry 251 (class 1259 OID 30831)
+-- TOC entry 224 (class 1259 OID 16422)
 -- Name: categorias; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.categorias (
     id bigint NOT NULL,
-    nombre character varying(255) NOT NULL,
-    descripcion text,
+    nombre text NOT NULL,
+    descripcion character varying(255),
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    deporte_id bigint
 );
 
 
 ALTER TABLE public.categorias OWNER TO postgres;
 
 --
--- TOC entry 250 (class 1259 OID 30830)
+-- TOC entry 225 (class 1259 OID 16429)
 -- Name: categorias_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -100,8 +145,8 @@ CREATE SEQUENCE public.categorias_id_seq
 ALTER SEQUENCE public.categorias_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5069 (class 0 OID 0)
--- Dependencies: 250
+-- TOC entry 5206 (class 0 OID 0)
+-- Dependencies: 225
 -- Name: categorias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -109,7 +154,7 @@ ALTER SEQUENCE public.categorias_id_seq OWNED BY public.categorias.id;
 
 
 --
--- TOC entry 249 (class 1259 OID 30814)
+-- TOC entry 226 (class 1259 OID 16430)
 -- Name: configuracion; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -125,7 +170,7 @@ CREATE TABLE public.configuracion (
 ALTER TABLE public.configuracion OWNER TO postgres;
 
 --
--- TOC entry 248 (class 1259 OID 30813)
+-- TOC entry 227 (class 1259 OID 16441)
 -- Name: configuracion_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -140,8 +185,8 @@ CREATE SEQUENCE public.configuracion_id_seq
 ALTER SEQUENCE public.configuracion_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5070 (class 0 OID 0)
--- Dependencies: 248
+-- TOC entry 5207 (class 0 OID 0)
+-- Dependencies: 227
 -- Name: configuracion_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -149,23 +194,23 @@ ALTER SEQUENCE public.configuracion_id_seq OWNED BY public.configuracion.id;
 
 
 --
--- TOC entry 231 (class 1259 OID 30631)
+-- TOC entry 228 (class 1259 OID 16442)
 -- Name: deportes; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.deportes (
     id bigint NOT NULL,
-    nombre character varying(100) NOT NULL,
-    descripcion text,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    nombre character varying(255) NOT NULL,
+    descripcion character varying(255),
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
 );
 
 
 ALTER TABLE public.deportes OWNER TO postgres;
 
 --
--- TOC entry 230 (class 1259 OID 30630)
+-- TOC entry 229 (class 1259 OID 16449)
 -- Name: deportes_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -180,8 +225,8 @@ CREATE SEQUENCE public.deportes_id_seq
 ALTER SEQUENCE public.deportes_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5071 (class 0 OID 0)
--- Dependencies: 230
+-- TOC entry 5208 (class 0 OID 0)
+-- Dependencies: 229
 -- Name: deportes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -189,26 +234,27 @@ ALTER SEQUENCE public.deportes_id_seq OWNED BY public.deportes.id;
 
 
 --
--- TOC entry 235 (class 1259 OID 30661)
+-- TOC entry 230 (class 1259 OID 16450)
 -- Name: equipos; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.equipos (
     id bigint NOT NULL,
-    nombre character varying(100) NOT NULL,
-    torneo_id bigint NOT NULL,
+    nombre character varying(255) NOT NULL,
     logo character varying(255),
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    deporte_id bigint,
-    categoria_id bigint
+    torneo_id bigint NOT NULL,
+    deporte_id bigint NOT NULL,
+    categoria_id bigint NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    representante_cedula character(10)
 );
 
 
 ALTER TABLE public.equipos OWNER TO postgres;
 
 --
--- TOC entry 234 (class 1259 OID 30660)
+-- TOC entry 231 (class 1259 OID 16460)
 -- Name: equipos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -223,8 +269,8 @@ CREATE SEQUENCE public.equipos_id_seq
 ALTER SEQUENCE public.equipos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5072 (class 0 OID 0)
--- Dependencies: 234
+-- TOC entry 5209 (class 0 OID 0)
+-- Dependencies: 231
 -- Name: equipos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -232,29 +278,28 @@ ALTER SEQUENCE public.equipos_id_seq OWNED BY public.equipos.id;
 
 
 --
--- TOC entry 243 (class 1259 OID 30765)
+-- TOC entry 232 (class 1259 OID 16461)
 -- Name: estadisticas; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.estadisticas (
     id bigint NOT NULL,
-    jugador_cedula character(10) NOT NULL,
     partido_id bigint NOT NULL,
+    jugador_cedula character(10) NOT NULL,
+    tipo character varying(255) NOT NULL,
+    minuto integer,
+    observaciones text,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
     goles integer DEFAULT 0 NOT NULL,
-    asistencias integer DEFAULT 0 NOT NULL,
-    tarjetas_amarillas integer DEFAULT 0 NOT NULL,
-    tarjetas_rojas integer DEFAULT 0 NOT NULL,
-    rebotes integer DEFAULT 0 NOT NULL,
-    bloqueos integer DEFAULT 0 NOT NULL,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    CONSTRAINT estadisticas_tipo_check CHECK (((tipo)::text = ANY (ARRAY[('gol'::character varying)::text, ('asistencia'::character varying)::text, ('tarjeta_amarilla'::character varying)::text, ('tarjeta_roja'::character varying)::text, ('lesion'::character varying)::text])))
 );
 
 
 ALTER TABLE public.estadisticas OWNER TO postgres;
 
 --
--- TOC entry 242 (class 1259 OID 30764)
+-- TOC entry 233 (class 1259 OID 16473)
 -- Name: estadisticas_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -269,8 +314,8 @@ CREATE SEQUENCE public.estadisticas_id_seq
 ALTER SEQUENCE public.estadisticas_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5073 (class 0 OID 0)
--- Dependencies: 242
+-- TOC entry 5210 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: estadisticas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -278,7 +323,7 @@ ALTER SEQUENCE public.estadisticas_id_seq OWNED BY public.estadisticas.id;
 
 
 --
--- TOC entry 227 (class 1259 OID 30593)
+-- TOC entry 234 (class 1259 OID 16474)
 -- Name: failed_jobs; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -296,7 +341,7 @@ CREATE TABLE public.failed_jobs (
 ALTER TABLE public.failed_jobs OWNER TO postgres;
 
 --
--- TOC entry 226 (class 1259 OID 30592)
+-- TOC entry 235 (class 1259 OID 16487)
 -- Name: failed_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -311,8 +356,8 @@ CREATE SEQUENCE public.failed_jobs_id_seq
 ALTER SEQUENCE public.failed_jobs_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5074 (class 0 OID 0)
--- Dependencies: 226
+-- TOC entry 5211 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: failed_jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -320,7 +365,7 @@ ALTER SEQUENCE public.failed_jobs_id_seq OWNED BY public.failed_jobs.id;
 
 
 --
--- TOC entry 247 (class 1259 OID 30803)
+-- TOC entry 236 (class 1259 OID 16488)
 -- Name: galeria; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -337,7 +382,7 @@ CREATE TABLE public.galeria (
 ALTER TABLE public.galeria OWNER TO postgres;
 
 --
--- TOC entry 246 (class 1259 OID 30802)
+-- TOC entry 237 (class 1259 OID 16499)
 -- Name: galeria_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -352,8 +397,8 @@ CREATE SEQUENCE public.galeria_id_seq
 ALTER SEQUENCE public.galeria_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5075 (class 0 OID 0)
--- Dependencies: 246
+-- TOC entry 5212 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: galeria_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -361,7 +406,7 @@ ALTER SEQUENCE public.galeria_id_seq OWNED BY public.galeria.id;
 
 
 --
--- TOC entry 237 (class 1259 OID 30680)
+-- TOC entry 238 (class 1259 OID 16500)
 -- Name: inscripciones; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -371,14 +416,15 @@ CREATE TABLE public.inscripciones (
     torneo_id bigint NOT NULL,
     fecha_inscripcion date DEFAULT CURRENT_DATE NOT NULL,
     created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    estado character varying(255) DEFAULT 'Pendiente'::character varying NOT NULL
 );
 
 
 ALTER TABLE public.inscripciones OWNER TO postgres;
 
 --
--- TOC entry 236 (class 1259 OID 30679)
+-- TOC entry 239 (class 1259 OID 16514)
 -- Name: inscripciones_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -393,8 +439,8 @@ CREATE SEQUENCE public.inscripciones_id_seq
 ALTER SEQUENCE public.inscripciones_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5076 (class 0 OID 0)
--- Dependencies: 236
+-- TOC entry 5213 (class 0 OID 0)
+-- Dependencies: 239
 -- Name: inscripciones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -402,7 +448,7 @@ ALTER SEQUENCE public.inscripciones_id_seq OWNED BY public.inscripciones.id;
 
 
 --
--- TOC entry 225 (class 1259 OID 30585)
+-- TOC entry 240 (class 1259 OID 16515)
 -- Name: job_batches; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -423,7 +469,7 @@ CREATE TABLE public.job_batches (
 ALTER TABLE public.job_batches OWNER TO postgres;
 
 --
--- TOC entry 224 (class 1259 OID 30576)
+-- TOC entry 241 (class 1259 OID 16527)
 -- Name: jobs; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -441,7 +487,7 @@ CREATE TABLE public.jobs (
 ALTER TABLE public.jobs OWNER TO postgres;
 
 --
--- TOC entry 223 (class 1259 OID 30575)
+-- TOC entry 242 (class 1259 OID 16538)
 -- Name: jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -456,8 +502,8 @@ CREATE SEQUENCE public.jobs_id_seq
 ALTER SEQUENCE public.jobs_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5077 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 5214 (class 0 OID 0)
+-- Dependencies: 242
 -- Name: jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -465,29 +511,33 @@ ALTER SEQUENCE public.jobs_id_seq OWNED BY public.jobs.id;
 
 
 --
--- TOC entry 238 (class 1259 OID 30701)
+-- TOC entry 243 (class 1259 OID 16539)
 -- Name: jugadores; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.jugadores (
-    cedula character(10) NOT NULL,
+    cedula character varying(10) NOT NULL,
     equipo_id bigint,
-    posicion character varying(50),
+    posicion character varying(255),
     numero integer,
-    carnet_qr text,
+    carnet_qr character varying(255),
     carnet_pdf character varying(255),
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    victorias integer DEFAULT 0,
-    derrotas integer DEFAULT 0,
-    empates integer DEFAULT 0
+    victorias integer DEFAULT 0 NOT NULL,
+    derrotas integer DEFAULT 0 NOT NULL,
+    empates integer DEFAULT 0 NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    qr_token character varying(80),
+    qr_generated_at timestamp(0) without time zone,
+    carrera character varying(255),
+    facultad character varying(255)
 );
 
 
 ALTER TABLE public.jugadores OWNER TO postgres;
 
 --
--- TOC entry 218 (class 1259 OID 30528)
+-- TOC entry 244 (class 1259 OID 16551)
 -- Name: migrations; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -501,7 +551,7 @@ CREATE TABLE public.migrations (
 ALTER TABLE public.migrations OWNER TO postgres;
 
 --
--- TOC entry 217 (class 1259 OID 30527)
+-- TOC entry 245 (class 1259 OID 16557)
 -- Name: migrations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -517,8 +567,8 @@ CREATE SEQUENCE public.migrations_id_seq
 ALTER SEQUENCE public.migrations_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5078 (class 0 OID 0)
--- Dependencies: 217
+-- TOC entry 5215 (class 0 OID 0)
+-- Dependencies: 245
 -- Name: migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -526,7 +576,7 @@ ALTER SEQUENCE public.migrations_id_seq OWNED BY public.migrations.id;
 
 
 --
--- TOC entry 245 (class 1259 OID 30792)
+-- TOC entry 246 (class 1259 OID 16558)
 -- Name: noticias; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -543,7 +593,7 @@ CREATE TABLE public.noticias (
 ALTER TABLE public.noticias OWNER TO postgres;
 
 --
--- TOC entry 244 (class 1259 OID 30791)
+-- TOC entry 247 (class 1259 OID 16569)
 -- Name: noticias_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -558,8 +608,8 @@ CREATE SEQUENCE public.noticias_id_seq
 ALTER SEQUENCE public.noticias_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5079 (class 0 OID 0)
--- Dependencies: 244
+-- TOC entry 5216 (class 0 OID 0)
+-- Dependencies: 247
 -- Name: noticias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -567,7 +617,7 @@ ALTER SEQUENCE public.noticias_id_seq OWNED BY public.noticias.id;
 
 
 --
--- TOC entry 241 (class 1259 OID 30734)
+-- TOC entry 248 (class 1259 OID 16570)
 -- Name: partidos; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -580,16 +630,19 @@ CREATE TABLE public.partidos (
     fecha timestamp(0) without time zone,
     marcador_local integer DEFAULT 0 NOT NULL,
     marcador_visitante integer DEFAULT 0 NOT NULL,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    estado character varying(255) DEFAULT 'Programado'::character varying NOT NULL
+    estado character varying(255) DEFAULT 'Programado'::character varying NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    hora time(0) without time zone,
+    campo character varying(100),
+    CONSTRAINT partidos_estado_check CHECK (((estado)::text = ANY (ARRAY[('Programado'::character varying)::text, ('En Juego'::character varying)::text, ('Finalizado'::character varying)::text, ('Postergado'::character varying)::text])))
 );
 
 
 ALTER TABLE public.partidos OWNER TO postgres;
 
 --
--- TOC entry 240 (class 1259 OID 30733)
+-- TOC entry 249 (class 1259 OID 16584)
 -- Name: partidos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -604,8 +657,8 @@ CREATE SEQUENCE public.partidos_id_seq
 ALTER SEQUENCE public.partidos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5080 (class 0 OID 0)
--- Dependencies: 240
+-- TOC entry 5217 (class 0 OID 0)
+-- Dependencies: 249
 -- Name: partidos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -613,7 +666,7 @@ ALTER SEQUENCE public.partidos_id_seq OWNED BY public.partidos.id;
 
 
 --
--- TOC entry 219 (class 1259 OID 30545)
+-- TOC entry 250 (class 1259 OID 16585)
 -- Name: password_reset_tokens; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -627,14 +680,14 @@ CREATE TABLE public.password_reset_tokens (
 ALTER TABLE public.password_reset_tokens OWNER TO postgres;
 
 --
--- TOC entry 253 (class 1259 OID 30880)
+-- TOC entry 251 (class 1259 OID 16592)
 -- Name: personal_access_tokens; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.personal_access_tokens (
     id bigint NOT NULL,
     tokenable_type character varying(255) NOT NULL,
-    tokenable_id bigint NOT NULL,
+    tokenable_id character varying(255) NOT NULL,
     name text NOT NULL,
     token character varying(64) NOT NULL,
     abilities text,
@@ -648,7 +701,7 @@ CREATE TABLE public.personal_access_tokens (
 ALTER TABLE public.personal_access_tokens OWNER TO postgres;
 
 --
--- TOC entry 252 (class 1259 OID 30879)
+-- TOC entry 252 (class 1259 OID 16602)
 -- Name: personal_access_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -663,7 +716,7 @@ CREATE SEQUENCE public.personal_access_tokens_id_seq
 ALTER SEQUENCE public.personal_access_tokens_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5081 (class 0 OID 0)
+-- TOC entry 5218 (class 0 OID 0)
 -- Dependencies: 252
 -- Name: personal_access_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -672,12 +725,12 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 
 
 --
--- TOC entry 228 (class 1259 OID 30604)
+-- TOC entry 253 (class 1259 OID 16603)
 -- Name: personas; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.personas (
-    cedula character(10) NOT NULL,
+    cedula character varying(10) NOT NULL,
     nombres character varying(100) NOT NULL,
     apellidos character varying(100) NOT NULL,
     edad integer,
@@ -685,20 +738,25 @@ CREATE TABLE public.personas (
     telefono character varying(20),
     foto character varying(255),
     created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    email character varying(255),
+    fecha_nacimiento date,
+    password character varying(255),
+    rol character varying(255) DEFAULT 'usuario'::character varying NOT NULL,
+    estado character varying(255) DEFAULT 'activo'::character varying NOT NULL
 );
 
 
 ALTER TABLE public.personas OWNER TO postgres;
 
 --
--- TOC entry 220 (class 1259 OID 30552)
+-- TOC entry 254 (class 1259 OID 16615)
 -- Name: sessions; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.sessions (
     id character varying(255) NOT NULL,
-    user_id character varying(20),
+    user_id bigint,
     ip_address character varying(45),
     user_agent text,
     payload text NOT NULL,
@@ -709,30 +767,31 @@ CREATE TABLE public.sessions (
 ALTER TABLE public.sessions OWNER TO postgres;
 
 --
--- TOC entry 233 (class 1259 OID 30642)
+-- TOC entry 255 (class 1259 OID 16623)
 -- Name: torneos; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.torneos (
     id bigint NOT NULL,
-    nombre character varying(100) NOT NULL,
-    deporte_id bigint NOT NULL,
-    fecha_inicio date,
-    fecha_fin date,
-    ubicacion character varying(100),
-    creado_por character(10),
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    categoria_id bigint NOT NULL,
+    nombre character varying(255) NOT NULL,
     descripcion text,
-    estado character varying(50) DEFAULT 'Activo'::character varying NOT NULL
+    deporte_id bigint NOT NULL,
+    categoria_id bigint NOT NULL,
+    fecha_inicio timestamp(0) without time zone,
+    fecha_fin timestamp(0) without time zone,
+    ubicacion character varying(255),
+    estado character varying(255) DEFAULT 'Inscripcion'::character varying NOT NULL,
+    creado_por character(10),
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT torneos_estado_check CHECK (((estado)::text = ANY (ARRAY[('Inscripcion'::character varying)::text, ('Activo'::character varying)::text, ('Finalizado'::character varying)::text])))
 );
 
 
 ALTER TABLE public.torneos OWNER TO postgres;
 
 --
--- TOC entry 232 (class 1259 OID 30641)
+-- TOC entry 256 (class 1259 OID 16635)
 -- Name: torneos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -747,8 +806,8 @@ CREATE SEQUENCE public.torneos_id_seq
 ALTER SEQUENCE public.torneos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5082 (class 0 OID 0)
--- Dependencies: 232
+-- TOC entry 5219 (class 0 OID 0)
+-- Dependencies: 256
 -- Name: torneos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -756,30 +815,78 @@ ALTER SEQUENCE public.torneos_id_seq OWNED BY public.torneos.id;
 
 
 --
--- TOC entry 229 (class 1259 OID 30611)
+-- TOC entry 257 (class 1259 OID 16636)
+-- Name: users; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.users (
+    id bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    email character varying(255) NOT NULL,
+    email_verified_at timestamp(0) without time zone,
+    password character varying(255) NOT NULL,
+    remember_token character varying(100),
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+ALTER TABLE public.users OWNER TO postgres;
+
+--
+-- TOC entry 258 (class 1259 OID 16645)
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.users_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5220 (class 0 OID 0)
+-- Dependencies: 258
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+--
+-- TOC entry 259 (class 1259 OID 16646)
 -- Name: usuarios; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.usuarios (
     cedula character(10) NOT NULL,
-    email character varying(100) NOT NULL,
+    email character varying(255) NOT NULL,
     password character varying(255) NOT NULL,
     rol character varying(255) DEFAULT 'usuario'::character varying NOT NULL,
+    token_sesion character varying(255),
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
     estado boolean DEFAULT true NOT NULL,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    nombres character varying(100),
-    apellidos character varying(100),
-    foto character varying(255),
-    telefono character varying(20),
-    CONSTRAINT usuarios_rol_check CHECK (((rol)::text = ANY ((ARRAY['admin'::character varying, 'entrenador'::character varying, 'jugador'::character varying, 'arbitro'::character varying, 'usuario'::character varying])::text[])))
+    CONSTRAINT usuarios_rol_check CHECK (((rol)::text = ANY (ARRAY[('admin'::character varying)::text, ('entrenador'::character varying)::text, ('jugador'::character varying)::text, ('arbitro'::character varying)::text, ('usuario'::character varying)::text, ('representante'::character varying)::text])))
 );
 
 
 ALTER TABLE public.usuarios OWNER TO postgres;
 
 --
--- TOC entry 4798 (class 2604 OID 30834)
+-- TOC entry 4868 (class 2604 OID 16659)
+-- Name: auditoria id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.auditoria ALTER COLUMN id SET DEFAULT nextval('public.auditoria_id_seq'::regclass);
+
+
+--
+-- TOC entry 4870 (class 2604 OID 16660)
 -- Name: categorias id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -787,7 +894,7 @@ ALTER TABLE ONLY public.categorias ALTER COLUMN id SET DEFAULT nextval('public.c
 
 
 --
--- TOC entry 4795 (class 2604 OID 30817)
+-- TOC entry 4871 (class 2604 OID 16661)
 -- Name: configuracion id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -795,7 +902,7 @@ ALTER TABLE ONLY public.configuracion ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 4752 (class 2604 OID 30634)
+-- TOC entry 4874 (class 2604 OID 16662)
 -- Name: deportes id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -803,7 +910,7 @@ ALTER TABLE ONLY public.deportes ALTER COLUMN id SET DEFAULT nextval('public.dep
 
 
 --
--- TOC entry 4759 (class 2604 OID 30664)
+-- TOC entry 4875 (class 2604 OID 16663)
 -- Name: equipos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -811,7 +918,7 @@ ALTER TABLE ONLY public.equipos ALTER COLUMN id SET DEFAULT nextval('public.equi
 
 
 --
--- TOC entry 4780 (class 2604 OID 30768)
+-- TOC entry 4876 (class 2604 OID 16664)
 -- Name: estadisticas id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -819,7 +926,7 @@ ALTER TABLE ONLY public.estadisticas ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 4744 (class 2604 OID 30596)
+-- TOC entry 4878 (class 2604 OID 16665)
 -- Name: failed_jobs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -827,7 +934,7 @@ ALTER TABLE ONLY public.failed_jobs ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 4792 (class 2604 OID 30806)
+-- TOC entry 4880 (class 2604 OID 16666)
 -- Name: galeria id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -835,7 +942,7 @@ ALTER TABLE ONLY public.galeria ALTER COLUMN id SET DEFAULT nextval('public.gale
 
 
 --
--- TOC entry 4762 (class 2604 OID 30683)
+-- TOC entry 4883 (class 2604 OID 16667)
 -- Name: inscripciones id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -843,7 +950,7 @@ ALTER TABLE ONLY public.inscripciones ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 4743 (class 2604 OID 30579)
+-- TOC entry 4888 (class 2604 OID 16668)
 -- Name: jobs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -851,7 +958,7 @@ ALTER TABLE ONLY public.jobs ALTER COLUMN id SET DEFAULT nextval('public.jobs_id
 
 
 --
--- TOC entry 4742 (class 2604 OID 30531)
+-- TOC entry 4892 (class 2604 OID 16669)
 -- Name: migrations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -859,7 +966,7 @@ ALTER TABLE ONLY public.migrations ALTER COLUMN id SET DEFAULT nextval('public.m
 
 
 --
--- TOC entry 4789 (class 2604 OID 30795)
+-- TOC entry 4893 (class 2604 OID 16670)
 -- Name: noticias id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -867,7 +974,7 @@ ALTER TABLE ONLY public.noticias ALTER COLUMN id SET DEFAULT nextval('public.not
 
 
 --
--- TOC entry 4774 (class 2604 OID 30737)
+-- TOC entry 4896 (class 2604 OID 16671)
 -- Name: partidos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -875,7 +982,7 @@ ALTER TABLE ONLY public.partidos ALTER COLUMN id SET DEFAULT nextval('public.par
 
 
 --
--- TOC entry 4799 (class 2604 OID 30883)
+-- TOC entry 4900 (class 2604 OID 16672)
 -- Name: personal_access_tokens id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -883,7 +990,7 @@ ALTER TABLE ONLY public.personal_access_tokens ALTER COLUMN id SET DEFAULT nextv
 
 
 --
--- TOC entry 4755 (class 2604 OID 30645)
+-- TOC entry 4903 (class 2604 OID 16673)
 -- Name: torneos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -891,18 +998,83 @@ ALTER TABLE ONLY public.torneos ALTER COLUMN id SET DEFAULT nextval('public.torn
 
 
 --
--- TOC entry 5049 (class 0 OID 30720)
--- Dependencies: 239
+-- TOC entry 4905 (class 2604 OID 16674)
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- TOC entry 5159 (class 0 OID 16389)
+-- Dependencies: 219
 -- Data for Name: arbitros; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.arbitros (cedula, experiencia, created_at, updated_at) FROM stdin;
+COPY public.arbitros (cedula, experiencia, created_at, updated_at, especialidad, estado) FROM stdin;
+1500511231	6	2026-02-05 15:00:42	2026-02-05 15:17:05	\N	Certificado
 \.
 
 
 --
--- TOC entry 5031 (class 0 OID 30561)
--- Dependencies: 221
+-- TOC entry 5160 (class 0 OID 16395)
+-- Dependencies: 220
+-- Data for Name: auditoria; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.auditoria (id, "timestamp", usuario_cedula, accion, entidad, entidad_id, detalle, created_at, updated_at) FROM stdin;
+1	2026-02-05 21:11:56	0102030405	ACTUALIZAR	Usuario	1500982782	Actualización de usuario: winston@ueb.edu.ec (Rol: usuario, Estado: Activo)	2026-02-05 21:11:56	2026-02-05 21:11:56
+2	2026-02-05 21:22:09	0102030405	ACTUALIZAR	Usuario	0921345678	Actualización de usuario: user0921345678@ueb.edu.ec (Rol: jugador, Estado: Inactivo)	2026-02-05 21:22:09	2026-02-05 21:22:09
+3	2026-02-06 02:34:26	0102030405	ACTUALIZAR	Configuracion	general	Actualización de configuración general.	2026-02-06 02:34:26	2026-02-06 02:34:26
+4	2026-02-06 02:34:26	0102030405	ACTUALIZAR	Configuracion	operacional	Actualización de configuración operacional.	2026-02-06 02:34:26	2026-02-06 02:34:26
+5	2026-02-06 02:34:26	0102030405	ACTUALIZAR	Configuracion	seguridad	Actualización de configuración de seguridad.	2026-02-06 02:34:26	2026-02-06 02:34:26
+6	2026-02-06 02:41:48	0102030405	ACTUALIZAR	Configuracion	general	Actualización de configuración general.	2026-02-06 02:41:48	2026-02-06 02:41:48
+7	2026-02-06 02:41:48	0102030405	ACTUALIZAR	Configuracion	operacional	Actualización de configuración operacional.	2026-02-06 02:41:48	2026-02-06 02:41:48
+8	2026-02-06 02:41:48	0102030405	ACTUALIZAR	Configuracion	seguridad	Actualización de configuración de seguridad.	2026-02-06 02:41:48	2026-02-06 02:41:48
+9	2026-02-06 02:49:37	0102030405	ACTUALIZAR	Configuracion	general	Actualización de configuración general.	2026-02-06 02:49:37	2026-02-06 02:49:37
+10	2026-02-06 02:49:37	0102030405	ACTUALIZAR	Configuracion	operacional	Actualización de configuración operacional.	2026-02-06 02:49:37	2026-02-06 02:49:37
+11	2026-02-06 02:49:37	0102030405	ACTUALIZAR	Configuracion	seguridad	Actualización de configuración de seguridad.	2026-02-06 02:49:37	2026-02-06 02:49:37
+12	2026-02-06 22:02:23	0302429733	LOGIN	Usuario	0302429733	Inicio de sesión de usuario: luis@ueb.edu.ec	2026-02-06 22:02:23	2026-02-06 22:02:23
+13	2026-02-07 23:55:37	0302429733	LOGIN	Usuario	0302429733	Inicio de sesión de usuario: luis@ueb.edu.ec	2026-02-07 23:55:37	2026-02-07 23:55:37
+14	2026-02-08 12:02:58	0302429733	LOGIN	Usuario	0302429733	Inicio de sesión de usuario: luis@ueb.edu.ec	2026-02-08 12:02:58	2026-02-08 12:02:58
+15	2026-02-08 13:29:52	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-08 13:29:52	2026-02-08 13:29:52
+16	2026-02-08 13:35:34	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-08 13:35:34	2026-02-08 13:35:34
+17	2026-02-08 13:35:56	0302429733	LOGIN	Usuario	0302429733	Inicio de sesión de usuario: luis@ueb.edu.ec	2026-02-08 13:35:56	2026-02-08 13:35:56
+18	2026-02-09 00:32:50	0302429733	LOGIN	Usuario	0302429733	Inicio de sesión de usuario: luis@ueb.edu.ec	2026-02-09 00:32:50	2026-02-09 00:32:50
+19	2026-02-09 12:15:45	0302429733	ACTUALIZAR_FOTO_PERFIL	Persona	0302429733	Foto de perfil de representante actualizada	2026-02-09 12:15:45	2026-02-09 12:15:45
+20	2026-02-09 12:16:08	0302429733	ACTUALIZAR_FOTO_PERFIL	Persona	0302429733	Foto de perfil de representante actualizada	2026-02-09 12:16:08	2026-02-09 12:16:08
+21	2026-02-09 12:16:18	0302429733	ACTUALIZAR_FOTO_PERFIL	Persona	0302429733	Foto de perfil de representante actualizada	2026-02-09 12:16:18	2026-02-09 12:16:18
+22	2026-02-09 12:16:22	0302429733	ACTUALIZAR_PERFIL	Usuario	0302429733	Perfil de representante actualizado: 	2026-02-09 12:16:22	2026-02-09 12:16:22
+23	2026-02-09 12:17:37	0302429733	ACTUALIZAR_FOTO_PERFIL	Persona	0302429733	Foto de perfil de representante actualizada	2026-02-09 12:17:37	2026-02-09 12:17:37
+24	2026-02-09 12:19:49	0302429733	ACTUALIZAR_FOTO_PERFIL	Persona	0302429733	Foto de perfil de representante actualizada	2026-02-09 12:19:49	2026-02-09 12:19:49
+25	2026-02-09 12:53:30	0302429733	ACTUALIZAR_FOTO_PERFIL	Persona	0302429733	Foto de perfil de representante actualizada	2026-02-09 12:53:30	2026-02-09 12:53:30
+26	2026-02-09 13:00:03	0302429733	ACTUALIZAR_FOTO_PERFIL	Persona	0302429733	Foto de perfil de representante actualizada	2026-02-09 13:00:03	2026-02-09 13:00:03
+27	2026-02-09 13:09:44	1500511231	LOGIN	Usuario	1500511231	Inicio de sesión de usuario: bethy@ueb.edu.ec	2026-02-09 13:09:44	2026-02-09 13:09:44
+28	2026-02-09 13:13:09	1500982782	LOGIN	Usuario	1500982782	Inicio de sesión de usuario: winston@ueb.edu.ec	2026-02-09 13:13:09	2026-02-09 13:13:09
+29	2026-02-09 13:13:57	1500511231	LOGIN	Usuario	1500511231	Inicio de sesión de usuario: bethy@ueb.edu.ec	2026-02-09 13:13:57	2026-02-09 13:13:57
+30	2026-02-09 13:30:21	1500511231	ACTUALIZAR_FOTO_PERFIL	Persona	1500511231	Foto de perfil de árbitro actualizada	2026-02-09 13:30:21	2026-02-09 13:30:21
+31	2026-02-09 13:38:41	1500511231	LOGIN	Usuario	1500511231	Inicio de sesión de usuario: bethy@ueb.edu.ec	2026-02-09 13:38:41	2026-02-09 13:38:41
+32	2026-02-09 13:39:04	1500982782	LOGIN	Usuario	1500982782	Inicio de sesión de usuario: winston@ueb.edu.ec	2026-02-09 13:39:04	2026-02-09 13:39:04
+33	2026-02-09 13:45:47	1500982782	LOGIN	Usuario	1500982782	Inicio de sesión de usuario: winston@ueb.edu.ec	2026-02-09 13:45:47	2026-02-09 13:45:47
+34	2026-02-09 13:46:10	1500982782	ACTUALIZAR_FOTO_PERFIL	Persona	1500982782	Foto de perfil de jugador actualizada	2026-02-09 13:46:10	2026-02-09 13:46:10
+35	2026-02-09 13:47:23	1500982782	ACTUALIZAR_FOTO_PERFIL	Persona	1500982782	Foto de perfil de jugador actualizada	2026-02-09 13:47:23	2026-02-09 13:47:23
+36	2026-02-09 14:09:17	1500982782	LOGIN	Usuario	1500982782	Inicio de sesión de usuario: winston@ueb.edu.ec	2026-02-09 14:09:17	2026-02-09 14:09:17
+37	2026-02-09 14:09:22	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-09 14:09:22	2026-02-09 14:09:22
+38	2026-02-09 14:09:53	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-09 14:09:53	2026-02-09 14:09:53
+39	2026-02-09 15:09:55	0102030405	ACTUALIZAR_FOTO_PERFIL	Persona	0102030405	Foto de perfil de jugador actualizada	2026-02-09 15:09:55	2026-02-09 15:09:55
+40	2026-02-09 15:15:48	0102030405	ACTUALIZAR	Configuracion	logo	Actualización del logo del sistema.	2026-02-09 15:15:48	2026-02-09 15:15:48
+41	2026-02-09 15:22:34	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-09 15:22:34	2026-02-09 15:22:34
+42	2026-02-09 20:20:33	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-09 20:20:33	2026-02-09 20:20:33
+43	2026-02-09 20:20:51	0302429733	LOGIN	Usuario	0302429733	Inicio de sesión de usuario: luis@ueb.edu.ec	2026-02-09 20:20:51	2026-02-09 20:20:51
+44	2026-02-10 13:28:30	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-10 13:28:30	2026-02-10 13:28:30
+45	2026-02-10 13:32:07	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-10 13:32:07	2026-02-10 13:32:07
+46	2026-02-12 03:07:19	0102030405	LOGIN	Usuario	0102030405	Inicio de sesión de usuario: admin@ueb.edu.ec	2026-02-12 03:07:19	2026-02-12 03:07:19
+\.
+
+
+--
+-- TOC entry 5162 (class 0 OID 16406)
+-- Dependencies: 222
 -- Data for Name: cache; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -911,8 +1083,8 @@ COPY public.cache (key, value, expiration) FROM stdin;
 
 
 --
--- TOC entry 5032 (class 0 OID 30568)
--- Dependencies: 222
+-- TOC entry 5163 (class 0 OID 16414)
+-- Dependencies: 223
 -- Data for Name: cache_locks; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -921,72 +1093,89 @@ COPY public.cache_locks (key, owner, expiration) FROM stdin;
 
 
 --
--- TOC entry 5061 (class 0 OID 30831)
--- Dependencies: 251
+-- TOC entry 5164 (class 0 OID 16422)
+-- Dependencies: 224
 -- Data for Name: categorias; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.categorias (id, nombre, descripcion, created_at, updated_at) FROM stdin;
-1	Libre	\N	\N	\N
-2	Masculino	\N	\N	\N
-3	Femenino	\N	\N	\N
-4	Mixto	\N	\N	\N
-5	Sub-18	\N	\N	\N
-6	Sub-20	\N	\N	\N
-7	Master	\N	\N	\N
-8	Juvenil	\N	2025-11-26 16:01:09	2025-11-26 16:01:09
+COPY public.categorias (id, nombre, descripcion, created_at, updated_at, deporte_id) FROM stdin;
+2	Masculino	\N	\N	\N	\N
+4	Mixto	\N	\N	\N	\N
+5	Sub-18	\N	\N	\N	\N
+6	Sub-20	\N	\N	\N	\N
+7	Master	\N	\N	\N	\N
+1	Libre	\N	2026-01-03 16:03:31	2026-01-03 16:03:31	\N
+10	juvenil 2026	\N	2026-01-15 20:52:48	2026-01-15 20:52:48	\N
+3	Femenino	\N	\N	2026-01-16 00:23:30	1
+8	Juvenil	\N	2025-11-26 16:01:09	2026-01-16 00:32:45	3
 \.
 
 
 --
--- TOC entry 5059 (class 0 OID 30814)
--- Dependencies: 249
+-- TOC entry 5166 (class 0 OID 16430)
+-- Dependencies: 226
 -- Data for Name: configuracion; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.configuracion (id, clave, valor, created_at, updated_at) FROM stdin;
 1	nombre_sistema	Gestor Multideportivo UEB	2025-11-08 18:14:24	2025-11-08 18:14:24
 2	version	1.0.0	2025-11-08 18:14:24	2025-11-08 18:14:24
+4	operacional	{"maxEquiposPorTorneo":32,"defaultEstadoInscripcion":"Aprobado","diasMaximoParaProgramacion":15,"activarNotificacionesEmail":true}	2025-11-30 03:56:01	2025-11-30 03:56:01
+5	seguridad	{"longitudMinimaContrasena":8,"rolUsuarioPorDefecto":"Invitado","forzar2FA":false}	2025-11-30 03:56:01	2025-11-30 03:56:01
+3	general	{"nombreSistema":"Gestor de Torneos UEB","emailContacto":"contacto@ueb.edu.ec","logoUrl":"http:\\/\\/127.0.0.1:8000\\/storage\\/logos\\/yOD2fTEUk8d7LRmuxvwXJCpPLeusE0iHhb6mUHuB.png","timezone":"America\\/Guayaquil","registroAbierto":true}	2025-11-30 03:56:01	2026-02-09 15:15:48
 \.
 
 
 --
--- TOC entry 5041 (class 0 OID 30631)
--- Dependencies: 231
+-- TOC entry 5168 (class 0 OID 16442)
+-- Dependencies: 228
 -- Data for Name: deportes; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.deportes (id, nombre, descripcion, created_at, updated_at) FROM stdin;
-1	Fútbol	Deporte de equipo jugado con balón y dos porterías.	2025-11-08 18:14:23	2025-11-08 18:14:23
 2	Vóley	Juego con balón y red central.	2025-11-08 18:14:23	2025-11-08 18:14:23
 3	Básquet	Juego de balón y aro.	2025-11-08 18:14:23	2025-11-08 18:14:23
+1	Fútbol	Deporte de equipo jugado con balón y dos porterías.	2026-01-03 16:03:31	2026-01-03 16:03:31
 \.
 
 
 --
--- TOC entry 5045 (class 0 OID 30661)
--- Dependencies: 235
+-- TOC entry 5170 (class 0 OID 16450)
+-- Dependencies: 230
 -- Data for Name: equipos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.equipos (id, nombre, torneo_id, logo, created_at, updated_at, deporte_id, categoria_id) FROM stdin;
-1	Los Innovadores	28	logos/mnsLpqWjfVBvh4PkoweBwGBKz5HfRGSu70T1CXQ7.jpg	2025-11-15 16:55:08	2025-11-16 00:58:06	1	3
+COPY public.equipos (id, nombre, logo, torneo_id, deporte_id, categoria_id, created_at, updated_at, representante_cedula) FROM stdin;
+5	Los Informaticos	\N	28	1	2	2025-12-18 18:17:43	2025-12-18 18:17:43	0302429733
+7	The streamers	\N	28	3	3	2025-12-21 19:50:59	2025-12-21 19:50:59	0302429733
+9	Barcelona SC	\N	1	1	1	2026-01-03 16:06:40	2026-01-03 16:06:40	\N
+10	Emelec	\N	1	1	1	2026-01-03 16:06:41	2026-01-03 16:06:41	\N
+11	Liga de Quito	\N	1	1	1	2026-01-03 16:06:41	2026-01-03 16:06:41	\N
+12	Independiente del Valle	\N	1	1	1	2026-01-03 16:06:42	2026-01-03 16:06:42	\N
+13	El Nacional	\N	1	1	1	2026-01-03 16:06:42	2026-01-03 16:06:42	\N
+14	Delfín SC	\N	1	1	1	2026-01-03 16:06:42	2026-01-03 16:06:42	\N
+15	Deportivo Cuenca	\N	1	1	1	2026-01-03 16:06:43	2026-01-03 16:06:43	\N
+16	Mushuc Runa	\N	1	1	1	2026-01-03 16:06:43	2026-01-03 16:06:43	\N
+17	Aucas	\N	1	1	1	2026-01-03 16:06:43	2026-01-03 16:06:43	\N
+18	Universidad Católica	\N	1	1	1	2026-01-03 16:06:44	2026-01-03 16:06:44	\N
+19	Macará	\N	1	1	1	2026-01-03 16:06:44	2026-01-03 16:06:44	\N
+20	Técnico Universitario	\N	1	1	1	2026-01-03 16:06:45	2026-01-03 16:06:45	\N
 \.
 
 
 --
--- TOC entry 5053 (class 0 OID 30765)
--- Dependencies: 243
+-- TOC entry 5172 (class 0 OID 16461)
+-- Dependencies: 232
 -- Data for Name: estadisticas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.estadisticas (id, jugador_cedula, partido_id, goles, asistencias, tarjetas_amarillas, tarjetas_rojas, rebotes, bloqueos, created_at, updated_at) FROM stdin;
+COPY public.estadisticas (id, partido_id, jugador_cedula, tipo, minuto, observaciones, created_at, updated_at, goles) FROM stdin;
 \.
 
 
 --
--- TOC entry 5037 (class 0 OID 30593)
--- Dependencies: 227
+-- TOC entry 5174 (class 0 OID 16474)
+-- Dependencies: 234
 -- Data for Name: failed_jobs; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -995,28 +1184,31 @@ COPY public.failed_jobs (id, uuid, connection, queue, payload, exception, failed
 
 
 --
--- TOC entry 5057 (class 0 OID 30803)
--- Dependencies: 247
+-- TOC entry 5176 (class 0 OID 16488)
+-- Dependencies: 236
 -- Data for Name: galeria; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.galeria (id, titulo, descripcion, imagen, created_at, updated_at) FROM stdin;
+1	Cancha	Lugar hermoso	https://civideportes.com.co/wp-content/uploads/2019/08/Cancha-de-f%C3%BAtbol-11-768x512.jpg	2025-11-29 03:09:09	2025-11-29 03:11:57
 \.
 
 
 --
--- TOC entry 5047 (class 0 OID 30680)
--- Dependencies: 237
+-- TOC entry 5178 (class 0 OID 16500)
+-- Dependencies: 238
 -- Data for Name: inscripciones; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.inscripciones (id, equipo_id, torneo_id, fecha_inscripcion, created_at, updated_at) FROM stdin;
+COPY public.inscripciones (id, equipo_id, torneo_id, fecha_inscripcion, created_at, updated_at, estado) FROM stdin;
+2	5	28	2025-12-18	2025-12-18 18:17:43	2025-12-18 18:31:54	Aprobada
+3	7	28	2025-12-21	2025-12-21 19:50:59	2025-12-21 20:30:23	Aprobada
 \.
 
 
 --
--- TOC entry 5035 (class 0 OID 30585)
--- Dependencies: 225
+-- TOC entry 5180 (class 0 OID 16515)
+-- Dependencies: 240
 -- Data for Name: job_batches; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1025,8 +1217,8 @@ COPY public.job_batches (id, name, total_jobs, pending_jobs, failed_jobs, failed
 
 
 --
--- TOC entry 5034 (class 0 OID 30576)
--- Dependencies: 224
+-- TOC entry 5181 (class 0 OID 16527)
+-- Dependencies: 241
 -- Data for Name: jobs; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1035,19 +1227,34 @@ COPY public.jobs (id, queue, payload, attempts, reserved_at, available_at, creat
 
 
 --
--- TOC entry 5048 (class 0 OID 30701)
--- Dependencies: 238
+-- TOC entry 5183 (class 0 OID 16539)
+-- Dependencies: 243
 -- Data for Name: jugadores; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.jugadores (cedula, equipo_id, posicion, numero, carnet_qr, carnet_pdf, created_at, updated_at, victorias, derrotas, empates) FROM stdin;
-1500982689	1	Defensa	4	\N	\N	2025-11-15 17:10:29	2025-11-15 22:46:49	0	0	0
+COPY public.jugadores (cedula, equipo_id, posicion, numero, carnet_qr, carnet_pdf, victorias, derrotas, empates, created_at, updated_at, qr_token, qr_generated_at, carrera, facultad) FROM stdin;
+0921345678	9	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:40	2026-01-03 16:06:40	\N	\N	\N	\N
+0912345679	10	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:41	2026-01-03 16:06:41	\N	\N	\N	\N
+1712345678	11	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:41	2026-01-03 16:06:41	\N	\N	\N	\N
+1723456789	12	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:42	2026-01-03 16:06:42	\N	\N	\N	\N
+1701234567	13	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:42	2026-01-03 16:06:42	\N	\N	\N	\N
+1309876543	14	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:42	2026-01-03 16:06:42	\N	\N	\N	\N
+1803456782	16	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:43	2026-01-03 16:06:43	\N	\N	\N	\N
+1715678901	17	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:43	2026-01-03 16:06:43	\N	\N	\N	\N
+1718901234	18	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:44	2026-01-03 16:06:44	\N	\N	\N	\N
+1801234567	19	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:44	2026-01-03 16:06:44	\N	\N	\N	\N
+1809876543	20	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:45	2026-01-03 16:06:45	\N	\N	\N	\N
+1718718396	5	Defensa	14	\N	\N	0	0	0	2025-12-19 17:50:56	2026-01-12 13:47:08	422a548c-073c-4d74-bb95-c872f730d7cc	2026-01-12 13:47:08	\N	\N
+1500982782	7	Defensa	12	\N	\N	0	0	0	2025-12-25 15:00:24	2026-01-14 22:09:26	1e3b4bca-8035-419d-80b9-cdca2bedbad1	2025-12-29 14:31:19	\N	\N
+1500511231	7	Delantero	13	\N	\N	0	0	0	2025-11-30 19:59:50	2026-01-14 22:10:15	beeb0dd0-96ab-4aa3-bcdd-0d933679c1fc	2025-12-13 19:16:14	\N	\N
+0102345678	15	Capitán	10	\N	\N	0	0	0	2026-01-03 16:06:43	2026-02-05 12:14:21	eab90610-8e9b-42fd-83f8-ee93b994b1cd	2026-02-05 11:54:35	Software	Ciencias Administrativas
+0202492310	5	Delantero	5	\N	\N	0	0	0	2025-12-20 21:33:04	2026-02-05 14:30:45	1e3464b4-0f81-4ecb-892a-7c427051321a	2026-02-05 14:30:45	\N	\N
 \.
 
 
 --
--- TOC entry 5028 (class 0 OID 30528)
--- Dependencies: 218
+-- TOC entry 5184 (class 0 OID 16551)
+-- Dependencies: 244
 -- Data for Name: migrations; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1055,54 +1262,208 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 1	0001_01_01_000000_create_users_table	1
 2	0001_01_01_000001_create_cache_table	1
 3	0001_01_01_000002_create_jobs_table	1
-4	2025_11_08_000001_create_personas_table	1
-5	2025_11_08_000002_create_usuarios_table	1
-6	2025_11_08_000003_create_deportes_table	1
-7	2025_11_08_000004_create_torneos_table	1
-8	2025_11_08_000005_create_equipos_table	1
-9	2025_11_08_000006_create_inscripciones_table	1
-10	2025_11_08_000007_create_jugadores_table	1
-11	2025_11_08_000008_create_arbitros_table	1
-12	2025_11_08_000009_create_partidos_table	1
-13	2025_11_08_000010_create_estadisticas_table	1
-14	2025_11_08_000011_create_noticias_table	1
-15	2025_11_08_000012_create_galeria_table	1
-16	2025_11_08_000013_create_configuracion_table	1
-17	2025_11_08_233113_create_categorias_table	2
-18	2025_11_08_233440_add_categoria_id_to_torneos_table	3
-19	2025_11_13_140435_add_campos_to_torneos_table	4
-20	2025_11_15_120000_add_deporte_categoria_to_equipos_table	5
-21	2025_11_25_230335_create_personal_access_tokens_table	6
-22	2025_11_26_161740_add_estado_to_torneos_table	7
-23	2025_11_26_162514_remove_redundant_categoria_column_from_torneos_table	8
-24	2025_11_26_171044_add_estado_to_partidos_table	9
-25	2025_11_26_171152_create_arbitros_table	9
+37	2026_01_15_161630_add_formato_to_torneos_table	2
+38	2026_01_15_200720_fix_categorias_unique_index	2
+39	2026_01_15_210245_add_deporte_id_to_categorias_table	3
+40	2026_01_16_155119_add_hora_and_campo_to_partidos_table	4
+41	2026_01_16_223405_add_fecha_nacimiento_to_personas_table	5
+42	2026_01_17_131932_add_carrera_facultad_to_jugadores_table	6
+43	2026_02_05_153036_add_especialidad_estado_to_arbitros_table	7
 \.
 
 
 --
--- TOC entry 5055 (class 0 OID 30792)
--- Dependencies: 245
+-- TOC entry 5186 (class 0 OID 16558)
+-- Dependencies: 246
 -- Data for Name: noticias; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.noticias (id, titulo, contenido, imagen, created_at, updated_at) FROM stdin;
+1	Inauguracion Torneo	Con gran exito se inauguro el Campeonato Deportivo. contando con la Participacion de Docentes, Alumnos que cursan la Carrera de Software del año 2025	https://www.laprensa.com.ec/wp-content/uploads/2025/06/Universidad-Estatal-de-Bolivar-jugo-contra-Livianitos-FC-1024x682.webp	2026-01-15 19:24:39	2026-01-15 19:24:39
 \.
 
 
 --
--- TOC entry 5051 (class 0 OID 30734)
--- Dependencies: 241
+-- TOC entry 5188 (class 0 OID 16570)
+-- Dependencies: 248
 -- Data for Name: partidos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.partidos (id, torneo_id, arbitro_cedula, equipo_local_id, equipo_visitante_id, fecha, marcador_local, marcador_visitante, created_at, updated_at, estado) FROM stdin;
+COPY public.partidos (id, torneo_id, arbitro_cedula, equipo_local_id, equipo_visitante_id, fecha, marcador_local, marcador_visitante, estado, created_at, updated_at, hora, campo) FROM stdin;
+1	1	\N	9	10	2026-01-14 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+3	1	\N	9	12	2026-01-13 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+4	1	\N	9	13	2026-01-15 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+5	1	\N	9	14	2026-01-22 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+6	1	\N	9	15	2026-01-24 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+7	1	\N	9	16	2026-01-12 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+8	1	\N	9	17	2026-01-22 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+9	1	\N	9	18	2026-01-27 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+10	1	\N	9	19	2026-01-21 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+11	1	\N	9	20	2026-01-22 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+12	1	\N	10	11	2026-01-15 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+13	1	\N	10	12	2026-01-10 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+14	1	\N	10	13	2026-01-29 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+15	1	\N	10	14	2026-01-28 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+17	1	\N	10	16	2026-01-08 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+18	1	\N	10	17	2026-01-12 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+19	1	\N	10	18	2026-01-25 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+20	1	\N	10	19	2026-01-10 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+21	1	\N	10	20	2026-01-30 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+22	1	\N	11	12	2026-01-20 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+23	1	\N	11	13	2026-01-12 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+24	1	\N	11	14	2026-01-21 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+25	1	\N	11	15	2026-01-27 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+26	1	\N	11	16	2026-01-22 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+27	1	\N	11	17	2026-01-28 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+29	1	\N	11	19	2026-01-28 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+30	1	\N	11	20	2026-01-11 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+31	1	\N	12	13	2026-01-07 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+32	1	\N	12	14	2026-01-10 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+33	1	\N	12	15	2026-01-12 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+34	1	\N	12	16	2026-01-30 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+35	1	\N	12	17	2026-01-14 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+36	1	\N	12	18	2026-01-06 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+37	1	\N	12	19	2026-01-22 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+39	1	\N	13	14	2026-01-22 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+40	1	\N	13	15	2026-01-25 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+41	1	\N	13	16	2026-01-06 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+42	1	\N	13	17	2026-01-22 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+44	1	\N	13	19	2026-01-21 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+45	1	\N	13	20	2026-01-29 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+46	1	\N	14	15	2026-01-14 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+47	1	\N	14	16	2026-01-24 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+48	1	\N	14	17	2026-01-21 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+49	1	\N	14	18	2026-01-13 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+50	1	\N	14	19	2026-01-13 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+51	1	\N	14	20	2026-01-23 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+52	1	\N	15	16	2026-01-18 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+53	1	\N	15	17	2026-01-18 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+54	1	\N	15	18	2026-01-12 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+55	1	\N	15	19	2026-01-30 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+57	1	\N	16	17	2026-01-09 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+58	1	\N	16	18	2026-01-07 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+59	1	\N	16	19	2026-01-26 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+60	1	\N	16	20	2026-01-09 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+61	1	\N	17	18	2026-01-15 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+62	1	\N	17	19	2026-01-15 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+63	1	\N	17	20	2026-01-28 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+64	1	\N	18	19	2026-01-28 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+65	1	\N	18	20	2026-01-19 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+66	1	\N	19	20	2026-01-21 16:07:34	0	0	Programado	2026-01-03 16:07:34	2026-01-03 16:07:34	\N	\N
+67	1	\N	9	10	2026-01-06 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+68	1	\N	9	11	2026-01-20 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+69	1	\N	9	12	2026-01-10 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+70	1	\N	9	13	2026-01-09 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+71	1	\N	9	14	2026-01-15 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+43	1	\N	13	18	2026-01-15 00:00:00	0	0	Programado	2026-01-03 16:07:34	2026-01-15 17:35:49	\N	\N
+56	1	\N	15	20	2026-01-04 16:07:34	4	3	Finalizado	2026-01-03 16:07:34	2026-01-15 17:37:52	\N	\N
+72	1	\N	9	15	2026-01-20 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+73	1	\N	9	16	2026-01-23 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+74	1	\N	9	17	2026-01-13 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+75	1	\N	9	18	2026-01-06 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+76	1	\N	9	19	2026-01-05 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+77	1	\N	9	20	2026-01-29 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+78	1	\N	10	11	2026-01-21 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+79	1	\N	10	12	2026-01-19 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+80	1	\N	10	13	2026-01-22 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+81	1	\N	10	14	2026-01-31 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+82	1	\N	10	15	2026-01-31 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+83	1	\N	10	16	2026-01-10 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+84	1	\N	10	17	2026-01-24 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+85	1	\N	10	18	2026-01-24 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+86	1	\N	10	19	2026-01-06 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+88	1	\N	11	12	2026-01-15 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+89	1	\N	11	13	2026-01-15 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+90	1	\N	11	14	2026-01-16 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+91	1	\N	11	15	2026-01-27 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+92	1	\N	11	16	2026-01-23 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+94	1	\N	11	18	2026-01-19 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+95	1	\N	11	19	2026-01-07 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+96	1	\N	11	20	2026-01-30 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+97	1	\N	12	13	2026-01-26 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+98	1	\N	12	14	2026-01-21 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+99	1	\N	12	15	2026-01-17 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+100	1	\N	12	16	2026-01-28 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+101	1	\N	12	17	2026-01-28 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+102	1	\N	12	18	2026-01-13 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+103	1	\N	12	19	2026-01-16 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+104	1	\N	12	20	2026-01-07 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+105	1	\N	13	14	2026-01-05 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+106	1	\N	13	15	2026-01-17 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+107	1	\N	13	16	2026-01-27 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+108	1	\N	13	17	2026-01-29 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+109	1	\N	13	18	2026-01-30 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+110	1	\N	13	19	2026-01-28 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+111	1	\N	13	20	2026-01-06 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+112	1	\N	14	15	2026-01-14 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+113	1	\N	14	16	2026-01-23 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+114	1	\N	14	17	2026-01-20 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+115	1	\N	14	18	2026-01-08 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+116	1	\N	14	19	2026-01-16 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+117	1	\N	14	20	2026-01-16 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+118	1	\N	15	16	2026-01-05 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+119	1	\N	15	17	2026-01-12 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+121	1	\N	15	19	2026-01-13 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+122	1	\N	15	20	2026-01-21 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+123	1	\N	16	17	2026-01-24 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+124	1	\N	16	18	2026-01-07 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+125	1	\N	16	19	2026-01-25 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+126	1	\N	16	20	2026-01-23 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+128	1	\N	17	19	2026-01-04 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+129	1	\N	17	20	2026-01-18 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+130	1	\N	18	19	2026-01-19 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+132	1	\N	19	20	2026-01-05 16:12:04	0	0	Programado	2026-01-03 16:12:04	2026-01-03 16:12:04	\N	\N
+93	1	\N	11	17	2026-02-01 16:12:04	4	1	Finalizado	2026-01-03 16:12:04	2026-01-03 21:15:47	\N	\N
+131	1	\N	18	20	2026-02-01 16:12:04	2	1	Finalizado	2026-01-03 16:12:04	2026-01-07 02:59:24	\N	\N
+38	1	\N	12	20	2026-02-01 16:07:34	1	0	Finalizado	2026-01-03 16:07:34	2026-01-14 14:21:21	\N	\N
+87	1	\N	10	20	2026-01-14 00:00:00	4	3	Finalizado	2026-01-03 16:12:04	2026-01-16 01:25:56	\N	\N
+134	1	\N	9	11	2026-01-22 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+135	1	\N	9	12	2026-01-29 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+136	1	\N	9	13	2026-01-17 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+137	1	\N	9	14	2026-01-31 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+138	1	\N	9	15	2026-01-25 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+139	1	\N	9	16	2026-01-24 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+2	1	\N	9	11	2026-01-15 00:00:00	0	1	Finalizado	2026-01-03 16:07:34	2026-01-16 15:08:02	\N	\N
+140	1	\N	9	17	2026-01-25 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+141	1	\N	9	18	2026-01-19 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+143	1	\N	9	20	2026-01-29 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+146	1	\N	10	13	2026-01-23 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+147	1	\N	10	14	2026-01-21 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+150	1	\N	10	17	2026-01-26 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+152	1	\N	10	19	2026-01-30 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+153	1	\N	10	20	2026-01-27 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+154	1	\N	11	12	2026-01-29 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+157	1	\N	11	15	2026-01-21 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+158	1	\N	11	16	2026-01-23 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+163	1	\N	12	13	2026-01-22 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+164	1	\N	12	14	2026-01-26 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+165	1	\N	12	15	2026-01-31 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+166	1	\N	12	16	2026-01-31 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+169	1	\N	12	19	2026-01-26 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+170	1	\N	12	20	2026-01-17 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+172	1	\N	13	15	2026-01-31 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+173	1	\N	13	16	2026-01-17 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+175	1	\N	13	18	2026-01-30 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+176	1	\N	13	19	2026-01-25 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+177	1	\N	13	20	2026-01-29 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+178	1	\N	14	15	2026-01-30 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+179	1	\N	14	16	2026-01-20 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+181	1	\N	14	18	2026-01-19 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+184	1	\N	15	16	2026-01-30 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+191	1	\N	16	19	2026-01-21 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+195	1	\N	17	20	2026-01-31 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+197	1	\N	18	20	2026-02-01 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+198	1	\N	19	20	2026-01-19 13:37:01	0	0	Programado	2026-01-16 13:37:01	2026-01-16 13:37:01	\N	\N
+199	28	\N	5	7	2026-01-27 19:58:08	0	0	Programado	2026-01-16 19:58:08	2026-01-16 19:58:08	\N	\N
+189	1	\N	16	17	2026-01-16 00:00:00	3	0	En Juego	2026-01-16 13:37:01	2026-01-16 19:22:52	14:22:00	\N
+174	1	\N	13	17	2026-01-16 00:00:00	0	0	En Juego	2026-01-16 13:37:01	2026-01-16 19:29:20	14:29:00	\N
+144	1	\N	10	11	2026-02-01 13:37:01	0	0	En Juego	2026-01-16 13:37:01	2026-01-16 19:29:33	\N	\N
 \.
 
 
 --
--- TOC entry 5029 (class 0 OID 30545)
--- Dependencies: 219
+-- TOC entry 5190 (class 0 OID 16585)
+-- Dependencies: 250
 -- Data for Name: password_reset_tokens; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1111,8 +1472,8 @@ COPY public.password_reset_tokens (email, token, created_at) FROM stdin;
 
 
 --
--- TOC entry 5063 (class 0 OID 30880)
--- Dependencies: 253
+-- TOC entry 5191 (class 0 OID 16592)
+-- Dependencies: 251
 -- Data for Name: personal_access_tokens; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1149,83 +1510,155 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 31	App\\Models\\Usuario	1500982671	auth_token	429b8512210cb1240af12e9fa8115258db38d3afa66d05ddbfa37a4893cefbae	["*"]	2025-11-26 19:49:24	\N	2025-11-26 19:09:57	2025-11-26 19:49:24
 34	App\\Models\\Usuario	1500982671	auth_token	f86f0eca46f12a26add1b59e02b2020c7605b0f0fc6a5f417c8638abea853e18	["*"]	2025-11-26 21:51:02	\N	2025-11-26 21:50:29	2025-11-26 21:51:02
 35	App\\Models\\Usuario	1500982671	auth_token	2e3af3ce9b1d73305f070f28a3b03e44776edc32c16976de67733ea9ba244d89	["*"]	2025-11-26 21:58:20	\N	2025-11-26 21:53:38	2025-11-26 21:58:20
+76	App\\Models\\Usuario	102030405	auth_token	e3755c0e9012e0ff6eb551bc913b9ab65f9ca53b598c0373733771b98fbc1133	["*"]	\N	\N	2025-11-27 17:19:15	2025-11-27 17:19:15
+358	App\\Models\\Usuario	1500470453	auth_token	8009180675bfbc6eaae55cf0ecfd152ee2c92ecf47e95ab612a94eb875338582	["*"]	2026-01-07 02:58:27	\N	2026-01-07 02:58:20	2026-01-07 02:58:27
+372	App\\Models\\Usuario	0955038518	auth_token	d1665625d9f23f5aabf90c1db6b84217dff68dbbd5926999bc94aaa921e4c675	["*"]	2026-01-12 13:52:59	\N	2026-01-12 13:52:58	2026-01-12 13:52:59
+393	App\\Models\\Usuario	1718718396	auth_token	0710ad171cdb2a19df0dfd1e80743de8ccb9a78392d49f40017b67a3bbf17113	["*"]	2026-01-16 16:34:06	\N	2026-01-16 16:34:05	2026-01-16 16:34:06
+477	App\\Models\\Usuario	0302429733	auth_token	ec5c4032e3beb369a1386630923e4ae0c98893a6c8380d86737471acd4c2c2ff	["*"]	2026-02-10 13:28:24	\N	2026-02-09 20:20:51	2026-02-10 13:28:24
+469	App\\Models\\Usuario	1500511231	auth_token	9e4655698a3220ffdfa51ecec57eb79fb24be98485aac46985b847f1bea289fd	["*"]	2026-02-09 13:38:43	\N	2026-02-09 13:38:41	2026-02-09 13:38:43
+472	App\\Models\\Usuario	1500982782	auth_token	2a7b3dc512ee22ce4886a1187e506115c5a15aeff54cd8af01903b9ec23ec051	["*"]	2026-02-09 14:09:21	\N	2026-02-09 14:09:17	2026-02-09 14:09:21
+480	App\\Models\\Usuario	0102030405	auth_token	527c20f953e7d4279402ab244de13d2741ad66fe42da8b13becccbab21d110d2	["*"]	2026-02-12 03:07:37	\N	2026-02-12 03:07:19	2026-02-12 03:07:37
 \.
 
 
 --
--- TOC entry 5038 (class 0 OID 30604)
--- Dependencies: 228
+-- TOC entry 5193 (class 0 OID 16603)
+-- Dependencies: 253
 -- Data for Name: personas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.personas (cedula, nombres, apellidos, edad, estatura, telefono, foto, created_at, updated_at) FROM stdin;
-1500982671	Stalin	Alvarado	26	1.59	0989213708	fotos/BKjKyueGgVpluUZMd5V3VUPlIj47hIbM4CHlDr0Z.jpg	2025-11-09 00:15:35	2025-11-09 00:15:35
-1701234567	Juan	Pérez	33	1.75	0998765432	\N	2025-11-09 23:32:45	2025-11-09 23:32:45
-1500982689	Maria		\N	\N	\N	\N	2025-11-10 19:19:13	2025-11-10 19:19:13
-123456789 	Raul	Lopez	\N	\N	\N	\N	2025-11-18 14:59:14	2025-11-18 14:59:14
-1500982673	Raul	Lopez	\N	\N	\N	\N	2025-11-18 15:02:16	2025-11-18 15:02:16
+COPY public.personas (cedula, nombres, apellidos, edad, estatura, telefono, foto, created_at, updated_at, email, fecha_nacimiento, password, rol, estado) FROM stdin;
+1500982671	Stalin	Alvarado	26	1.59	0989213708	fotos/BKjKyueGgVpluUZMd5V3VUPlIj47hIbM4CHlDr0Z.jpg	2025-11-09 00:15:35	2025-11-09 00:15:35	\N	\N	\N	usuario	activo
+1500982689	Maria		\N	\N	\N	\N	2025-11-10 19:19:13	2025-11-10 19:19:13	\N	\N	\N	usuario	activo
+123456789	Raul	Lopez	\N	\N	\N	\N	2025-11-18 14:59:14	2025-11-18 14:59:14	\N	\N	\N	usuario	activo
+1500982673	Raul	Lopez	\N	\N	\N	\N	2025-11-18 15:02:16	2025-11-18 15:02:16	\N	\N	\N	usuario	activo
+1500470453	Saul	Alvarado	\N	\N	\N	\N	2025-12-15 00:58:41	2025-12-15 00:58:41	\N	\N	$2y$12$7WC2c63zaUao8PyTlNp7N.2S/hy8nWyQOChtLTwws1wrcwtvJ8OEW	representante	activo
+1718718396	Anthony	Pozo	\N	\N	\N	\N	2025-12-19 17:48:57	2025-12-19 17:48:57	\N	\N	$2y$12$G45386laC3O78Yde8BT7/.YpY1gwXeu872sqsmlbLntsYPnDXmxQ6	usuario	activo
+0921345678	Capitán	Barcelona SC	\N	\N	\N	\N	2026-01-03 15:58:59	2026-01-03 15:58:59	user0921345678@ueb.edu.ec	\N	$2y$12$k78.faswCD4dyXZAK6JDAeHmpyukhIPQH7qK8xN2BXof.jPh.1mga	jugador	inactivo
+0912345679	Capitán	Emelec	\N	\N	\N	\N	2026-01-03 11:06:41	2026-01-03 11:06:41	user0912345679@ueb.edu.ec	\N	$2y$12$FaE3QPKf.QH1zzlEti/Gk.pbVf557UfoCYcCiHEMAD1bf21wTEwwm	jugador	activo
+1712345678	Capitán	Liga de Quito	\N	\N	\N	\N	2026-01-03 11:06:41	2026-01-03 11:06:41	user1712345678@ueb.edu.ec	\N	$2y$12$uveAeXuj7FrdFRd2u5IOtujFHa0eA3QTEqSESsVKYZ3qVQ9ZMLnRW	jugador	activo
+1723456789	Capitán	Independiente del Valle	\N	\N	\N	\N	2026-01-03 11:06:42	2026-01-03 11:06:42	user1723456789@ueb.edu.ec	\N	$2y$12$07emr8Dn0hv6VtdB2agmjOoQWU8RWJ/QwTeVeQ258Yk5T7OmAZhaK	jugador	activo
+1701234567	Capitán	El Nacional	33	1.75	0998765432	\N	2025-11-09 23:32:45	2025-11-09 23:32:45	user1701234567@ueb.edu.ec	\N	$2y$12$.OADow.RQyJzbY0kxTZnbO1uQyAE9vkVqSIYEKuPhCe/knCyQ5f8a	jugador	activo
+1309876543	Capitán	Delfín SC	\N	\N	\N	\N	2026-01-03 11:06:42	2026-01-03 11:06:42	user1309876543@ueb.edu.ec	\N	$2y$12$0FH0eE6GvuFc/W9l1bgqqucCvstENy86QLHEqhg8Tjr.FHTPEglwi	jugador	activo
+1803456782	Capitán	Mushuc Runa	\N	\N	\N	\N	2026-01-03 11:06:43	2026-01-03 11:06:43	user1803456782@ueb.edu.ec	\N	$2y$12$LbsjrZv5/mfGmBUgLpQ2EeykvM8725KxNqdFl1cOft5SrYvI8M94S	jugador	activo
+1715678901	Capitán	Aucas	\N	\N	\N	\N	2026-01-03 11:06:44	2026-01-03 11:06:44	user1715678901@ueb.edu.ec	\N	$2y$12$LWzahYBSpyHXfT9z6Qi7DOur0JQ9l2zmNnUMV4KldfR8oq2Z2rLRu	jugador	activo
+1718901234	Capitán	Universidad Católica	\N	\N	\N	\N	2026-01-03 11:06:44	2026-01-03 11:06:44	user1718901234@ueb.edu.ec	\N	$2y$12$rgF8CI.iJ0PX9XHo1884f.kVpEtCBXg/tpYSqomZ5rnBP3j54R.Ja	jugador	activo
+1801234567	Capitán	Macará	\N	\N	\N	\N	2026-01-03 11:06:44	2026-01-03 11:06:44	user1801234567@ueb.edu.ec	\N	$2y$12$5bPDGfxe90HZ8TMfN2Y/n.pqYxFoxR5a/2pnLrcC4NonppKUzC9HW	jugador	activo
+1809876543	Capitán	Técnico Universitario	\N	\N	\N	\N	2026-01-03 11:06:45	2026-01-03 11:06:45	user1809876543@ueb.edu.ec	\N	$2y$12$wLQvM8IHJUZwZHnUQRP4BefU1ta3wcs/H/Nje3/2wH.8iAfBP0mxG	jugador	activo
+0955038518	Mily	Vendoval	\N	\N	\N	\N	2026-01-12 13:52:42	2026-01-12 13:52:42	\N	\N	$2y$12$qCcjd4ZU.QSmo5EOHuAU1OIZ94ArjRMBkPLlMLHKfuGyK64Mtu5pC	usuario	activo
+0102345678	Capitán	Deportivo Cuenca	\N	\N	\N	fotos/capitan-deportivo-cuenca-1770301661.jpg	2026-01-03 11:06:43	2026-02-05 14:27:42	user0102345678@ueb.edu.ec	\N	$2y$12$4X8nHmhi95jsrorjUzUW7.L6GEMy3Vy4loH9Y04Xqq/j.zy73hx6W	jugador	activo
+0202492310	Aldair	Muyulema	\N	\N	0918223712	fotos/aldair-muyulema-1770301857.jpg	2025-12-20 21:33:04	2026-02-05 14:30:59	aldair@ueb.edu.ec	\N	\N	usuario	activo
+0302429733	Luis	Duy	\N	\N	\N	perfiles/perfil_0302429733_4c7d949f-906e-4ff8-add4-0780fe275ba3.jpg	2025-12-18 14:14:25	2026-02-09 13:00:03	luis@ueb.edu.ec	\N	$2y$12$oGi146qP/5sxT3DALc8yFOt2jD.fqKVTujAfEYjvnKuMHbrcZRljW	representante	activo
+1500511231	Bethy	Chongo	\N	\N	0989213708	perfiles/perfil_1500511231_2b4aa3c3-1522-4c2c-baf9-664f00763528.jpg	2025-11-30 17:58:13	2026-02-09 13:30:21	bethy@ueb.edu.ec	\N	$2y$12$Ggnjj2Ei8hj1bCTuwFvdI.tIiEU9wjD6nB3WQOfPmRTKgHemexfpG	arbitro	activo
+1500982782	Winston	Alvarado	\N	\N	\N	perfiles/perfil_jugador_1500982782_66479a8f-a79f-41cd-8267-3fd93c185be4.jpg	2025-12-24 02:53:37	2026-02-09 13:47:23	winston@ueb.edu.ec	\N	$2y$12$pVjLg.UEhIP3iAXzDtviE.Kp8yjHOJ0g1Yr8r10u/b0cHz4iNSxhW	usuario	activo
+0102030405	Henry	Administrador	\N	\N	\N	perfiles/perfil_jugador_0102030405_c051ab89-b287-4699-91db-9df483c2a8a9.jpg	2025-11-27 14:45:04	2026-02-09 15:09:55	admin@ueb.edu.ec	\N	$2y$12$c6jFhoECiqfrKMLM2qBAC.6CK0.Y8dcatrOKuFyEQbpD7EogncPca	admin	activo
 \.
 
 
 --
--- TOC entry 5030 (class 0 OID 30552)
--- Dependencies: 220
+-- TOC entry 5194 (class 0 OID 16615)
+-- Dependencies: 254
 -- Data for Name: sessions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.sessions (id, user_id, ip_address, user_agent, payload, last_activity) FROM stdin;
-3eFz2uEdGRirdL9w0nbdkDaCZDrzEfnC0589dshv	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoic2VKSkJ1OEppY2EwZDdEa1l3c3RIMk16NVp1V1ZQaVkxNFpiamhwZSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1764184172
-MPasFwHwu1nPNvLAkZE6ywLjQM1mgWuR0nCZUcM7	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiOUEzcTZnOGhtRXo5dEMxRU9XNno1TjR2TkpESFZhTzhuNVE1MnFXRyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1764194011
+zMiv8UAK4eEUpUCQnpq958cG19K01qxBOxHbAozT	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoidTBneUdjcmdpelpSWGU3dHo0a2RpZHNWalZ6Q043aHpFdGRmMmd5WCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9qdWdhZG9yZXMiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1768660700
+5E7TnKWz906B5X63ZdRqbPo9CmbO3gf3B8OSrh1p	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiUTMwWlZFZ2twcTNkNm1UNDNWVDVyT3gyMDBaWnU1akQ0V3lCTEV5ZSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1768535694
+b9Bpohjk2WyAg6KH4wgLfxUpZFgeP8kEN4eGwrzc	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiUFN3Vm5CQ3Y3a3JSWm90TEdsamRkQ2JhVXVabnVvaVlSbkdLM05IUSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9wYXJ0aWRvcyI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1768568917
+smVqKEtkAQ7uZL2wQYI7dcfDls257yJdjDu7JaUf	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoicWNGVFZNWnE4R0FybzVDcFpRV0xKWDdscUU5SEJKY0ZMU2hPeUlPNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1768568920
+VT6MSzHYsrRDRVgwwFJmelFQM3OKLAgFaCoeG970	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiRUdyU1JmQVpudGkzOFVNTXhQWGdrdEIxUGJUdTNlbXFBdWs5YVp5NSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1768590876
+pipFxCBl8ZI6dXo3IAimn8Y1zSBJgP2mgOYiQkcc	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiejA5UERpQmxuRnNNRlowUW9FVXU1Y3VGeHQ3UHhxdDVBVVRQUUcyMCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC8ud2VsbC1rbm93bi9hcHBzcGVjaWZpYy9jb20uY2hyb21lLmRldnRvb2xzLmpzb24iO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1768601811
+e5XRH90QRVG48vEGMwY0564YzuyMoWXX0nPHOhaf	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiUVpybDRBZDE5MEFSU1htVHVuMGZuekRoM09ZYXJoWndzOGd3aFFLVCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9qdWdhZG9yZXMiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1768631006
+ukVZlSuRbmgVI5N71gYxbovRxDjxfdmIbcRFijsl	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiMlJlWU1rV3NwZllDNlNTejVOcjRJY29GMTNpaFR5WVpycGE1MzI5YyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzg6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9pbWcvbG9nby11ZWIuanBnIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1769452638
+kulWxKw1adZ9CerwcTEwo7ny6p9YAvGMDUjDSCZY	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiWUZhRlZIVnc5NDFoSUpHdHh1dkpoZkxSeExrM3BGUnhGZUN3aDR1ayI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzg6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9pbWcvbG9nby11ZWIuanBnIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1769478689
+IVAfQ43c5bx29gt7D9vIHrow6rXz91btXt171Jtm	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiWDJ6Tkx6N3FMcGEydEhkVElPWmJqT1phenU5UUxNT3RObDV1blZzUyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzg6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9pbWcvbG9nby11ZWIuanBnIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1769516176
+lOZs67l7enydBIpgUp4dHSQSdwq0tSnapM3p8yQy	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiZ3NBZ1pkdm9uZk9RemhZNEFSU080bnFaNzB2ejR0dmZDS0JGMjFZViI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1769516305
 \.
 
 
 --
--- TOC entry 5043 (class 0 OID 30642)
--- Dependencies: 233
+-- TOC entry 5195 (class 0 OID 16623)
+-- Dependencies: 255
 -- Data for Name: torneos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.torneos (id, nombre, deporte_id, fecha_inicio, fecha_fin, ubicacion, creado_por, created_at, updated_at, categoria_id, descripcion, estado) FROM stdin;
-28	Software 2025	1	2025-11-27	2025-11-28	\N	\N	2025-11-15 13:06:00	2025-11-26 21:23:59	1	Torneo Relampago	Activo
+COPY public.torneos (id, nombre, descripcion, deporte_id, categoria_id, fecha_inicio, fecha_fin, ubicacion, estado, creado_por, created_at, updated_at) FROM stdin;
+28	Software 2025	Torneo Relampago	1	3	2025-11-27 00:00:00	2025-12-16 00:00:00	\N	Activo	\N	2025-11-15 13:06:00	2025-12-15 00:21:11
+29	Los Innovadores	\N	3	4	2025-12-16 00:00:00	2025-12-31 00:00:00	\N	Activo	\N	2025-12-15 00:23:48	2025-12-15 00:23:48
+1	Torneo Apertura 2026	\N	1	1	2026-02-01 00:00:00	2026-06-01 00:00:00	\N	Activo	\N	2026-01-03 16:06:40	2026-01-03 16:06:40
 \.
 
 
 --
--- TOC entry 5039 (class 0 OID 30611)
--- Dependencies: 229
+-- TOC entry 5197 (class 0 OID 16636)
+-- Dependencies: 257
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.users (id, name, email, email_verified_at, password, remember_token, created_at, updated_at) FROM stdin;
+1	Test User	test@example.com	2025-11-27 00:51:40	$2y$12$yS9O.G2eAVE8YBJozxAU1eHwnj1bjx0HsDwsg.Ofg/YvRJCVqiS.u	8ZnSjj2YP5	2025-11-27 00:51:41	2025-11-27 00:51:41
+\.
+
+
+--
+-- TOC entry 5199 (class 0 OID 16646)
+-- Dependencies: 259
 -- Data for Name: usuarios; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.usuarios (cedula, email, password, rol, estado, created_at, updated_at, nombres, apellidos, foto, telefono) FROM stdin;
-1500982671	admin@torneos.com	$2y$12$4mw/Q4ogYBb4xjENifPGDu9UsShb1Mzm7KEvKiUcGSBIstCsFD4Im	admin	t	2025-11-09 00:15:36	2025-11-09 00:15:36	Stalin	Alvarado	\N	0989213708
-1701234567	juan.perez@email.com	$2y$12$4mw/Q4ogYBb4xjENifPGDu9UsShb1Mzm7KEvKiUcGSBIstCsFD4Im	usuario	t	2025-11-09 23:32:45	2025-11-09 23:32:45	Juan	Pérez	\N	0998765432
-1500982689	maria.perez@gmail.com	$2y$12$.Z.dz6CHjvlBNZ0Ax.6KF.PRoOcrEFE4bRdQdG3gwtth41GqdoOpG	usuario	t	2025-11-10 19:19:13	2025-11-12 21:45:17	Maria		\N	\N
-123456789 	raul.lopez@gmail.com	$2y$12$Le80x8bZWag871JTKYGiVu3be1ToWtGAvXgoWvQwknPFNR0HBKAtu	usuario	t	2025-11-18 14:59:15	2025-11-18 14:59:15	\N	\N	\N	\N
-1500982673	raullopez@gmail.com	$2y$12$h46bzWS0tgYIANn5k970OeNL0nWw5rbJpmI2q2iwcAyHGxThPMD2q	usuario	t	2025-11-18 15:02:16	2025-11-18 15:02:16	\N	\N	\N	\N
+COPY public.usuarios (cedula, email, password, rol, token_sesion, created_at, updated_at, estado) FROM stdin;
+0912345679	user0912345679@ueb.edu.ec	$2y$12$FaE3QPKf.QH1zzlEti/Gk.pbVf557UfoCYcCiHEMAD1bf21wTEwwm	jugador	\N	\N	\N	t
+1712345678	user1712345678@ueb.edu.ec	$2y$12$uveAeXuj7FrdFRd2u5IOtujFHa0eA3QTEqSESsVKYZ3qVQ9ZMLnRW	jugador	\N	\N	\N	t
+1723456789	user1723456789@ueb.edu.ec	$2y$12$07emr8Dn0hv6VtdB2agmjOoQWU8RWJ/QwTeVeQ258Yk5T7OmAZhaK	jugador	\N	\N	\N	t
+1701234567	user1701234567@ueb.edu.ec	$2y$12$.OADow.RQyJzbY0kxTZnbO1uQyAE9vkVqSIYEKuPhCe/knCyQ5f8a	jugador	\N	\N	\N	t
+1309876543	user1309876543@ueb.edu.ec	$2y$12$0FH0eE6GvuFc/W9l1bgqqucCvstENy86QLHEqhg8Tjr.FHTPEglwi	jugador	\N	\N	\N	t
+0102345678	user0102345678@ueb.edu.ec	$2y$12$4X8nHmhi95jsrorjUzUW7.L6GEMy3Vy4loH9Y04Xqq/j.zy73hx6W	jugador	\N	\N	\N	t
+1803456782	user1803456782@ueb.edu.ec	$2y$12$LbsjrZv5/mfGmBUgLpQ2EeykvM8725KxNqdFl1cOft5SrYvI8M94S	jugador	\N	\N	\N	t
+1715678901	user1715678901@ueb.edu.ec	$2y$12$LWzahYBSpyHXfT9z6Qi7DOur0JQ9l2zmNnUMV4KldfR8oq2Z2rLRu	jugador	\N	\N	\N	t
+1718901234	user1718901234@ueb.edu.ec	$2y$12$rgF8CI.iJ0PX9XHo1884f.kVpEtCBXg/tpYSqomZ5rnBP3j54R.Ja	jugador	\N	\N	\N	t
+1801234567	user1801234567@ueb.edu.ec	$2y$12$5bPDGfxe90HZ8TMfN2Y/n.pqYxFoxR5a/2pnLrcC4NonppKUzC9HW	jugador	\N	\N	\N	t
+1809876543	user1809876543@ueb.edu.ec	$2y$12$wLQvM8IHJUZwZHnUQRP4BefU1ta3wcs/H/Nje3/2wH.8iAfBP0mxG	jugador	\N	\N	\N	t
+0955038518	mily@ueb.edu.ec	$2y$12$qCcjd4ZU.QSmo5EOHuAU1OIZ94ArjRMBkPLlMLHKfuGyK64Mtu5pC	usuario	\N	2026-01-12 13:52:42	2026-01-12 13:54:23	t
+1500511231	bethy@ueb.edu.ec	$2y$12$Ggnjj2Ei8hj1bCTuwFvdI.tIiEU9wjD6nB3WQOfPmRTKgHemexfpG	arbitro	\N	2025-11-30 23:18:16	2026-01-15 02:26:18	t
+0102030405	admin@ueb.edu.ec	$2y$12$c6jFhoECiqfrKMLM2qBAC.6CK0.Y8dcatrOKuFyEQbpD7EogncPca	admin	\N	2025-11-27 14:45:06	2026-02-05 16:59:48	t
+0302429733	luis@ueb.edu.ec	$2y$12$oGi146qP/5sxT3DALc8yFOt2jD.fqKVTujAfEYjvnKuMHbrcZRljW	representante	\N	2025-12-18 14:14:25	2026-02-05 17:00:09	t
+1500470453	saul@ueb.edu.ec	$2y$12$7WC2c63zaUao8PyTlNp7N.2S/hy8nWyQOChtLTwws1wrcwtvJ8OEW	representante	\N	2025-12-15 00:58:42	2026-02-05 17:52:32	t
+1718718396	pozo@ueb.edu.ec	$2y$12$G45386laC3O78Yde8BT7/.YpY1gwXeu872sqsmlbLntsYPnDXmxQ6	usuario	\N	2025-12-19 17:48:57	2026-02-05 18:54:40	t
+1500982782	winston@ueb.edu.ec	$2y$12$pVjLg.UEhIP3iAXzDtviE.Kp8yjHOJ0g1Yr8r10u/b0cHz4iNSxhW	usuario	\N	2025-12-24 02:53:38	2026-02-05 21:11:56	t
+0921345678	user0921345678@ueb.edu.ec	$2y$12$k78.faswCD4dyXZAK6JDAeHmpyukhIPQH7qK8xN2BXof.jPh.1mga	jugador	\N	2026-01-03 15:59:00	2026-02-05 21:22:09	f
 \.
 
 
 --
--- TOC entry 5083 (class 0 OID 0)
--- Dependencies: 250
+-- TOC entry 5221 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: auditoria_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.auditoria_id_seq', 46, true);
+
+
+--
+-- TOC entry 5222 (class 0 OID 0)
+-- Dependencies: 225
 -- Name: categorias_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.categorias_id_seq', 8, true);
+SELECT pg_catalog.setval('public.categorias_id_seq', 10, true);
 
 
 --
--- TOC entry 5084 (class 0 OID 0)
--- Dependencies: 248
+-- TOC entry 5223 (class 0 OID 0)
+-- Dependencies: 227
 -- Name: configuracion_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.configuracion_id_seq', 2, true);
+SELECT pg_catalog.setval('public.configuracion_id_seq', 5, true);
 
 
 --
--- TOC entry 5085 (class 0 OID 0)
--- Dependencies: 230
+-- TOC entry 5224 (class 0 OID 0)
+-- Dependencies: 229
 -- Name: deportes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -1233,17 +1666,17 @@ SELECT pg_catalog.setval('public.deportes_id_seq', 3, true);
 
 
 --
--- TOC entry 5086 (class 0 OID 0)
--- Dependencies: 234
+-- TOC entry 5225 (class 0 OID 0)
+-- Dependencies: 231
 -- Name: equipos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.equipos_id_seq', 1, true);
+SELECT pg_catalog.setval('public.equipos_id_seq', 20, true);
 
 
 --
--- TOC entry 5087 (class 0 OID 0)
--- Dependencies: 242
+-- TOC entry 5226 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: estadisticas_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -1251,8 +1684,8 @@ SELECT pg_catalog.setval('public.estadisticas_id_seq', 1, false);
 
 
 --
--- TOC entry 5088 (class 0 OID 0)
--- Dependencies: 226
+-- TOC entry 5227 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: failed_jobs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -1260,26 +1693,26 @@ SELECT pg_catalog.setval('public.failed_jobs_id_seq', 1, false);
 
 
 --
--- TOC entry 5089 (class 0 OID 0)
--- Dependencies: 246
+-- TOC entry 5228 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: galeria_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.galeria_id_seq', 1, false);
+SELECT pg_catalog.setval('public.galeria_id_seq', 1, true);
 
 
 --
--- TOC entry 5090 (class 0 OID 0)
--- Dependencies: 236
+-- TOC entry 5229 (class 0 OID 0)
+-- Dependencies: 239
 -- Name: inscripciones_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.inscripciones_id_seq', 1, false);
+SELECT pg_catalog.setval('public.inscripciones_id_seq', 3, true);
 
 
 --
--- TOC entry 5091 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 5230 (class 0 OID 0)
+-- Dependencies: 242
 -- Name: jobs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -1287,52 +1720,61 @@ SELECT pg_catalog.setval('public.jobs_id_seq', 1, false);
 
 
 --
--- TOC entry 5092 (class 0 OID 0)
--- Dependencies: 217
+-- TOC entry 5231 (class 0 OID 0)
+-- Dependencies: 245
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 25, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 43, true);
 
 
 --
--- TOC entry 5093 (class 0 OID 0)
--- Dependencies: 244
+-- TOC entry 5232 (class 0 OID 0)
+-- Dependencies: 247
 -- Name: noticias_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.noticias_id_seq', 1, false);
+SELECT pg_catalog.setval('public.noticias_id_seq', 1, true);
 
 
 --
--- TOC entry 5094 (class 0 OID 0)
--- Dependencies: 240
+-- TOC entry 5233 (class 0 OID 0)
+-- Dependencies: 249
 -- Name: partidos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.partidos_id_seq', 1, false);
+SELECT pg_catalog.setval('public.partidos_id_seq', 199, true);
 
 
 --
--- TOC entry 5095 (class 0 OID 0)
+-- TOC entry 5234 (class 0 OID 0)
 -- Dependencies: 252
 -- Name: personal_access_tokens_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.personal_access_tokens_id_seq', 35, true);
+SELECT pg_catalog.setval('public.personal_access_tokens_id_seq', 480, true);
 
 
 --
--- TOC entry 5096 (class 0 OID 0)
--- Dependencies: 232
+-- TOC entry 5235 (class 0 OID 0)
+-- Dependencies: 256
 -- Name: torneos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.torneos_id_seq', 28, true);
+SELECT pg_catalog.setval('public.torneos_id_seq', 30, true);
 
 
 --
--- TOC entry 4841 (class 2606 OID 30732)
+-- TOC entry 5236 (class 0 OID 0)
+-- Dependencies: 258
+-- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.users_id_seq', 1, true);
+
+
+--
+-- TOC entry 4913 (class 2606 OID 16676)
 -- Name: arbitros arbitros_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1341,7 +1783,16 @@ ALTER TABLE ONLY public.arbitros
 
 
 --
--- TOC entry 4812 (class 2606 OID 30574)
+-- TOC entry 4915 (class 2606 OID 16678)
+-- Name: auditoria auditoria_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.auditoria
+    ADD CONSTRAINT auditoria_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4919 (class 2606 OID 16680)
 -- Name: cache_locks cache_locks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1350,7 +1801,7 @@ ALTER TABLE ONLY public.cache_locks
 
 
 --
--- TOC entry 4810 (class 2606 OID 30567)
+-- TOC entry 4917 (class 2606 OID 16682)
 -- Name: cache cache_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1359,7 +1810,16 @@ ALTER TABLE ONLY public.cache
 
 
 --
--- TOC entry 4857 (class 2606 OID 30838)
+-- TOC entry 4921 (class 2606 OID 16684)
+-- Name: categorias categorias_nombre_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.categorias
+    ADD CONSTRAINT categorias_nombre_unique UNIQUE (nombre);
+
+
+--
+-- TOC entry 4923 (class 2606 OID 16686)
 -- Name: categorias categorias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1368,7 +1828,7 @@ ALTER TABLE ONLY public.categorias
 
 
 --
--- TOC entry 4853 (class 2606 OID 30825)
+-- TOC entry 4925 (class 2606 OID 16688)
 -- Name: configuracion configuracion_clave_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1377,7 +1837,7 @@ ALTER TABLE ONLY public.configuracion
 
 
 --
--- TOC entry 4855 (class 2606 OID 30823)
+-- TOC entry 4927 (class 2606 OID 16690)
 -- Name: configuracion configuracion_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1386,7 +1846,16 @@ ALTER TABLE ONLY public.configuracion
 
 
 --
--- TOC entry 4829 (class 2606 OID 30640)
+-- TOC entry 4929 (class 2606 OID 16692)
+-- Name: deportes deportes_nombre_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deportes
+    ADD CONSTRAINT deportes_nombre_unique UNIQUE (nombre);
+
+
+--
+-- TOC entry 4931 (class 2606 OID 16694)
 -- Name: deportes deportes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1395,7 +1864,16 @@ ALTER TABLE ONLY public.deportes
 
 
 --
--- TOC entry 4833 (class 2606 OID 30668)
+-- TOC entry 4933 (class 2606 OID 16696)
+-- Name: equipos equipos_nombre_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.equipos
+    ADD CONSTRAINT equipos_nombre_unique UNIQUE (nombre);
+
+
+--
+-- TOC entry 4935 (class 2606 OID 16698)
 -- Name: equipos equipos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1404,7 +1882,7 @@ ALTER TABLE ONLY public.equipos
 
 
 --
--- TOC entry 4845 (class 2606 OID 30790)
+-- TOC entry 4937 (class 2606 OID 16700)
 -- Name: estadisticas estadisticas_jugador_cedula_partido_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1413,7 +1891,7 @@ ALTER TABLE ONLY public.estadisticas
 
 
 --
--- TOC entry 4847 (class 2606 OID 30778)
+-- TOC entry 4939 (class 2606 OID 16702)
 -- Name: estadisticas estadisticas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1422,7 +1900,7 @@ ALTER TABLE ONLY public.estadisticas
 
 
 --
--- TOC entry 4819 (class 2606 OID 30601)
+-- TOC entry 4941 (class 2606 OID 16704)
 -- Name: failed_jobs failed_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1431,7 +1909,7 @@ ALTER TABLE ONLY public.failed_jobs
 
 
 --
--- TOC entry 4821 (class 2606 OID 30603)
+-- TOC entry 4943 (class 2606 OID 16706)
 -- Name: failed_jobs failed_jobs_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1440,7 +1918,7 @@ ALTER TABLE ONLY public.failed_jobs
 
 
 --
--- TOC entry 4851 (class 2606 OID 30812)
+-- TOC entry 4945 (class 2606 OID 16708)
 -- Name: galeria galeria_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1449,7 +1927,7 @@ ALTER TABLE ONLY public.galeria
 
 
 --
--- TOC entry 4835 (class 2606 OID 30700)
+-- TOC entry 4947 (class 2606 OID 16710)
 -- Name: inscripciones inscripciones_equipo_id_torneo_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1458,7 +1936,7 @@ ALTER TABLE ONLY public.inscripciones
 
 
 --
--- TOC entry 4837 (class 2606 OID 30688)
+-- TOC entry 4949 (class 2606 OID 16712)
 -- Name: inscripciones inscripciones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1467,7 +1945,7 @@ ALTER TABLE ONLY public.inscripciones
 
 
 --
--- TOC entry 4817 (class 2606 OID 30591)
+-- TOC entry 4951 (class 2606 OID 16714)
 -- Name: job_batches job_batches_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1476,7 +1954,7 @@ ALTER TABLE ONLY public.job_batches
 
 
 --
--- TOC entry 4814 (class 2606 OID 30583)
+-- TOC entry 4953 (class 2606 OID 16716)
 -- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1485,7 +1963,7 @@ ALTER TABLE ONLY public.jobs
 
 
 --
--- TOC entry 4839 (class 2606 OID 30719)
+-- TOC entry 4956 (class 2606 OID 16718)
 -- Name: jugadores jugadores_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1494,7 +1972,16 @@ ALTER TABLE ONLY public.jugadores
 
 
 --
--- TOC entry 4802 (class 2606 OID 30533)
+-- TOC entry 4958 (class 2606 OID 16720)
+-- Name: jugadores jugadores_qr_token_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jugadores
+    ADD CONSTRAINT jugadores_qr_token_unique UNIQUE (qr_token);
+
+
+--
+-- TOC entry 4960 (class 2606 OID 16722)
 -- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1503,7 +1990,7 @@ ALTER TABLE ONLY public.migrations
 
 
 --
--- TOC entry 4849 (class 2606 OID 30801)
+-- TOC entry 4962 (class 2606 OID 16724)
 -- Name: noticias noticias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1512,7 +1999,7 @@ ALTER TABLE ONLY public.noticias
 
 
 --
--- TOC entry 4843 (class 2606 OID 30743)
+-- TOC entry 4964 (class 2606 OID 16726)
 -- Name: partidos partidos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1521,7 +2008,7 @@ ALTER TABLE ONLY public.partidos
 
 
 --
--- TOC entry 4804 (class 2606 OID 30551)
+-- TOC entry 4966 (class 2606 OID 16728)
 -- Name: password_reset_tokens password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1530,7 +2017,7 @@ ALTER TABLE ONLY public.password_reset_tokens
 
 
 --
--- TOC entry 4860 (class 2606 OID 30887)
+-- TOC entry 4969 (class 2606 OID 16730)
 -- Name: personal_access_tokens personal_access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1539,7 +2026,7 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 
 --
--- TOC entry 4862 (class 2606 OID 30890)
+-- TOC entry 4971 (class 2606 OID 16732)
 -- Name: personal_access_tokens personal_access_tokens_token_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1548,7 +2035,7 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 
 --
--- TOC entry 4823 (class 2606 OID 30610)
+-- TOC entry 4975 (class 2606 OID 16734)
 -- Name: personas personas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1557,7 +2044,7 @@ ALTER TABLE ONLY public.personas
 
 
 --
--- TOC entry 4807 (class 2606 OID 30558)
+-- TOC entry 4978 (class 2606 OID 16736)
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1566,7 +2053,16 @@ ALTER TABLE ONLY public.sessions
 
 
 --
--- TOC entry 4831 (class 2606 OID 30649)
+-- TOC entry 4981 (class 2606 OID 16738)
+-- Name: torneos torneos_nombre_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.torneos
+    ADD CONSTRAINT torneos_nombre_unique UNIQUE (nombre);
+
+
+--
+-- TOC entry 4983 (class 2606 OID 16740)
 -- Name: torneos torneos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1575,7 +2071,25 @@ ALTER TABLE ONLY public.torneos
 
 
 --
--- TOC entry 4825 (class 2606 OID 30629)
+-- TOC entry 4985 (class 2606 OID 16742)
+-- Name: users users_email_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_unique UNIQUE (email);
+
+
+--
+-- TOC entry 4987 (class 2606 OID 16744)
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4989 (class 2606 OID 16746)
 -- Name: usuarios usuarios_email_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1584,7 +2098,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- TOC entry 4827 (class 2606 OID 30627)
+-- TOC entry 4991 (class 2606 OID 16748)
 -- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1593,7 +2107,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- TOC entry 4815 (class 1259 OID 30584)
+-- TOC entry 4954 (class 1259 OID 16749)
 -- Name: jobs_queue_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1601,7 +2115,7 @@ CREATE INDEX jobs_queue_index ON public.jobs USING btree (queue);
 
 
 --
--- TOC entry 4858 (class 1259 OID 30891)
+-- TOC entry 4967 (class 1259 OID 16750)
 -- Name: personal_access_tokens_expires_at_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1609,7 +2123,7 @@ CREATE INDEX personal_access_tokens_expires_at_index ON public.personal_access_t
 
 
 --
--- TOC entry 4863 (class 1259 OID 30888)
+-- TOC entry 4972 (class 1259 OID 16751)
 -- Name: personal_access_tokens_tokenable_type_tokenable_id_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1617,7 +2131,15 @@ CREATE INDEX personal_access_tokens_tokenable_type_tokenable_id_index ON public.
 
 
 --
--- TOC entry 4805 (class 1259 OID 30560)
+-- TOC entry 4973 (class 1259 OID 16752)
+-- Name: personas_email_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX personas_email_unique ON public.personas USING btree (email) WHERE (email IS NOT NULL);
+
+
+--
+-- TOC entry 4976 (class 1259 OID 16753)
 -- Name: sessions_last_activity_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1625,7 +2147,7 @@ CREATE INDEX sessions_last_activity_index ON public.sessions USING btree (last_a
 
 
 --
--- TOC entry 4808 (class 1259 OID 30853)
+-- TOC entry 4979 (class 1259 OID 16754)
 -- Name: sessions_user_id_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1633,34 +2155,52 @@ CREATE INDEX sessions_user_id_index ON public.sessions USING btree (user_id);
 
 
 --
--- TOC entry 4875 (class 2606 OID 30726)
+-- TOC entry 4992 (class 2606 OID 16755)
 -- Name: arbitros arbitros_cedula_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.arbitros
-    ADD CONSTRAINT arbitros_cedula_foreign FOREIGN KEY (cedula) REFERENCES public.personas(cedula) ON DELETE CASCADE;
+    ADD CONSTRAINT arbitros_cedula_foreign FOREIGN KEY (cedula) REFERENCES public.usuarios(cedula) ON DELETE CASCADE;
 
 
 --
--- TOC entry 4868 (class 2606 OID 30869)
+-- TOC entry 4993 (class 2606 OID 16760)
+-- Name: auditoria auditoria_usuario_cedula_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.auditoria
+    ADD CONSTRAINT auditoria_usuario_cedula_foreign FOREIGN KEY (usuario_cedula) REFERENCES public.usuarios(cedula) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4994 (class 2606 OID 16765)
+-- Name: categorias categorias_deporte_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.categorias
+    ADD CONSTRAINT categorias_deporte_id_foreign FOREIGN KEY (deporte_id) REFERENCES public.deportes(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4995 (class 2606 OID 16770)
 -- Name: equipos equipos_categoria_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.equipos
-    ADD CONSTRAINT equipos_categoria_id_foreign FOREIGN KEY (categoria_id) REFERENCES public.categorias(id) ON DELETE SET NULL;
+    ADD CONSTRAINT equipos_categoria_id_foreign FOREIGN KEY (categoria_id) REFERENCES public.categorias(id);
 
 
 --
--- TOC entry 4869 (class 2606 OID 30864)
+-- TOC entry 4996 (class 2606 OID 16775)
 -- Name: equipos equipos_deporte_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.equipos
-    ADD CONSTRAINT equipos_deporte_id_foreign FOREIGN KEY (deporte_id) REFERENCES public.deportes(id) ON DELETE SET NULL;
+    ADD CONSTRAINT equipos_deporte_id_foreign FOREIGN KEY (deporte_id) REFERENCES public.deportes(id);
 
 
 --
--- TOC entry 4870 (class 2606 OID 30674)
+-- TOC entry 4997 (class 2606 OID 16780)
 -- Name: equipos equipos_torneo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1669,7 +2209,7 @@ ALTER TABLE ONLY public.equipos
 
 
 --
--- TOC entry 4880 (class 2606 OID 30779)
+-- TOC entry 4998 (class 2606 OID 16785)
 -- Name: estadisticas estadisticas_jugador_cedula_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1678,7 +2218,7 @@ ALTER TABLE ONLY public.estadisticas
 
 
 --
--- TOC entry 4881 (class 2606 OID 30784)
+-- TOC entry 4999 (class 2606 OID 16790)
 -- Name: estadisticas estadisticas_partido_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1687,7 +2227,7 @@ ALTER TABLE ONLY public.estadisticas
 
 
 --
--- TOC entry 4871 (class 2606 OID 30689)
+-- TOC entry 5000 (class 2606 OID 16795)
 -- Name: inscripciones inscripciones_equipo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1696,7 +2236,7 @@ ALTER TABLE ONLY public.inscripciones
 
 
 --
--- TOC entry 4872 (class 2606 OID 30694)
+-- TOC entry 5001 (class 2606 OID 16800)
 -- Name: inscripciones inscripciones_torneo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1705,7 +2245,7 @@ ALTER TABLE ONLY public.inscripciones
 
 
 --
--- TOC entry 4873 (class 2606 OID 30708)
+-- TOC entry 5002 (class 2606 OID 16805)
 -- Name: jugadores jugadores_cedula_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1714,7 +2254,7 @@ ALTER TABLE ONLY public.jugadores
 
 
 --
--- TOC entry 4874 (class 2606 OID 30713)
+-- TOC entry 5003 (class 2606 OID 16810)
 -- Name: jugadores jugadores_equipo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1723,7 +2263,7 @@ ALTER TABLE ONLY public.jugadores
 
 
 --
--- TOC entry 4876 (class 2606 OID 30749)
+-- TOC entry 5004 (class 2606 OID 16815)
 -- Name: partidos partidos_arbitro_cedula_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1732,7 +2272,7 @@ ALTER TABLE ONLY public.partidos
 
 
 --
--- TOC entry 4877 (class 2606 OID 30754)
+-- TOC entry 5005 (class 2606 OID 16820)
 -- Name: partidos partidos_equipo_local_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1741,7 +2281,7 @@ ALTER TABLE ONLY public.partidos
 
 
 --
--- TOC entry 4878 (class 2606 OID 30759)
+-- TOC entry 5006 (class 2606 OID 16825)
 -- Name: partidos partidos_equipo_visitante_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1750,7 +2290,7 @@ ALTER TABLE ONLY public.partidos
 
 
 --
--- TOC entry 4879 (class 2606 OID 30744)
+-- TOC entry 5007 (class 2606 OID 16830)
 -- Name: partidos partidos_torneo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1759,7 +2299,7 @@ ALTER TABLE ONLY public.partidos
 
 
 --
--- TOC entry 4865 (class 2606 OID 30839)
+-- TOC entry 5008 (class 2606 OID 16835)
 -- Name: torneos torneos_categoria_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1768,7 +2308,7 @@ ALTER TABLE ONLY public.torneos
 
 
 --
--- TOC entry 4866 (class 2606 OID 30874)
+-- TOC entry 5009 (class 2606 OID 16840)
 -- Name: torneos torneos_creado_por_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1777,7 +2317,7 @@ ALTER TABLE ONLY public.torneos
 
 
 --
--- TOC entry 4867 (class 2606 OID 30650)
+-- TOC entry 5010 (class 2606 OID 16845)
 -- Name: torneos torneos_deporte_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1786,7 +2326,7 @@ ALTER TABLE ONLY public.torneos
 
 
 --
--- TOC entry 4864 (class 2606 OID 30621)
+-- TOC entry 5011 (class 2606 OID 16850)
 -- Name: usuarios usuarios_cedula_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1794,11 +2334,9 @@ ALTER TABLE ONLY public.usuarios
     ADD CONSTRAINT usuarios_cedula_foreign FOREIGN KEY (cedula) REFERENCES public.personas(cedula) ON DELETE CASCADE;
 
 
--- Completed on 2025-11-26 17:03:52
+-- Completed on 2026-02-12 07:37:43
 
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict 1uxwA1DScJK8MgMn6jfj5AAeTCb7ZgRZ7p9TCEdSrxhdMegCla0biM7SSbcW9Pb
 

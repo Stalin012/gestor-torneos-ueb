@@ -1,0 +1,104 @@
+:root {
+    /* Primary Colors */
+    --primary: #356ed8;
+    /* Azul medio, vibrante */
+    --primary-dark: #33518e;
+    /* Azul más oscuro para estados hover/activos */
+    --primary-light: #72add9;
+    /* Azul más claro para acentos sutiles o elementos secundarios */
+    --primary-rgb: 53, 110, 216;
+    /* RGB para sombras */
+
+    /* Secondary Colors (acentos, elementos menos prominentes) */
+    --secondary: #726a72;
+    /* Gris/púrpura medio, un tono neutro pero distintivo */
+    --secondary-dark: #50697d;
+    /* Gris/azul más oscuro para estados hover/activos secundarios */
+    --secondary-light: #eaeaea;
+    /* Gris muy claro para elementos secundarios muy sutiles */
+
+    /* Text Colors (para un fondo oscuro) */
+    --text-color: #eaeaea;
+    /* Gris muy claro, ideal para el texto principal sobre fondos oscuros */
+    --text-color-rgb: 234, 234, 234;
+    --text-light: #72add9;
+    /* Azul claro, para texto secundario o enlaces */
+    --text-muted: #726a72;
+    /* Gris/púrpura medio, para texto menos prominente o deshabilitado */
+    --text-white: #ffffff;
+    --text-white-rgb: 255, 255, 255;
+
+    /* Background Colors */
+    --background-page: var(--background-dark);
+    /* Se mantiene, ya que es la base para el glassmorphism */
+    --background-light: #eaeaea;
+    /* Gris muy claro, para secciones o elementos que necesiten un fondo claro en contraste */
+    --background-dark: #182939;
+    /* Azul/gris muy oscuro, el color principal del fondo */
+    --background-dark-rgb: 24, 41, 57;
+
+    /* Card & Border Colors */
+    --card-bg: #19293a;
+    /* Azul oscuro elegante para tarjetas */
+    --card-header-bg: #1a2333;
+    /* Un tono ligeramente más oscuro para cabeceras */
+    --border: rgba(234, 234, 234, 0.12);
+    /* Borde sutil y elegante */
+    --divider: rgba(234, 234, 234, 0.08);
+    /* Divisor muy sutil */
+
+    /* Input Colors */
+    --input-bg: #1a2333;
+    /* Fondo oscuro para inputs */
+    --input-border: rgba(234, 234, 234, 0.15);
+    --input-placeholder: rgba(234, 234, 234, 0.4);
+
+    /* Button Colors */
+    --btn-primary-bg: var(--primary);
+    --btn-primary-text: var(--text-white);
+    --btn-primary-hover-bg: var(--primary-dark);
+
+    /* Status Colors */
+    --success: #10b981;
+    /* Verde esmeralda moderno */
+    --info: #356ed8;
+    /* Azul principal */
+    --warning: #f59e0b;
+    /* Ámbar moderno */
+    --danger: #ef4444;
+    /* Rojo suave/moderno */
+
+    /* Shadows (optimizadas para fondos oscuros) */
+    --shadow-xs: 0 0 0 1px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 6px 15px -3px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 15px 25px -5px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+
+    /* Custom Border Radius */
+    --border-radius-md: 10px;
+    --border-radius-lg: 14px;
+
+    /* Custom Box Shadows */
+    --shadow-custom-light: 0 10px 30px rgba(0,0,0,0.05);
+
+    /* Custom Colors for NominaRepresentante.jsx */
+    --background-light-alt: #f8fafc;
+    --text-secondary: #64748b;
+    --border-light: #e2e8f0;
+    --shadow-primary-button: 0 8px 20px rgba(var(--primary-rgb), 0.3);
+
+    /* Custom Colors for KPI Cards */
+    --primary-ocean: #0366D6;
+    --accent-teal: #10B981;
+
+    /* Deep background variable referenced in other files */
+    --bg-deep: #0b1426;
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+}

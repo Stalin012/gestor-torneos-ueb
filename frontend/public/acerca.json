@@ -1,0 +1,38 @@
+{
+  "plataforma": {
+    "nombre": "UEBSPORT",
+    "descripcion": "Plataforma oficial para gestión y difusión del deporte universitario: torneos, estadísticas en vivo, galería, noticias y carnet digital.",
+    "objetivo": "Centralizar la información deportiva de la UEB y ofrecer herramientas para clubes, organizadores y estudiantes.",
+    "caracteristicas": [
+      "Publicación de torneos y fixtures",
+      "Tabla de posiciones y métricas agregadas",
+      "Carnet digital por cédula",
+      "Galería multimedia y noticias",
+      "Acceso para clubes y organizadores"
+    ],
+    "version": "1.0.0"
+  },
+  "autores": [
+    "Stalin Alvarado",
+    "Luis Duy"
+  ],
+  "universidad": {
+    "nombre": "Universidad Estatal de Bolívar",
+    "siglas": "UEB",
+    "ubicacion": "Bolívar, Ecuador",
+    "descripcion": "Institución pública de educación superior comprometida con la formación académica, investigación y vinculación con la sociedad.",
+    "mision": "Formar profesionales de excelencia, con valores, pensamiento crítico y compromiso social, promoviendo el desarrollo científico, tecnológico y cultural para contribuir al progreso de la provincia de Bolívar y del país.",
+    "vision": "Ser una institución de educación superior reconocida por su calidad académica, investigación y vinculación, líder en la formación integral de ciudadanos que transforman su entorno.",
+    "deportes_destacados": ["Fútbol", "Basketball", "Voley", "Atletismo"],
+    "facultades": ["Ingeniería", "Ciencias de la Salud", "Administración", "Educación"]
+  },
+  "contacto": {
+    "correo": "deportes@ueb.edu.ec",
+    "sitio_web": "https://www.ueb.edu.ec",
+    "redes": {
+      "facebook": "https://www.facebook.com/ueb",
+      "instagram": "https://www.instagram.com/ueb",
+      "youtube": "https://www.youtube.com/@ueb"
+    }
+  }
+}
