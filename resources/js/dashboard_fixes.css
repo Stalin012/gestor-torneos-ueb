@@ -1,0 +1,120 @@
+/* FIXES FOR DASHBOARD LAYOUT */
+
+.dashboard-hero {
+    background: linear-gradient(135deg, var(--bg-2) 0%, var(--bg-1) 100%);
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-hero-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.hero-icon-box {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--accent), #2563eb);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+}
+
+.hero-title h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(to right, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-title p {
+    color: var(--muted);
+    margin: 0.5rem 0 0;
+    font-size: 1rem;
+}
+
+/* Quick Actions Bar - MOVED OUT OF HERO */
+.quick-actions-bar {
+    margin-bottom: 2rem;
+}
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.quick-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+    border-left: 4px solid var(--action-color, var(--accent));
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    background: var(--bg-3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.action-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-label {
+    font-weight: 600;
+    color: var(--text-1);
+    font-size: 0.95rem;
+    flex: 1;
+}
+
+.action-arrow {
+    color: var(--muted);
+    opacity: 0;
+    transform: translateX(-5px);
+    transition: all 0.2s;
+}
+
+.quick-action-btn:hover .action-arrow {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* SIDEBAR FIXES */
+.admin-layout.pro-theme,
+.admin-layout.pro-theme .sidebar {
+    /* Ensure width is respected */
+}
+
+.sidebar-scroll-area {
+    padding: 1.5rem 1rem;
+    /* Adjust padding */
+}
+
+.nav-item {
+    padding: 0.75rem 1rem;
+}
