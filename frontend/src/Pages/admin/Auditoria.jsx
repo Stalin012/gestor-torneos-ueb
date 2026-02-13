@@ -293,47 +293,39 @@ const Auditoria = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div className="mini-card" style={{ padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b' }}>
-                    <div className="mini-card-header" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <div className="mini-card-icon" style={{ backgroundColor: '#3468c0', color: 'white', borderRadius: '8px', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '0.75rem' }}>
-                            <FileText size={20} />
-                        </div>
-                        <div className="mini-card-title" style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>Total Registros</div>
+            <div className="card-grid" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', justifyContent: 'flex-start' }}>
+                <div className="mini-card" style={{ width: '100px', height: '100px', padding: '0.75rem', borderRadius: '6px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                    <div className="mini-card-icon" style={{ backgroundColor: '#3468c0', color: 'white', borderRadius: '4px', padding: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.25rem' }}>
+                        <FileText size={14} />
                     </div>
-                    <div className="mini-card-value" style={{ fontSize: '2.25rem', fontWeight: 700, color: '#e2e8f0' }}>{stats.total}</div>
+                    <div className="mini-card-title" style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 500, marginBottom: '0.125rem' }}>Total Registros</div>
+                    <div className="mini-card-value" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#e2e8f0' }}>{stats.total}</div>
                 </div>
 
-                <div className="mini-card" style={{ padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b' }}>
-                    <div className="mini-card-header" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <div className="mini-card-icon" style={{ backgroundColor: '#28a745', color: 'white', borderRadius: '8px', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '0.75rem' }}>
-                            <Calendar size={20} />
-                        </div>
-                        <div className="mini-card-title" style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>Hoy</div>
+                <div className="mini-card" style={{ width: '100px', height: '100px', padding: '0.75rem', borderRadius: '6px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                    <div className="mini-card-icon" style={{ backgroundColor: '#28a745', color: 'white', borderRadius: '4px', padding: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.25rem' }}>
+                        <Calendar size={14} />
                     </div>
-                    <div className="mini-card-value" style={{ fontSize: '2.25rem', fontWeight: 700, color: '#e2e8f0' }}>{stats.today}</div>
-                    <div className="mini-card-trend trend-up" style={{ fontSize: '0.8rem', color: '#28a745', marginTop: '0.5rem' }}>Actividad diaria</div>
+                    <div className="mini-card-title" style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 500, marginBottom: '0.125rem' }}>Hoy</div>
+                    <div className="mini-card-value" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#e2e8f0' }}>{stats.today}</div>
+                    <div className="mini-card-trend trend-up" style={{ fontSize: '0.55rem', color: '#28a745', marginTop: '0.125rem' }}>Actividad diaria</div>
                 </div>
 
-                <div className="mini-card" style={{ padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b' }}>
-                    <div className="mini-card-header" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <div className="mini-card-icon" style={{ backgroundColor: '#dc3545', color: 'white', borderRadius: '8px', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '0.75rem' }}>
-                            <X size={20} />
-                        </div>
-                        <div className="mini-card-title" style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>Errores</div>
+                <div className="mini-card" style={{ width: '100px', height: '100px', padding: '0.75rem', borderRadius: '6px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                    <div className="mini-card-icon" style={{ backgroundColor: '#dc3545', color: 'white', borderRadius: '4px', padding: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.25rem' }}>
+                        <X size={14} />
                     </div>
-                    <div className="mini-card-value" style={{ fontSize: '2.25rem', fontWeight: 700, color: '#e2e8f0' }}>{stats.errors}</div>
-                    <div className="mini-card-trend trend-down" style={{ fontSize: '0.8rem', color: '#dc3545', marginTop: '0.5rem' }}>Eventos fallidos</div>
+                    <div className="mini-card-title" style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 500, marginBottom: '0.125rem' }}>Errores</div>
+                    <div className="mini-card-value" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#e2e8f0' }}>{stats.errors}</div>
+                    <div className="mini-card-trend trend-down" style={{ fontSize: '0.55rem', color: '#dc3545', marginTop: '0.125rem' }}>Eventos fallidos</div>
                 </div>
 
-                <div className="mini-card" style={{ padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b' }}>
-                    <div className="mini-card-header" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <div className="mini-card-icon" style={{ backgroundColor: '#6f42c1', color: 'white', borderRadius: '8px', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '0.75rem' }}>
-                            <User size={20} />
-                        </div>
-                        <div className="mini-card-title" style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>Usuarios Únicos</div>
+                <div className="mini-card" style={{ width: '100px', height: '100px', padding: '0.75rem', borderRadius: '6px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                    <div className="mini-card-icon" style={{ backgroundColor: '#6f42c1', color: 'white', borderRadius: '4px', padding: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.25rem' }}>
+                        <User size={14} />
                     </div>
-                    <div className="mini-card-value" style={{ fontSize: '2.25rem', fontWeight: 700, color: '#e2e8f0' }}>{stats.users}</div>
+                    <div className="mini-card-title" style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 500, marginBottom: '0.125rem' }}>Usuarios Únicos</div>
+                    <div className="mini-card-value" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#e2e8f0' }}>{stats.users}</div>
                 </div>
             </div>
 

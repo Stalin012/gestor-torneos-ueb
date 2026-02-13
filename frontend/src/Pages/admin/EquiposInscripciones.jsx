@@ -593,26 +593,47 @@ const EquiposInscripciones = () => {
                                     equipos.map((equipo) => (
                                         <tr key={equipo.id}>
                                             <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                                     <div style={{
-                                                        width: '40px',
-                                                        height: '40px',
-                                                        borderRadius: '12px',
-                                                        background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
+                                                        width: '50px',
+                                                        height: '50px',
+                                                        borderRadius: '16px',
+                                                        background: equipo.logo ? `url(${equipo.logo})` : 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
+                                                        backgroundSize: 'cover',
+                                                        backgroundPosition: 'center',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
                                                         color: 'white',
                                                         fontWeight: 900,
-                                                        fontSize: '1.2rem'
+                                                        fontSize: '1.4rem',
+                                                        boxShadow: '0 8px 25px rgba(53, 110, 216, 0.3)',
+                                                        border: '2px solid rgba(255, 255, 255, 0.1)'
                                                     }}>
-                                                        {equipo.nombre?.charAt(0)}
+                                                        {!equipo.logo && equipo.nombre?.charAt(0)}
                                                     </div>
-                                                    <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem' }}>{equipo.nombre}</div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem', marginBottom: '4px' }}>{equipo.nombre}</div>
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Representante: {equipo.representante?.nombres || 'Sin asignar'}</div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
-                                                <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>{equipo.torneo?.nombre || 'General'}</span>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    <div style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '8px',
+                                                        padding: '6px 12px',
+                                                        background: 'rgba(53, 110, 216, 0.1)',
+                                                        borderRadius: '8px',
+                                                        border: '1px solid rgba(53, 110, 216, 0.2)'
+                                                    }}>
+                                                        <Trophy size={16} color="var(--primary)" />
+                                                        <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>{equipo.torneo?.nombre || 'General'}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingLeft: '8px' }}>Estado: Activo</div>
+                                                </div>
                                             </td>
                                             <td>
                                                 <div style={{ fontSize: '0.9rem', color: '#fff' }}>{equipo.deporte?.nombre}</div>
@@ -622,14 +643,30 @@ const EquiposInscripciones = () => {
                                                 <code style={{ color: 'var(--text-muted)' }}>#{equipo.id}</code>
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                    <button className="pro-btn btn-secondary" onClick={() => { setSelectedEquipo(equipo); setIsDetailModalOpen(true); }} title="Gestionar Nómina">
+                                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                                    <button 
+                                                        className="pro-btn btn-secondary" 
+                                                        onClick={() => { setSelectedEquipo(equipo); setIsDetailModalOpen(true); }} 
+                                                        title="Gestionar Nómina"
+                                                        style={{ padding: '12px 16px', borderRadius: '12px' }}
+                                                    >
                                                         <Edit size={16} />
+                                                        <span>Gestionar</span>
                                                     </button>
-                                                    <button className="pro-btn btn-primary" title="Ficha Técnica / Carnet">
+                                                    <button 
+                                                        className="pro-btn btn-primary" 
+                                                        title="Ver Carnet del Equipo"
+                                                        style={{ padding: '12px 16px', borderRadius: '12px' }}
+                                                    >
                                                         <CreditCard size={16} />
+                                                        <span>Carnet</span>
                                                     </button>
-                                                    <button className="pro-btn btn-danger" onClick={() => handleDeleteEquipo(equipo.id)} title="Eliminar Registro">
+                                                    <button 
+                                                        className="pro-btn btn-danger" 
+                                                        onClick={() => handleDeleteEquipo(equipo.id)} 
+                                                        title="Eliminar Equipo"
+                                                        style={{ padding: '12px', borderRadius: '12px' }}
+                                                    >
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
