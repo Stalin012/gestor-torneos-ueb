@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
-import { X, Bell, CheckCircle, AlertTriangle, Info, AlertCircle } from "lucide-react";
+import { X, Bell, CheckCircle, AlertTriangle, Info, AlertCircle, History } from "lucide-react";
+import api from "../api";
 
 /**
- * Sistema de Notificaciones Premium
- * Centro de notificaciones tipo iOS/MacOS
+ * Sistema de Notificaciones Premium con Historial
+ * Centro de notificaciones tipo iOS/MacOS con persistencia en BD
  */
 
 const NOTIFICATION_TYPES = {
@@ -14,21 +15,11 @@ const NOTIFICATION_TYPES = {
     INFO: "info",
 };
 
-const NotificationItem = ({ notification, onClose, onDismiss }) => {
-    const { id, type, title, message, timestamp, autoClose = true } = notification;
-
-    useEffect(() => {
-        if (autoClose) {
-            const timer = setTimeout(() => {
-                onClose(id);
-            }, 6000);
-
-            return () => clearTimeout(timer);
-        }
-    }, [id, autoClose, onClose]);
+const NotificationItem = ({ notification, onClose, onDismiss, onMarkAsRead }) => {
+    const { id, tipo, titulo, mensaje, created_at, leida } = notification;
 
     const getIcon = () => {
-        switch (type) {
+        switch (tipo) {
             case NOTIFICATION_TYPES.SUCCESS:
                 return <CheckCircle size={24} />;
             case NOTIFICATION_TYPES.ERROR:
@@ -41,7 +32,7 @@ const NotificationItem = ({ notification, onClose, onDismiss }) => {
     };
 
     const getColors = () => {
-        switch (type) {
+        switch (tipo) {
             case NOTIFICATION_TYPES.SUCCESS:
                 return {
                     bg: "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.1))",
@@ -71,6 +62,13 @@ const NotificationItem = ({ notification, onClose, onDismiss }) => {
 
     const colors = getColors();
 
+    const handleClick = async () => {
+        if (!leida && onMarkAsRead) {
+            await onMarkAsRead(id);
+        }
+        onDismiss?.(id);
+    };
+
     return (
         <div
             className="notification-item clickable-scale"
@@ -84,8 +82,9 @@ const NotificationItem = ({ notification, onClose, onDismiss }) => {
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                 animation: "slideInRight 0.3s ease-out",
                 cursor: "pointer",
+                opacity: leida ? 0.7 : 1,
             }}
-            onClick={() => onDismiss?.(id)}
+            onClick={handleClick}
         >
             <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
                 <div style={{ color: colors.icon, flexShrink: 0 }}>{getIcon()}</div>
@@ -93,7 +92,17 @@ const NotificationItem = ({ notification, onClose, onDismiss }) => {
                 <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.25rem" }}>
                         <h4 style={{ fontSize: "0.95rem", fontWeight: "700", color: "#ffffff", margin: 0 }}>
-                            {title}
+                            {titulo}
+                            {!leida && (
+                                <span style={{
+                                    display: 'inline-block',
+                                    width: '8px',
+                                    height: '8px',
+                                    background: colors.border,
+                                    borderRadius: '50%',
+                                    marginLeft: '0.5rem'
+                                }}></span>
+                            )}
                         </h4>
                         <button
                             onClick={(e) => {
@@ -118,17 +127,18 @@ const NotificationItem = ({ notification, onClose, onDismiss }) => {
                     </div>
 
                     <p style={{ fontSize: "0.85rem", color: "#ffffff", margin: "0 0 0.5rem 0", lineHeight: 1.5 }}>
-                        {message}
+                        {mensaje}
                     </p>
 
-                    {timestamp && (
-                        <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontStyle: "italic" }}>
-                            {new Date(timestamp).toLocaleTimeString("es-ES", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                            })}
-                        </span>
-                    )}
+                    <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontStyle: "italic" }}>
+                        {new Date(created_at).toLocaleString("es-ES", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        })}
+                    </span>
                 </div>
             </div>
         </div>
@@ -136,19 +146,62 @@ const NotificationItem = ({ notification, onClose, onDismiss }) => {
 };
 
 NotificationItem.propTypes = {
-    notification: PropTypes.shape({
-        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-        type: PropTypes.string.isRequired,
-        title: PropTypes.string.isRequired,
-        message: PropTypes.string.isRequired,
-        timestamp: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
-        autoClose: PropTypes.bool,
-    }).isRequired,
+    notification: PropTypes.object.isRequired,
     onClose: PropTypes.func.isRequired,
     onDismiss: PropTypes.func,
+    onMarkAsRead: PropTypes.func,
 };
 
-const NotificationCenter = ({ notifications, onClose, onDismiss, onClearAll }) => {
+const NotificationCenter = ({ isOpen, onClose }) => {
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const loadNotifications = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await api.get('/notificaciones');
+            setNotifications(response.data);
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            loadNotifications();
+        }
+    }, [isOpen, loadNotifications]);
+
+    const markAsRead = async (id) => {
+        try {
+            await api.patch(`/notificaciones/${id}/read`);
+            setNotifications(prev => 
+                prev.map(n => n.id === id ? { ...n, leida: true } : n)
+            );
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
+
+    const markAllAsRead = async () => {
+        try {
+            await api.patch('/notificaciones/read-all');
+            setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    };
+
+    const removeNotification = (id) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    };
+
+    if (!isOpen) return null;
+
+    const unreadCount = notifications.filter(n => !n.leida).length;
+
     return (
         <div
             className="notification-center"
@@ -174,7 +227,7 @@ const NotificationCenter = ({ notifications, onClose, onDismiss, onClearAll }) =
                 <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#ffffff" }}>
                     <Bell size={20} />
                     Notificaciones
-                    {notifications.length > 0 && (
+                    {unreadCount > 0 && (
                         <span
                             style={{
                                 fontSize: "0.75rem",
@@ -185,52 +238,75 @@ const NotificationCenter = ({ notifications, onClose, onDismiss, onClearAll }) =
                                 fontWeight: "700",
                             }}
                         >
-                            {notifications.length}
+                            {unreadCount}
                         </span>
                     )}
                 </h3>
 
-                {notifications.length > 0 && (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {unreadCount > 0 && (
+                        <button
+                            onClick={markAllAsRead}
+                            style={{
+                                background: "transparent",
+                                border: "1px solid var(--accent)",
+                                color: "var(--accent)",
+                                padding: "0.4rem 0.8rem",
+                                borderRadius: "8px",
+                                fontSize: "0.75rem",
+                                cursor: "pointer",
+                                fontWeight: "600",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "var(--accent)";
+                                e.currentTarget.style.color = "#000";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.color = "var(--accent)";
+                            }}
+                        >
+                            Marcar todas
+                        </button>
+                    )}
                     <button
-                        onClick={onClearAll}
+                        onClick={onClose}
                         style={{
                             background: "transparent",
-                            border: "1px solid var(--danger)",
-                            color: "var(--danger)",
-                            padding: "0.4rem 0.8rem",
-                            borderRadius: "8px",
-                            fontSize: "0.75rem",
+                            border: "none",
+                            color: "#ffffff",
                             cursor: "pointer",
-                            fontWeight: "600",
+                            padding: "0.25rem",
+                            borderRadius: "4px",
                             transition: "all 0.2s",
                         }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "var(--danger)";
-                            e.currentTarget.style.color = "#fff";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "transparent";
-                            e.currentTarget.style.color = "var(--danger)";
-                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                     >
-                        Limpiar todo
+                        <X size={20} />
                     </button>
-                )}
+                </div>
             </div>
 
             <div>
-                {notifications.length === 0 ? (
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#ffffff' }}>
+                        Cargando notificaciones...
+                    </div>
+                ) : notifications.length === 0 ? (
                     <div className="empty-state" style={{ padding: "3rem 1rem" }}>
-                        <Bell size={60} style={{ opacity: 0.1, margin: "0 auto 1rem", display: "block" }} />
-                        <p style={{ color: "#ffffff", fontSize: "0.9rem", textAlign: "center" }}>No hay notificaciones</p>
+                        <History size={60} style={{ opacity: 0.1, margin: "0 auto 1rem", display: "block" }} />
+                        <p style={{ color: "#ffffff", fontSize: "0.9rem", textAlign: "center" }}>No hay notificaciones en el historial</p>
                     </div>
                 ) : (
                     notifications.map((notification) => (
                         <NotificationItem
                             key={notification.id}
                             notification={notification}
-                            onClose={onClose}
-                            onDismiss={onDismiss}
+                            onClose={removeNotification}
+                            onDismiss={removeNotification}
+                            onMarkAsRead={markAsRead}
                         />
                     ))
                 )}
@@ -240,51 +316,47 @@ const NotificationCenter = ({ notifications, onClose, onDismiss, onClearAll }) =
 };
 
 NotificationCenter.propTypes = {
-    notifications: PropTypes.arrayOf(PropTypes.object).isRequired,
+    isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
-    onDismiss: PropTypes.func,
-    onClearAll: PropTypes.func.isRequired,
 };
 
-// Hook personalizado para notificaciones
+// Hook personalizado para notificaciones con persistencia
 export const useNotifications = () => {
     const [notifications, setNotifications] = useState([]);
-    const [notificationId, setNotificationId] = useState(0);
 
-    const addNotification = useCallback((type, title, message, autoClose = true) => {
-        const id = notificationId;
-        setNotificationId((prev) => prev + 1);
-
-        const notification = {
-            id,
-            type,
-            title,
-            message,
-            timestamp: new Date(),
-            autoClose,
-        };
-
-        setNotifications((prev) => [notification, ...prev]);
-        return id;
-    }, [notificationId]);
-
-    const removeNotification = useCallback((id) => {
-        setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const addNotification = useCallback(async (type, title, message, userCedula = null) => {
+        try {
+            await api.post('/notificaciones', {
+                titulo: title,
+                mensaje: message,
+                tipo: type,
+                usuario_cedula: userCedula
+            });
+            // Recargar notificaciones después de crear una nueva
+            const response = await api.get('/notificaciones');
+            setNotifications(response.data);
+        } catch (error) {
+            console.error('Error creating notification:', error);
+        }
     }, []);
 
-    const clearAll = useCallback(() => {
-        setNotifications([]);
+    const loadNotifications = useCallback(async () => {
+        try {
+            const response = await api.get('/notificaciones');
+            setNotifications(response.data);
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+        }
     }, []);
 
     return {
         notifications,
         addNotification,
-        removeNotification,
-        clearAll,
-        success: (title, message) => addNotification(NOTIFICATION_TYPES.SUCCESS, title, message),
-        error: (title, message) => addNotification(NOTIFICATION_TYPES.ERROR, title, message),
-        warning: (title, message) => addNotification(NOTIFICATION_TYPES.WARNING, title, message),
-        info: (title, message) => addNotification(NOTIFICATION_TYPES.INFO, title, message),
+        loadNotifications,
+        success: (title, message, userCedula) => addNotification(NOTIFICATION_TYPES.SUCCESS, title, message, userCedula),
+        error: (title, message, userCedula) => addNotification(NOTIFICATION_TYPES.ERROR, title, message, userCedula),
+        warning: (title, message, userCedula) => addNotification(NOTIFICATION_TYPES.WARNING, title, message, userCedula),
+        info: (title, message, userCedula) => addNotification(NOTIFICATION_TYPES.INFO, title, message, userCedula),
     };
 };
 

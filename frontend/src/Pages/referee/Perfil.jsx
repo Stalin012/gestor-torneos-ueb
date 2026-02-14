@@ -23,6 +23,7 @@ const Perfil = () => {
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [message, setMessage] = useState({ type: "", text: "" });
     const [form, setForm] = useState({
         nombres: "",

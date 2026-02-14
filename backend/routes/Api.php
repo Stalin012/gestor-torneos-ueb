@@ -100,8 +100,13 @@ Route::get('/noticias', [NoticiaController::class, 'index']);
 Route::get('/noticias/{id}', [NoticiaController::class, 'show']);
 Route::get('/galeria',  [GaleriaController::class, 'index']);
 
-// Notificaciones públicas
-Route::get('/notificaciones', [NotificacionController::class, 'index']);
+// Notificaciones
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/notificaciones', [NotificacionController::class, 'index']);
+    Route::post('/notificaciones', [NotificacionController::class, 'store']);
+    Route::patch('/notificaciones/{id}/read', [NotificacionController::class, 'markAsRead']);
+    Route::patch('/notificaciones/read-all', [NotificacionController::class, 'markAllAsRead']);
+});
 
 // Configuración pública
 Route::get('/configuracion/publica', [ConfiguracionController::class, 'publicIndex']);

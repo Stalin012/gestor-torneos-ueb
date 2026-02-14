@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\CorsMiddleware::class,
         ]);
         
+        $middleware->web(prepend: [
+            \App\Http\Middleware\CorsMiddleware::class,
+        ]);
+        
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'representante' => RepresentanteMiddleware::class,

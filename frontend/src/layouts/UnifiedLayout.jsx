@@ -15,7 +15,7 @@ const UnifiedLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const { notifications, toggleNotificationCenter } = useNotification();
+  const { notifications, toggleNotificationCenter, unreadCount } = useNotification();
 
   useEffect(() => {
     if (window.innerWidth <= 768) {
@@ -189,7 +189,7 @@ const UnifiedLayout = () => {
             onSearchChange={handleSearchChange}
             searchTerm={searchTerm}
             onNotificationsClick={toggleNotificationCenter}
-            notificationCount={notifications.length}
+            notificationCount={unreadCount}
             onProfileClick={handleProfileClick}
           />
 

@@ -1,104 +1,133 @@
 :root {
-    /* Primary Colors */
-    --primary: #356ed8;
-    /* Azul medio, vibrante */
-    --primary-dark: #33518e;
-    /* Azul más oscuro para estados hover/activos */
-    --primary-light: #72add9;
-    /* Azul más claro para acentos sutiles o elementos secundarios */
-    --primary-rgb: 53, 110, 216;
-    /* RGB para sombras */
-
-    /* Secondary Colors (acentos, elementos menos prominentes) */
-    --secondary: #726a72;
-    /* Gris/púrpura medio, un tono neutro pero distintivo */
-    --secondary-dark: #50697d;
-    /* Gris/azul más oscuro para estados hover/activos secundarios */
-    --secondary-light: #eaeaea;
-    /* Gris muy claro para elementos secundarios muy sutiles */
-
-    /* Text Colors (para un fondo oscuro) */
-    --text-color: #eaeaea;
-    /* Gris muy claro, ideal para el texto principal sobre fondos oscuros */
-    --text-color-rgb: 234, 234, 234;
-    --text-light: #72add9;
-    /* Azul claro, para texto secundario o enlaces */
-    --text-muted: #726a72;
-    /* Gris/púrpura medio, para texto menos prominente o deshabilitado */
-    --text-white: #ffffff;
+    /* === PALETA DE COLORES MODERNA === */
+    
+    /* Colores Primarios - Azul Profesional */
+    --primary: #3b82f6;           /* Azul moderno y vibrante */
+    --primary-dark: #2563eb;      /* Azul más oscuro para hover */
+    --primary-light: #60a5fa;     /* Azul claro para acentos */
+    --primary-rgb: 59, 130, 246;
+    
+    /* Colores Secundarios - Verde Esmeralda */
+    --secondary: #10b981;         /* Verde esmeralda moderno */
+    --secondary-dark: #059669;    /* Verde oscuro para hover */
+    --secondary-light: #34d399;   /* Verde claro para acentos */
+    --secondary-rgb: 16, 185, 129;
+    
+    /* Colores de Acento */
+    --accent: #8b5cf6;           /* Púrpura moderno */
+    --accent-dark: #7c3aed;      /* Púrpura oscuro */
+    --accent-light: #a78bfa;     /* Púrpura claro */
+    --accent-rgb: 139, 92, 246;
+    
+    /* Colores de Texto - Optimizados para Dark Mode */
+    --text-color: #f8fafc;        /* Blanco suave principal */
+    --text-secondary: #cbd5e1;    /* Gris claro secundario */
+    --text-muted: #94a3b8;        /* Gris medio para texto menos importante */
+    --text-white: #ffffff;        /* Blanco puro */
+    --text-dark: #1e293b;         /* Texto oscuro para fondos claros */
+    --text-color-rgb: 248, 250, 252;
     --text-white-rgb: 255, 255, 255;
-
-    /* Background Colors */
-    --background-page: var(--background-dark);
-    /* Se mantiene, ya que es la base para el glassmorphism */
-    --background-light: #eaeaea;
-    /* Gris muy claro, para secciones o elementos que necesiten un fondo claro en contraste */
-    --background-dark: #182939;
-    /* Azul/gris muy oscuro, el color principal del fondo */
-    --background-dark-rgb: 24, 41, 57;
-
-    /* Card & Border Colors */
-    --card-bg: #19293a;
-    /* Azul oscuro elegante para tarjetas */
-    --card-header-bg: #1a2333;
-    /* Un tono ligeramente más oscuro para cabeceras */
-    --border: rgba(234, 234, 234, 0.12);
-    /* Borde sutil y elegante */
-    --divider: rgba(234, 234, 234, 0.08);
-    /* Divisor muy sutil */
-
-    /* Input Colors */
-    --input-bg: #1a2333;
-    /* Fondo oscuro para inputs */
-    --input-border: rgba(234, 234, 234, 0.15);
-    --input-placeholder: rgba(234, 234, 234, 0.4);
-
-    /* Button Colors */
+    
+    /* Fondos - Sistema Dark Mode Moderno */
+    --background-page: #0f172a;   /* Fondo principal muy oscuro */
+    --background-dark: #1e293b;   /* Fondo oscuro para tarjetas */
+    --background-darker: #0f172a; /* Fondo más oscuro */
+    --background-light: #334155;  /* Fondo claro relativo */
+    --background-dark-rgb: 30, 41, 59;
+    
+    /* Tarjetas y Superficies */
+    --card-bg: rgba(30, 41, 59, 0.8);     /* Fondo de tarjetas con transparencia */
+    --card-header-bg: rgba(15, 23, 42, 0.9); /* Cabecera de tarjetas */
+    --card-hover-bg: rgba(30, 41, 59, 0.9); /* Hover de tarjetas */
+    
+    /* Bordes y Divisores */
+    --border: rgba(248, 250, 252, 0.1);   /* Borde sutil */
+    --border-light: rgba(248, 250, 252, 0.05); /* Borde muy sutil */
+    --border-strong: rgba(248, 250, 252, 0.2); /* Borde más visible */
+    --divider: rgba(248, 250, 252, 0.08); /* Divisor muy sutil */
+    
+    /* Inputs y Formularios */
+    --input-bg: rgba(15, 23, 42, 0.6);    /* Fondo de inputs */
+    --input-border: rgba(248, 250, 252, 0.15); /* Borde de inputs */
+    --input-focus-border: var(--primary); /* Borde de inputs en focus */
+    --input-placeholder: rgba(148, 163, 184, 0.6); /* Placeholder */
+    
+    /* Estados de Botones */
     --btn-primary-bg: var(--primary);
     --btn-primary-text: var(--text-white);
     --btn-primary-hover-bg: var(--primary-dark);
-
-    /* Status Colors */
-    --success: #10b981;
-    /* Verde esmeralda moderno */
-    --info: #356ed8;
-    /* Azul principal */
-    --warning: #f59e0b;
-    /* Ámbar moderno */
-    --danger: #ef4444;
-    /* Rojo suave/moderno */
-
-    /* Shadows (optimizadas para fondos oscuros) */
-    --shadow-xs: 0 0 0 1px rgba(0, 0, 0, 0.3);
-    --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 6px 15px -3px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 15px 25px -5px rgba(0, 0, 0, 0.5);
-    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-
-    /* Custom Border Radius */
-    --border-radius-md: 10px;
-    --border-radius-lg: 14px;
-
-    /* Custom Box Shadows */
-    --shadow-custom-light: 0 10px 30px rgba(0,0,0,0.05);
-
-    /* Custom Colors for NominaRepresentante.jsx */
+    --btn-secondary-bg: var(--secondary);
+    --btn-secondary-hover-bg: var(--secondary-dark);
+    
+    /* Colores de Estado - Modernos y Suaves */
+    --success: #10b981;          /* Verde esmeralda */
+    --success-light: #34d399;    /* Verde claro */
+    --success-dark: #059669;     /* Verde oscuro */
+    --success-rgb: 16, 185, 129;
+    
+    --info: #3b82f6;             /* Azul información */
+    --info-light: #60a5fa;       /* Azul claro */
+    --info-dark: #2563eb;        /* Azul oscuro */
+    --info-rgb: 59, 130, 246;
+    
+    --warning: #f59e0b;          /* Ámbar moderno */
+    --warning-light: #fbbf24;    /* Ámbar claro */
+    --warning-dark: #d97706;     /* Ámbar oscuro */
+    --warning-rgb: 245, 158, 11;
+    
+    --danger: #ef4444;           /* Rojo moderno */
+    --danger-light: #f87171;     /* Rojo claro */
+    --danger-dark: #dc2626;      /* Rojo oscuro */
+    --danger-rgb: 239, 68, 68;
+    
+    /* Sombras - Optimizadas para Dark Mode */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    
+    /* Sombras de Color */
+    --shadow-primary: 0 10px 30px rgba(var(--primary-rgb), 0.3);
+    --shadow-secondary: 0 10px 30px rgba(var(--secondary-rgb), 0.3);
+    --shadow-accent: 0 10px 30px rgba(var(--accent-rgb), 0.3);
+    
+    /* Gradientes Modernos */
+    --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    --gradient-secondary: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+    --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    --gradient-dark: linear-gradient(135deg, var(--background-page), var(--background-dark));
+    --gradient-card: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+    
+    /* Bordes Redondeados */
+    --border-radius-sm: 6px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 16px;
+    --border-radius-2xl: 20px;
+    
+    /* Espaciado Consistente */
+    --spacing-xs: 0.25rem;  /* 4px */
+    --spacing-sm: 0.5rem;   /* 8px */
+    --spacing-md: 1rem;     /* 16px */
+    --spacing-lg: 1.5rem;   /* 24px */
+    --spacing-xl: 2rem;     /* 32px */
+    --spacing-2xl: 3rem;    /* 48px */
+    
+    /* Transiciones Suaves */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+    
+    /* Colores Específicos del Sistema */
+    --primary-ocean: var(--primary);
+    --accent-teal: var(--secondary);
+    --bg-deep: var(--background-page);
+    
+    /* Compatibilidad con componentes existentes */
     --background-light-alt: #f8fafc;
-    --text-secondary: #64748b;
-    --border-light: #e2e8f0;
-    --shadow-primary-button: 0 8px 20px rgba(var(--primary-rgb), 0.3);
-
-    /* Custom Colors for KPI Cards */
-    --primary-ocean: #0366D6;
-    --accent-teal: #10B981;
-
-    /* Deep background variable referenced in other files */
-    --bg-deep: #0b1426;
-
-    /* Spacing */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
+    --border-light: rgba(248, 250, 252, 0.1);
+    --shadow-custom-light: var(--shadow-lg);
+    --shadow-primary-button: var(--shadow-primary);
 }

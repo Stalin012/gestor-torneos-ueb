@@ -4,20 +4,30 @@ import { useNotifications, NotificationCenter } from '../components/Notification
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
-    // Destructure the notification logic from the custom hook
     const notification = useNotifications();
-    const { notifications, removeNotification, clearAll, addNotification, success, error, warning, info } = notification;
-
+    const { notifications, addNotification, loadNotifications, success, error, warning, info } = notification;
+    
     const [isOpen, setIsOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Cargar notificaciones al iniciar
+    useEffect(() => {
+        loadNotifications();
+    }, [loadNotifications]);
+
+    // Calcular notificaciones no leídas
+    useEffect(() => {
+        const count = notifications.filter(n => !n.leida).length;
+        setUnreadCount(count);
+    }, [notifications]);
 
     const toggleNotificationCenter = useCallback(() => {
         setIsOpen((prev) => !prev);
     }, []);
 
-    // Also close the notification center if clicking outside or after some time if needed, 
-    // but for now let's keep it simple.
-
-    // Automatically open notification center if there are unread notifications? Maybe not.
+    const closeNotificationCenter = useCallback(() => {
+        setIsOpen(false);
+    }, []);
 
     return (
         <NotificationContext.Provider value={{
@@ -25,24 +35,20 @@ export const NotificationProvider = ({ children }) => {
             addNotification,
             isOpen,
             toggleNotificationCenter,
+            closeNotificationCenter,
             setIsOpen,
             success,
             error,
             warning,
             info,
-            removeNotification,
-            clearAll
+            unreadCount,
+            loadNotifications
         }}>
             {children}
-            {/* The NotificationCenter itself */}
-            {isOpen && (
-                <NotificationCenter
-                    notifications={notifications}
-                    onClose={removeNotification}
-                    onDismiss={removeNotification}
-                    onClearAll={clearAll}
-                />
-            )}
+            <NotificationCenter
+                isOpen={isOpen}
+                onClose={closeNotificationCenter}
+            />
         </NotificationContext.Provider>
     );
 };
