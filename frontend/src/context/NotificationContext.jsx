@@ -10,9 +10,12 @@ export const NotificationProvider = ({ children }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
-    // Cargar notificaciones al iniciar
+    // Cargar notificaciones solo si hay token
     useEffect(() => {
-        loadNotifications();
+        const token = localStorage.getItem('token');
+        if (token) {
+            loadNotifications();
+        }
     }, [loadNotifications]);
 
     // Calcular notificaciones no leídas
@@ -20,6 +23,14 @@ export const NotificationProvider = ({ children }) => {
         const count = notifications.filter(n => !n.leida).length;
         setUnreadCount(count);
     }, [notifications]);
+
+    // Función para cargar notificaciones cuando el usuario se loguee
+    const initializeNotifications = useCallback(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            loadNotifications();
+        }
+    }, [loadNotifications]);
 
     const toggleNotificationCenter = useCallback(() => {
         setIsOpen((prev) => !prev);
@@ -42,7 +53,8 @@ export const NotificationProvider = ({ children }) => {
             warning,
             info,
             unreadCount,
-            loadNotifications
+            loadNotifications,
+            initializeNotifications
         }}>
             {children}
             <NotificationCenter

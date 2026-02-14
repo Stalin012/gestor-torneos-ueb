@@ -159,10 +159,19 @@ const NotificationCenter = ({ isOpen, onClose }) => {
     const loadNotifications = useCallback(async () => {
         setLoading(true);
         try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('No token found, skipping notification load');
+                setLoading(false);
+                return;
+            }
             const response = await api.get('/notificaciones');
             setNotifications(response.data);
         } catch (error) {
-            console.error('Error loading notifications:', error);
+            // Solo mostrar error si no es 401 (no autenticado)
+            if (error.response?.status !== 401) {
+                console.error('Error loading notifications:', error);
+            }
         } finally {
             setLoading(false);
         }
@@ -176,21 +185,31 @@ const NotificationCenter = ({ isOpen, onClose }) => {
 
     const markAsRead = async (id) => {
         try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
             await api.patch(`/notificaciones/${id}/read`);
             setNotifications(prev => 
                 prev.map(n => n.id === id ? { ...n, leida: true } : n)
             );
         } catch (error) {
-            console.error('Error marking notification as read:', error);
+            if (error.response?.status !== 401) {
+                console.error('Error marking notification as read:', error);
+            }
         }
     };
 
     const markAllAsRead = async () => {
         try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
             await api.patch('/notificaciones/read-all');
             setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
         } catch (error) {
-            console.error('Error marking all notifications as read:', error);
+            if (error.response?.status !== 401) {
+                console.error('Error marking all notifications as read:', error);
+            }
         }
     };
 
@@ -326,6 +345,11 @@ export const useNotifications = () => {
 
     const addNotification = useCallback(async (type, title, message, userCedula = null) => {
         try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('No token found, skipping notification creation');
+                return;
+            }
             await api.post('/notificaciones', {
                 titulo: title,
                 mensaje: message,
@@ -336,16 +360,27 @@ export const useNotifications = () => {
             const response = await api.get('/notificaciones');
             setNotifications(response.data);
         } catch (error) {
-            console.error('Error creating notification:', error);
+            // Solo mostrar error si no es 401 (no autenticado)
+            if (error.response?.status !== 401) {
+                console.error('Error creating notification:', error);
+            }
         }
     }, []);
 
     const loadNotifications = useCallback(async () => {
         try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('No token found, skipping notification load');
+                return;
+            }
             const response = await api.get('/notificaciones');
             setNotifications(response.data);
         } catch (error) {
-            console.error('Error loading notifications:', error);
+            // Solo mostrar error si no es 401 (no autenticado)
+            if (error.response?.status !== 401) {
+                console.error('Error loading notifications:', error);
+            }
         }
     }, []);
 
