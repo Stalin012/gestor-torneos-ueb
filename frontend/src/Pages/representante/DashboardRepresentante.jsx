@@ -34,59 +34,49 @@ const formatDate = (d) => {
    UI Components
 ========================= */
 const KPI = ({ title, value, desc, icon: Icon, color = "#3b82f6", gradient }) => (
-  <div className="stat-card" style={{
-    background: `linear-gradient(135deg, ${gradient || color}15, ${gradient || color}05)`,
-    border: `1px solid ${color}20`,
-    borderRadius: '16px',
-    padding: '1.5rem',
-    position: 'relative',
-    overflow: 'hidden'
-  }}>
-    <div style={{
-      position: 'absolute',
-      top: '-20px',
-      right: '-20px',
-      width: '80px',
-      height: '80px',
-      background: `${color}10`,
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
+  <div
+    className="stat-card kpi-card"
+    style={{
+      background: `linear-gradient(135deg, ${gradient || color}15, ${gradient || color}05)`,
+      border: `1px solid ${color}20`,
+    }}
+  >
+    <div
+      className="kpi-card-icon-bg"
+      style={{
+        background: `${color}10`,
+      }}
+    >
       <Icon size={32} color={`${color}40`} />
     </div>
-    <div style={{ position: 'relative', zIndex: 2 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-        <div style={{
-          background: color,
-          borderRadius: '8px',
-          padding: '0.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
+    <div className="kpi-card-content">
+      <div className="kpi-card-header">
+        <div
+          className="kpi-card-icon-wrapper"
+          style={{
+            background: color,
+          }}
+        >
           <Icon size={18} color="white" />
         </div>
         <div>
-          <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8', fontWeight: 600 }}>{title}</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+          <h3 className="kpi-card-title">{title}</h3>
+          <div className="kpi-card-trend">
             <TrendingUp size={12} color="#10b981" />
-            <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 500 }}>Activo</span>
+            <span>Activo</span>
           </div>
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-        <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff' }}>{value}</span>
-        <div style={{
-          width: '8px',
-          height: '8px',
-          background: color,
-          borderRadius: '50%',
-          animation: 'pulse 2s infinite'
-        }}></div>
+      <div className="kpi-card-value-row">
+        <span className="kpi-card-value">{value}</span>
+        <div
+          className="kpi-card-pulse"
+          style={{
+            background: color,
+          }}
+        ></div>
       </div>
-      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 500 }}>{desc}</p>
+      <p className="kpi-card-desc">{desc}</p>
     </div>
   </div>
 );
@@ -304,24 +294,10 @@ const DashboardRepresentante = () => {
      Render
   ========================= */
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-      color: '#f8fafc',
-      fontFamily: 'Inter, sans-serif'
-    }}>
+    <div className="dashboard-layout-main">
       <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
         {/* Header mejorado */}
-        <header style={{
-          background: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '20px',
-          padding: '2rem',
-          marginBottom: '2rem',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
+        <header className="dashboard-header-main">
           <div style={{
             position: 'absolute',
             top: '-50px',

@@ -1,13 +1,8 @@
-/* =========================================
+@import './design-system.css';
+
+=========================================
    GLOBAL LAYOUT STYLES - PROFESSIONAL DASHBOARD
    ========================================= */
-
-body {
-  margin: 0;
-  padding: 0;
-  font-family: Inter, Segoe UI, Roboto, sans-serif;
-  background-color: var(--background-page);
-}
 
 /* LAYOUT CONTAINER */
 .app-layout {
@@ -17,21 +12,31 @@ body {
   overflow: hidden;
 }
 
+
+
 /* SIDEBAR */
 .global-sidebar {
-  width: 270px;
+  flex-basis: 270px;
   background-color: var(--background-dark);
   color: var(--text-white);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease, transform 0.3s ease;
-  flex-shrink: 0;
+  transition: width 0.3s ease, transform 0.3s ease, flex-basis 0.3s ease, visibility 0.3s ease, opacity 0.3s ease;
+  flex-shrink: 1;
   overflow: hidden;
   z-index: 50;
 }
 
 .global-sidebar.collapsed {
-  width: 80px;
+  flex-basis: 0px;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  width: 0;
+  max-width: 0;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-100%);
 }
 
 .global-sidebar.collapsed .brand-logo span,
@@ -96,6 +101,7 @@ body {
   padding: 1rem;
   border-top: 1px solid rgba(var(--text-white-rgb), 0.1);
 }
+
 
 /* MAIN CONTENT AREA */
 .main-wrapper {
@@ -195,33 +201,22 @@ body {
     height: 100%;
     left: 0;
     top: 0;
+
     transform: translateX(-100%);
-    width: 270px !important;
     /* Force full width on mobile when open */
     box-shadow: 4px 0 15px rgba(var(--text-color-rgb), 0.3);
   }
 
-  .global-sidebar.open {
-    transform: translateX(0);
-  }
 
-  /* When sidebar is collapsed on desktop, it might be 'collapsed' class, 
-     but on mobile we toggle 'open' class usually. 
+
+  /* When sidebar is collapsed on desktop, it might be 'collapsed' class,
+     but on mobile we toggle 'open' class usually.
      Wait, UnifiedLayout uses isOpen state.
      If isOpen is true, we want it shown.
      If isOpen is false, we want it hidden (translateX -100%).
   */
 
-  .global-sidebar.collapsed {
-    transform: translateX(-100%);
-    width: 270px;
-    /* Reset width when hidden */
-  }
 
-  /* Override the desktop collapsed behavior which just shrinks width */
-  .global-sidebar:not(.collapsed) {
-    transform: translateX(0);
-  }
 
   /* We need a backdrop when sidebar is open on mobile */
   .sidebar-backdrop {
@@ -248,3 +243,4 @@ body {
     font-size: 1.1rem;
   }
 }
+

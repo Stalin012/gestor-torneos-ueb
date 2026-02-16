@@ -18,6 +18,18 @@ const UnifiedLayout = () => {
   const { notifications, toggleNotificationCenter, unreadCount } = useNotification();
 
   useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setIsSidebarOpen(false); // Close sidebar on small screens
+        setIsSidebarCollapsed(false); // Ensure it's not collapsed on small screens
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     if (window.innerWidth <= 768) {
       setIsSidebarOpen(false);
     }
@@ -102,12 +114,13 @@ const UnifiedLayout = () => {
   }, [navigate, rolePrefix]);
 
   const handleToggleSidebar = useCallback(() => {
-    if (window.innerWidth <= 768) {
-      setIsSidebarOpen(!isSidebarOpen);
-    } else {
-      setIsSidebarCollapsed(!isSidebarCollapsed);
+    setIsSidebarOpen(prev => !prev); // Siempre alterna la visibilidad completa
+
+    // Si el sidebar se está abriendo en una pantalla grande, asegúrate de que no esté colapsado por defecto
+    if (!isSidebarOpen && window.innerWidth > 768) {
+      setIsSidebarCollapsed(false);
     }
-  }, [isSidebarOpen, isSidebarCollapsed]);
+  }, [isSidebarOpen]);
 
   const adminLinks = useMemo(() => [
     { to: "/dashboard", label: "Dashboard" },
@@ -167,20 +180,18 @@ const UnifiedLayout = () => {
   return (
     <ErrorBoundary>
       <div className="app-layout">
+
+
         <GlobalSidebar
           links={navLinks}
-          role={rolePrefix.replace('/', '')}
+          role={user?.rol?.toLowerCase()}
           onLogout={handleLogout}
           isOpen={isSidebarOpen}
-          isCollapsed={isSidebarCollapsed}
+          isCollapsed={window.innerWidth <= 768 ? false : isSidebarCollapsed}
         />
+        <div className={`sidebar-overlay ${isSidebarOpen && window.innerWidth <= 768 ? 'visible' : ''}`} onClick={handleToggleSidebar}></div>
 
-        <div
-          className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`}
-          onClick={() => setIsSidebarOpen(false)}
-        ></div>
-
-        <div className={`main-wrapper ${isSidebarOpen ? 'sidebar-open' : ''} ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <div className={`main-wrapper ${!isSidebarOpen ? 'sidebar-hidden-full' : (isSidebarCollapsed ? 'sidebar-collapsed' : '')}`}>
           <GlobalNavbar
             user={user}
             title={pageTitle}

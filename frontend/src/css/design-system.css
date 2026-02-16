@@ -1,0 +1,286 @@
+:root {
+  /* Colors */
+  --primary: #3b82f6; /* Blue */
+  --primary-rgb: 59, 130, 246;
+  --primary-dark: #2563eb;
+  --primary-ocean: #007bff; /* Example for stat card */
+  --accent: #10b981; /* Green accent */
+  --accent-teal: #00cec9; /* Example for stat card */
+  --success: #28a745;
+  --warning: #ffc107;
+  --error: #dc3545;
+  --error-rgb: 239, 68, 68;
+  --error-dark: #c82333;
+
+  /* Backgrounds */
+  --background-page: #0f172a; /* Dark blue-gray */
+  --background-dark: #1a202c; /* Slightly lighter dark blue-gray */
+  --background-dark-rgb: 26, 32, 44;
+  --background-light: #2d3748; /* Even lighter dark blue-gray */
+  --bg-primary: #0a0f1c; /* Very dark blue */
+  --bg-secondary: #1a2332;
+  --bg-tertiary: #2a3441;
+  --bg-overlay: rgba(0, 0, 0, 0.75); /* Dark overlay for modals/sidebars */
+  --card-bg: rgba(30, 41, 59, 0.8);
+  --card-header-bg: rgba(30, 41, 59, 0.8);
+  --input-bg: rgba(30, 41, 59, 0.8);
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-color: #e2e8f0; /* General text color */
+  --text-muted: #94a3b8; /* Muted text color */
+  --text-white: #ffffff;
+  --text-white-rgb: 255, 255, 255;
+  --text-white-90: rgba(255, 255, 255, 0.9);
+
+  /* Borders */
+  --border: rgba(148, 163, 184, 0.2);
+  --border-primary: rgba(148, 163, 184, 0.2);
+  --border-secondary: rgba(148, 163, 184, 0.1);
+  --border-accent: #3b82f6;
+
+  /* Spacing */
+  --space-xs: 0.25rem; /* 4px */
+  --space-sm: 0.5rem;  /* 8px */
+  --space-md: 1rem;    /* 16px */
+  --space-lg: 1.5rem;  /* 24px */
+  --space-xl: 2rem;    /* 32px */
+  --space-2xl: 2.5rem; /* 40px */
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 15px rgba(59, 130, 246, 0.5); /* Primary blue glow */
+
+  /* Radii */
+  --radius-md: 0.375rem; /* 6px */
+  --radius-lg: 0.5rem;  /* 8px */
+  --radius-xl: 1.25rem; /* 20px */
+  --radius-full: 9999px; /* Fully rounded */
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
+  --font-size-hero-h1: 2.5rem; /* 40px */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --letter-spacing-tight: -1px;
+
+  /* Transitions */
+  --transition-normal: all 0.2s ease-in-out;
+  --nav-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index */
+  --z-fixed: 1000;
+  --z-sticky: 100;
+
+  /* Gradients */
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  --gradient-primary-hover: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+
+  /* Button Specific */
+  --border-primary-button: 2px solid var(--primary);
+  --shadow-primary-button-sm: 0 4px 12px rgba(var(--primary-rgb), 0.25);
+  --shadow-primary-button-md: 0 6px 20px rgba(var(--primary-rgb), 0.35);
+  --shadow-primary-button-xs: 0 2px 8px rgba(var(--primary-rgb), 0.2);
+
+  --icon-size-base: 1.25em;
+
+  --secondary-background-hover: rgba(var(--primary-rgb), 0.08);
+  --secondary-border-hover: var(--primary-dark);
+  --secondary-color-hover: var(--primary-dark);
+  --secondary-shadow-hover-sm: 0 4px 12px rgba(var(--primary-rgb), 0.2);
+  --secondary-shadow-active-xs: 0 2px 6px rgba(var(--primary-rgb), 0.15);
+
+  --danger-gradient: linear-gradient(135deg, var(--error) 0%, #f24146 100%);
+  --danger-gradient-hover: linear-gradient(135deg, var(--error-dark) 0%, var(--error) 100%);
+  --border-danger-button: 2px solid var(--error);
+  --shadow-danger-button-sm: 0 4px 12px rgba(var(--error-rgb), 0.25);
+  --shadow-danger-button-md: 0 6px 20px rgba(var(--error-rgb), 0.35);
+
+  --success-rgb: 40, 167, 69;
+  --success-dark: #1e7e34;
+  --success-gradient: linear-gradient(135deg, var(--success) 0%, #218838 100%);
+  --success-gradient-hover: linear-gradient(135deg, var(--success-dark) 0%, var(--success) 100%);
+  --border-success-button: 2px solid var(--success);
+  --shadow-success-button-sm: 0 4px 12px rgba(var(--success-rgb), 0.25);
+  --shadow-success-button-md: 0 6px 20px rgba(var(--success-rgb), 0.35);
+
+  --warning-rgb: 255, 193, 7;
+  --warning-dark: #e0a800;
+  --warning-gradient: linear-gradient(135deg, var(--warning) 0%, #e0a800 100%);
+  --warning-gradient-hover: linear-gradient(135deg, var(--warning-dark) 0%, var(--warning) 100%);
+  --border-warning-button: 2px solid var(--warning);
+  --shadow-warning-button-sm: 0 4px 12px rgba(var(--warning-rgb), 0.25);
+  --shadow-warning-button-md: 0 6px 20px rgba(var(--warning-rgb), 0.35);
+
+  --button-min-height-base: 44px;
+  --button-min-height-sm: 36px;
+  --button-min-height-lg: 48px;
+  --button-min-height-xl: 56px;
+
+  /* Disabled Button */
+  --button-disabled-background: linear-gradient(135deg, #eaeaea 0%, #e3eaf5 100%);
+  --button-disabled-border: #eaeaea;
+  --button-disabled-color: #7d8fa3;
+  --button-disabled-opacity: 0.6;
+  --button-disabled-cursor: not-allowed;
+
+  /* Transparent Button */
+  --border-transparent-button: 1px solid currentColor;
+  --background-transparent-button-hover: rgba(0, 0, 0, 0.05);
+  --dark-theme-background-transparent-button-hover: rgba(255, 255, 255, 0.1);
+
+  /* Table Button Specific */
+  --border-table-btn: 1px solid #eaeaea;
+  --bg-white: #ffffff;
+  --text-dark: #0a0e27;
+  --primary-hover: #0366d6;
+  --danger-hover: #e63946;
+  --warning-hover: #d97706;
+  --success-hover: #1a7f64;
+
+  /* Dark Theme Specific */
+  --dark-secondary-background-hover: #252d47;
+  --dark-table-btn-border: #334155;
+
+  /* Accessibility */
+  --focus-outline-color: #0366d6;
+  --focus-outline-offset: 2px;
+
+  /* Loading Spinner */
+  --loading-spinner-border-color: rgba(255, 255, 255, 0.3);
+  --loading-spinner-border-top-color: white;
+
+  /* Layout */
+  --header-height: 70px;
+  --footer-height: 0px; /* Assuming no fixed footer for now, adjust if needed */
+
+  /* Dashboard Hero Header */
+  --background-hero-primary: #356ed8;
+  --shadow-hero-lg: 0 8px 24px rgba(50, 115, 239, 0.25);
+
+  /* Quick Action Card */
+  --background-quick-action-card: linear-gradient(135deg, #19293a 0%, #19293a 100%);
+  --border-quick-action-card: 1px solid rgba(234, 234, 234, 0.15);
+  --shadow-quick-action-card-sm: 0 1px 6px rgba(0, 0, 0, 0.12);
+  --shadow-quick-action-card-hover: 0 6px 16px rgba(50, 115, 239, 0.2);
+  --background-quick-action-icon-wrapper: linear-gradient(135deg, #356ed8 0%, #19293a 100%);
+
+  /* Enhanced Components - General */
+  --secondary-purple: #8957e5;
+  --text-muted-light: rgba(234, 234, 234, 0.7);
+  --border-width-md: 2px; /* For 2px borders */
+
+  /* Content Card */
+  --background-content-card: #19293a;
+  --border-content-card: 2px solid rgba(234, 234, 234, 0.12);
+  --font-size-card-title: 1.3rem;
+
+  /* Stat Card */
+  --background-stat-card: #19293a;
+  --border-stat-card: 2px solid rgba(234, 234, 234, 0.12);
+  --padding-stat-card: 1.75rem;
+  --font-size-stat-value: 2.75rem;
+  --font-size-stat-label: 0.9375rem;
+
+  /* Status Pill */
+  --padding-pill-y: 0.4rem;
+  --padding-pill-x: 0.8rem;
+  --radius-pill: 20px;
+  --background-success-alpha: rgba(34, 197, 94, 0.15);
+  --border-success-alpha: 1px solid rgba(22, 163, 74, 0.8);
+  --background-warning-alpha: rgba(245, 158, 11, 0.15);
+  --border-warning-alpha: 1px solid rgba(217, 119, 6, 0.8);
+  --background-danger-alpha: rgba(239, 68, 68, 0.15);
+  --border-danger-alpha: 1px solid rgba(220, 38, 38, 0.8);
+
+  /* Match Item */
+  --padding-match-item-y: 1.25rem;
+  --padding-match-item-x: 1.5rem;
+  --background-match-item: rgba(234, 234, 234, 0.1);
+  --border-match-item: 1px solid rgba(234, 234, 234, 0.3);
+  --shadow-match-item-hover: 0 6px 20px rgba(53, 110, 216, 0.15);
+  --gradient-match-item-border: linear-gradient(to bottom, #356ed8, #72add9);
+
+  /* Team Logo */
+  --gradient-team-logo: linear-gradient(135deg, #356ed8, #72add9);
+  --border-team-logo: 2px solid rgba(234, 234, 234, 0.2);
+
+  /* Match VS */
+  --background-vs-alpha: rgba(53, 110, 216, 0.1);
+  --border-vs-alpha: 1px solid rgba(53, 110, 216, 0.3);
+
+  /* Match Time */
+  --background-match-time-alpha: rgba(53, 110, 216, 0.1);
+  --border-match-time-alpha: 1px solid rgba(53, 110, 216, 0.3);
+
+  /* Status Dot */
+  --size-status-dot: 12px;
+  --shadow-status-dot: 0 2px 6px rgba(0, 0, 0, 0.3);
+
+  /* Modern Table */
+  --font-size-table-header: 0.8rem;
+  --background-table-row-hover: rgba(50, 115, 239, 0.08);
+  --border-table-row-alpha: rgba(234, 234, 234, 0.12);
+
+  /* Icon Button */
+  --background-icon-btn-hover: rgba(53, 110, 216, 0.15);
+
+  /* Glass Table */
+  --background-glass-table-header: rgba(53, 110, 216, 0.2);
+  --background-glass-table-row-even: rgba(234, 234, 234, 0.05);
+  --background-glass-table-row-hover: rgba(53, 110, 216, 0.15);
+
+  /* Card Badge */
+  --space-xs-plus: 5px; /* 5px */
+  --padding-badge-y: 0.3rem;
+  --padding-badge-x: 0.6rem;
+  --radius-badge: 15px;
+  --font-size-badge: 0.8rem;
+  --background-badge-warning-alpha: rgba(245, 158, 11, 0.15);
+  --border-badge-warning-alpha: 1px solid rgba(245, 158, 11, 0.5);
+  --background-badge-danger-alpha: rgba(239, 68, 68, 0.15);
+  --border-badge-danger-alpha: 1px solid rgba(239, 68, 68, 0.5);
+
+  /* Quick Action Button */
+  --font-size-icon-lg: 2rem;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #0a0f1c;
+    --bg-secondary: #1a2332;
+    --bg-tertiary: #2a3441;
+    --background-page: #0a0f1c;
+    --background-dark: #1a202c;
+    --background-light: #2d3748;
+    --card-bg: rgba(30, 41, 59, 0.8);
+    --card-header-bg: rgba(30, 41, 59, 0.8);
+    --input-bg: rgba(30, 41, 59, 0.8);
+    --text-color: #e2e8f0;
+    --text-primary: #ffffff;
+    --text-secondary: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: rgba(148, 163, 184, 0.2);
+    --border-primary: rgba(148, 163, 184, 0.2);
+    --border-secondary: rgba(148, 163, 184, 0.1);
+  }
+}

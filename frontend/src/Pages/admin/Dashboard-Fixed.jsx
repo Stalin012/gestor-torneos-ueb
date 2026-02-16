@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 import LoadingScreen from "../../components/LoadingScreen";
-import { StatCard } from "../../components/StatsComponents";
+import { StatCard } from "../../components/StatCards";
 import api from "../../api";
 import "../../css/dashboard-styles.css";
 
