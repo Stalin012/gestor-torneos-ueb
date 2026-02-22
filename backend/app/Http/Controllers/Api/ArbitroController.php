@@ -43,10 +43,12 @@ class ArbitroController extends Controller
         }
 
         $request->validate([
-            'cedula'     => 'required|string|size:10|unique:arbitros,cedula',
-            'nombres'    => 'required|string|max:100',
-            'apellidos'  => 'required|string|max:100',
-            'experiencia'=> 'required|integer|min:0',
+            'cedula'      => 'required|string|size:10|unique:arbitros,cedula',
+            'nombres'     => 'required|string|max:100',
+            'apellidos'   => 'required|string|max:100',
+            'experiencia' => 'required|integer|min:0',
+            'especialidad'=> 'nullable|string|max:100',
+            'estado'      => 'nullable|string|max:50',
         ]);
 
         try {
@@ -61,8 +63,10 @@ class ArbitroController extends Controller
             }
 
             $arbitro = Arbitro::create([
-                'cedula'      => $request->cedula,
-                'experiencia' => $request->experiencia,
+                'cedula'       => $request->cedula,
+                'experiencia'  => $request->experiencia,
+                'especialidad' => $request->especialidad,
+                'estado'       => $request->estado ?? 'Certificado',
             ]);
 
             $this->logAudit(
@@ -120,9 +124,11 @@ class ArbitroController extends Controller
         }
 
         $request->validate([
-            'nombres'     => 'required|string|max:100',
-            'apellidos'   => 'required|string|max:100',
-            'experiencia' => 'required|integer|min:0',
+            'nombres'      => 'required|string|max:100',
+            'apellidos'    => 'required|string|max:100',
+            'experiencia'  => 'required|integer|min:0',
+            'especialidad' => 'nullable|string|max:100',
+            'estado'       => 'nullable|string|max:50',
         ]);
 
         try {
@@ -133,7 +139,7 @@ class ArbitroController extends Controller
                 $persona->update($request->only('nombres', 'apellidos'));
             }
 
-            $arbitro->update($request->only('experiencia'));
+            $arbitro->update($request->only('experiencia', 'especialidad', 'estado'));
 
             $this->logAudit(
                 $request->user() ? $request->user()->cedula : 'SISTEMA',

@@ -104,8 +104,8 @@ const ModalEditarPartido = ({ isOpen, onClose, partido, onSave, loading }) => {
 
     useEffect(() => {
         if (isOpen) {
-            document.body.style.overflow = 'hidden';
-            return () => { document.body.style.overflow = 'auto'; };
+            document.body.classList.add('modal-open');
+            return () => document.body.classList.remove('modal-open');
         }
     }, [isOpen]);
 
@@ -147,7 +147,7 @@ const ModalEditarPartido = ({ isOpen, onClose, partido, onSave, loading }) => {
 
     return createPortal((
         <div className="modal-overlay fade-in" onClick={onClose}>
-            <div className="modal-content scale-in" style={{ maxWidth: '750px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content modal-lg scale-in" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(245, 158, 11, 0.05))',
                     borderBottom: '2px solid var(--primary)'
@@ -190,7 +190,7 @@ const ModalEditarPartido = ({ isOpen, onClose, partido, onSave, loading }) => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} style={{ padding: '2rem' }}>
+                <form onSubmit={handleSubmit}>
                     <div style={{
                         marginBottom: '2rem',
                         padding: '1.5rem',
@@ -275,7 +275,7 @@ const ModalEditarPartido = ({ isOpen, onClose, partido, onSave, loading }) => {
                         </div>
                     </div>
 
-                    <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem' }}>
+                    <div className="modal-footer">
                         <button type="button" className="pro-btn btn-secondary" onClick={onClose} disabled={loading}>Cancelar</button>
                         <button type="submit" className="pro-btn btn-primary" disabled={loading}>
                             {loading ? (
@@ -307,8 +307,8 @@ const ModalEditarPartido = ({ isOpen, onClose, partido, onSave, loading }) => {
 const ModalConfirmar = ({ isOpen, onClose, titulo, mensaje, onConfirm, loading, tipo = 'info' }) => {
     useEffect(() => {
         if (isOpen) {
-            document.body.style.overflow = 'hidden';
-            return () => { document.body.style.overflow = 'auto'; };
+            document.body.classList.add('modal-open');
+            return () => document.body.classList.remove('modal-open');
         }
     }, [isOpen]);
 
@@ -326,14 +326,14 @@ const ModalConfirmar = ({ isOpen, onClose, titulo, mensaje, onConfirm, loading, 
 
     return createPortal((
         <div className="modal-overlay fade-in" onClick={onClose}>
-            <div className="modal-content scale-in" style={{ maxWidth: '480px', borderRadius: '24px', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content modal-md scale-in" onClick={(e) => e.stopPropagation()}>
                 <div style={{
                     height: '8px',
                     background: color.border,
                     boxShadow: `0 4px 12px ${color.border}44`
                 }} />
 
-                <div style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>
+                <div className="modal-body" style={{ textAlign: 'center' }}>
                     <div style={{
                         width: '80px',
                         height: '80px',

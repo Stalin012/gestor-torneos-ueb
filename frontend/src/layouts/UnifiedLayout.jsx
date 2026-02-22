@@ -191,7 +191,7 @@ const UnifiedLayout = () => {
         />
         <div className={`sidebar-overlay ${isSidebarOpen && window.innerWidth <= 768 ? 'visible' : ''}`} onClick={handleToggleSidebar}></div>
 
-        <div className={`main-wrapper ${!isSidebarOpen ? 'sidebar-hidden-full' : (isSidebarCollapsed ? 'sidebar-collapsed' : '')}`}>
+        <div className={`main-wrapper ${!isSidebarOpen ? 'layout-full-width' : (isSidebarCollapsed ? 'layout-collapsed-sidebar' : 'layout-full-sidebar')}`}>
           <GlobalNavbar
             user={user}
             title={pageTitle}

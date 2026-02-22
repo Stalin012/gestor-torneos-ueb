@@ -1,8 +1,6 @@
 import React, { memo } from 'react';
 import { getAssetUrl } from '../utils/helpers';
 import { Bell, Menu, LogOut } from 'lucide-react';
-import '../css/unified-all.css';
-import '../css/unified-navigation.css';
 
 const GlobalNavbar = memo(({ user, title, onToggleSidebar, onLogout, onNotificationsClick, notificationCount, onProfileClick }) => {
     const profileImage = user ? getAssetUrl(user.foto_url || user.persona?.foto_url) : null;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from 'react-dom';
 import PropTypes from "prop-types";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -249,8 +250,8 @@ const PartidoModal = ({ isOpen, onClose, onSave, initialData, equipos, torneoId 
 
     useEffect(() => {
         if (isOpen) {
-            document.body.style.overflow = 'hidden';
-            return () => { document.body.style.overflow = 'auto'; };
+            document.body.classList.add('modal-open');
+            return () => document.body.classList.remove('modal-open');
         }
     }, [isOpen]);
 
@@ -292,9 +293,9 @@ const PartidoModal = ({ isOpen, onClose, onSave, initialData, equipos, torneoId 
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div className="modal-overlay fade-in" onClick={onClose}>
-            <div className="modal-content scale-in" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(53, 110, 216, 0.1), rgba(16, 185, 129, 0.05))',
                     borderBottom: '2px solid var(--primary)'
@@ -318,136 +319,139 @@ const PartidoModal = ({ isOpen, onClose, onSave, initialData, equipos, torneoId 
                             </p>
                         </div>
                     </div>
-                    <button className="btn-icon-close" type="button" onClick={onClose} aria-label="Cerrar">
-                        <X size={20} />
+                    <button className="btn-icon-close" onClick={onClose}>
+                        <X size={24} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ padding: '2rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="equipo_local_id">Equipo Local</label>
-                            <select
-                                id="equipo_local_id"
-                                name="equipo_local_id"
-                                value={formData.equipo_local_id}
+                <div className="modal-body">
+                    <form id="partido-form" onSubmit={handleSubmit}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div className="form-group">
+                                <label className="form-label" htmlFor="equipo_local_id">Equipo Local</label>
+                                <select
+                                    id="equipo_local_id"
+                                    name="equipo_local_id"
+                                    value={formData.equipo_local_id}
+                                    onChange={handleChange}
+                                    required
+                                    className="pro-input"
+                                >
+                                    <option value="">Seleccione equipo local</option>
+                                    {equipos.map((equipo) => (
+                                        <option key={equipo.id} value={String(equipo.id)}>
+                                            {equipo.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label" htmlFor="equipo_visitante_id">Equipo Visitante</label>
+                                <select
+                                    id="equipo_visitante_id"
+                                    name="equipo_visitante_id"
+                                    value={formData.equipo_visitante_id}
+                                    onChange={handleChange}
+                                    required
+                                    className="pro-input"
+                                >
+                                    <option value="">Seleccione equipo visitante</option>
+                                    {equipos.map((equipo) => (
+                                        <option key={equipo.id} value={String(equipo.id)}>
+                                            {equipo.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                            <label className="form-label" htmlFor="fecha">Fecha del partido</label>
+                            <input
+                                type="date"
+                                id="fecha"
+                                name="fecha"
+                                value={formData.fecha}
                                 onChange={handleChange}
                                 required
                                 className="pro-input"
-                            >
-                                <option value="">Seleccione equipo local</option>
-                                {equipos.map((equipo) => (
-                                    <option key={equipo.id} value={String(equipo.id)}>
-                                        {equipo.nombre}
+                            />
+                        </div>
+
+                        <div style={{
+                            padding: '1.5rem',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            marginBottom: '1.5rem'
+                        }}>
+                            <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                ResultadOS (Opcional)
+                            </h4>
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1rem', alignItems: 'center' }}>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ textAlign: 'center', display: 'block' }}>Local</label>
+                                    <input
+                                        type="number"
+                                        name="marcador_local"
+                                        value={formData.marcador_local}
+                                        onChange={handleChange}
+                                        min="0"
+                                        className="pro-input"
+                                        style={{ fontSize: '1.5rem', textAlign: 'center', fontWeight: 800 }}
+                                    />
+                                </div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 900, opacity: 0.3, marginTop: '1.2rem' }}>VS</div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ textAlign: 'center', display: 'block' }}>Visitante</label>
+                                    <input
+                                        type="number"
+                                        name="marcador_visitante"
+                                        value={formData.marcador_visitante}
+                                        onChange={handleChange}
+                                        min="0"
+                                        className="pro-input"
+                                        style={{ fontSize: '1.5rem', textAlign: 'center', fontWeight: 800 }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: '2rem' }}>
+                            <label className="form-label" htmlFor="estado">Estado del Partido</label>
+                            <select id="estado" name="estado" value={formData.estado} onChange={handleChange} className="pro-input">
+                                {Object.values(ESTADOS_PARTIDO).map((estado) => (
+                                    <option key={estado} value={estado}>
+                                        {estado}
                                     </option>
                                 ))}
                             </select>
                         </div>
+                    </form>
+                </div>
 
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="equipo_visitante_id">Equipo Visitante</label>
-                            <select
-                                id="equipo_visitante_id"
-                                name="equipo_visitante_id"
-                                value={formData.equipo_visitante_id}
-                                onChange={handleChange}
-                                required
-                                className="pro-input"
-                            >
-                                <option value="">Seleccione equipo visitante</option>
-                                {equipos.map((equipo) => (
-                                    <option key={equipo.id} value={String(equipo.id)}>
-                                        {equipo.nombre}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                        <label className="form-label" htmlFor="fecha">Fecha del partido</label>
-                        <input
-                            type="date"
-                            id="fecha"
-                            name="fecha"
-                            value={formData.fecha}
-                            onChange={handleChange}
-                            required
-                            className="pro-input"
-                        />
-                    </div>
-
-                    <div style={{
-                        padding: '1.5rem',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        borderRadius: '12px',
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                        marginBottom: '1.5rem'
-                    }}>
-                        <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                            Resultados (Opcional)
-                        </h4>
-                        <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1rem', alignItems: 'center' }}>
-                            <div className="form-group">
-                                <label className="form-label" style={{ textAlign: 'center', display: 'block' }}>Local</label>
-                                <input
-                                    type="number"
-                                    name="marcador_local"
-                                    value={formData.marcador_local}
-                                    onChange={handleChange}
-                                    min="0"
-                                    className="pro-input"
-                                    style={{ fontSize: '1.5rem', textAlign: 'center', fontWeight: 800 }}
-                                />
-                            </div>
-                            <div style={{ fontSize: '1.2rem', fontWeight: 900, opacity: 0.3, marginTop: '1.2rem' }}>VS</div>
-                            <div className="form-group">
-                                <label className="form-label" style={{ textAlign: 'center', display: 'block' }}>Visitante</label>
-                                <input
-                                    type="number"
-                                    name="marcador_visitante"
-                                    value={formData.marcador_visitante}
-                                    onChange={handleChange}
-                                    min="0"
-                                    className="pro-input"
-                                    style={{ fontSize: '1.5rem', textAlign: 'center', fontWeight: 800 }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="form-group" style={{ marginBottom: '2rem' }}>
-                        <label className="form-label" htmlFor="estado">Estado del Partido</label>
-                        <select id="estado" name="estado" value={formData.estado} onChange={handleChange} className="pro-input">
-                            {Object.values(ESTADOS_PARTIDO).map((estado) => (
-                                <option key={estado} value={estado}>
-                                    {estado}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem', marginTop: '0' }}>
-                        <button type="button" className="pro-btn btn-secondary" onClick={onClose} disabled={isSubmitting}>
-                            Cancelar
-                        </button>
-                        <button type="submit" className="pro-btn btn-primary" disabled={isSubmitting}>
-                            {isSubmitting ? (
-                                <>
-                                    <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
-                                    Guardando...
-                                </>
-                            ) : (
-                                <>
-                                    <Save size={18} />
-                                    {isEditMode ? "Actualizar Encuentro" : "Crear Encuentro"}
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
+                <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem', marginTop: '0' }}>
+                    <button type="button" className="pro-btn btn-secondary" onClick={onClose} disabled={isSubmitting}>
+                        Cancelar
+                    </button>
+                    <button type="submit" form="partido-form" className="pro-btn btn-primary" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
+                                Guardando...
+                            </>
+                        ) : (
+                            <>
+                                <Save size={18} />
+                                {isEditMode ? "Actualizar Encuentro" : "Crear Encuentro"}
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
@@ -472,16 +476,16 @@ PartidoModal.propTypes = {
 const EquipoModal = ({ isOpen, onClose, equipo, jugadores, tema }) => {
     useEffect(() => {
         if (isOpen) {
-            document.body.style.overflow = 'hidden';
-            return () => { document.body.style.overflow = 'auto'; };
+            document.body.classList.add('modal-open');
+            return () => document.body.classList.remove('modal-open');
         }
     }, [isOpen]);
 
     if (!isOpen || !equipo) return null;
 
-    return (
+    return createPortal(
         <div className="modal-overlay fade-in" onClick={onClose}>
-            <div className="modal-content scale-in" style={{ maxWidth: '650px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05))',
                     borderBottom: `2px solid ${tema.colorPrimario}`
@@ -508,7 +512,7 @@ const EquipoModal = ({ isOpen, onClose, equipo, jugadores, tema }) => {
                     <button className="btn-icon-close" onClick={onClose}><X size={20} /></button>
                 </div>
 
-                <div style={{ padding: '2rem' }}>
+                <div className="modal-body">
                     <div className="premium-card" style={{
                         textAlign: 'center',
                         marginBottom: '2rem',
@@ -519,89 +523,77 @@ const EquipoModal = ({ isOpen, onClose, equipo, jugadores, tema }) => {
                             style={{
                                 width: "90px",
                                 height: "90px",
-                                margin: "0 auto 1rem",
+                                margin: "0 auto 1.5rem",
                                 borderRadius: "24px",
-                                background: 'var(--bg-darkest)',
-                                border: `3px solid ${tema.colorPrimario}`,
+                                background: "var(--bg-darkest)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                fontSize: "3rem",
-                                fontWeight: "900",
-                                color: tema.colorPrimario,
-                                boxShadow: `0 0 30px ${tema.colorPrimario}33`,
-                                transform: 'rotate(-5deg)'
+                                border: `2px solid ${tema.colorPrimario}`,
+                                overflow: "hidden",
+                                boxShadow: `0 10px 30px ${tema.colorPrimario}22`
                             }}
                         >
-                            {equipo.nombre.charAt(0)}
+                            {equipo.logo_url ? (
+                                <img src={equipo.logo_url} alt={equipo.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                                <span style={{ fontSize: "2.5rem", fontWeight: 900, color: tema.colorPrimario }}>{equipo.nombre.charAt(0)}</span>
+                            )}
                         </div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.25rem', color: '#fff' }}>{equipo.nombre}</h3>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', alignItems: 'center' }}>
-                            <span className="status-badge badge-neutral" style={{ fontSize: '0.8rem' }}>
-                                <Trophy size={12} style={{ marginRight: '4px' }} /> {equipo.categoria?.nombre || 'General'}
-                            </span>
-                            <span className="status-badge badge-success" style={{ fontSize: '0.8rem' }}>
-                                <Users size={12} style={{ marginRight: '4px' }} /> {jugadores.length} Atletas
-                            </span>
+                        <h3 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900 }}>{equipo.nombre}</h3>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1.5rem' }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '4px' }}>Miembros</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{jugadores.length}</div>
+                            </div>
+                            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '4px' }}>Estado</div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 800, padding: '4px 12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '100px' }}>ACTIVO</div>
+                            </div>
                         </div>
                     </div>
 
-                    <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <List size={18} color={tema.colorPrimario} /> Nómina Oficial
-                        </h4>
-                    </div>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <List size={20} color={tema.colorPrimario} /> Nómina Oficial
+                    </h4>
 
-                    {jugadores.length === 0 ? (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: '3rem',
-                            opacity: 0.5,
-                            background: 'rgba(255,255,255,0.01)',
-                            borderRadius: '16px',
-                            border: '1px dashed rgba(255,255,255,0.1)'
-                        }}>
-                            <Search size={40} style={{ marginBottom: '1rem', opacity: 0.2 }} />
-                            <p>No hay jugadores registrados en este equipo.</p>
-                        </div>
-                    ) : (
-                        <div className="table-container" style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                            <table className="glass-table">
-                                <thead>
-                                    <tr>
-                                        <th style={{ width: '120px' }}>ID / Cédula</th>
-                                        <th>Nombre Completo</th>
-                                        <th style={{ textAlign: 'center' }}>Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {jugadores.map((jugador) => (
-                                        <tr key={jugador.cedula}>
-                                            <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{jugador.cedula}</td>
+                    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                        <table className="glass-table">
+                            <thead>
+                                <tr>
+                                    <th>Cédula</th>
+                                    <th>Deportista</th>
+                                    <th>Género</th>
+                                    <th>Fec. Nac.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {jugadores.length === 0 ? (
+                                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>Sin jugadores inscritos</td></tr>
+                                ) : (
+                                    jugadores.map((jug) => (
+                                        <tr key={jug.cedula}>
+                                            <td style={{ fontWeight: 800, color: 'var(--text-muted)' }}>{jug.cedula}</td>
                                             <td>
-                                                <div style={{ fontWeight: 600 }}>{jugador.persona?.nombres} {jugador.persona?.apellidos}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Jugador Federado</div>
+                                                <div style={{ fontWeight: 700 }}>{jug.persona?.nombres} {jug.persona?.apellidos}</div>
                                             </td>
-                                            <td style={{ textAlign: 'center' }}>
-                                                <span className={`status-badge ${jugador.estado === 'Activo' ? 'badge-success' : 'badge-neutral'}`}
-                                                    style={{ fontSize: '0.7rem', padding: '3px 10px' }}
-                                                >
-                                                    {jugador.estado}
-                                                </span>
-                                            </td>
+                                            <td>{jug.persona?.genero === 'M' ? 'Masculino' : 'Femenino'}</td>
+                                            <td>{new Date(jug.persona?.fecha_nacimiento).toLocaleDateString()}</td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div className="modal-footer" style={{ background: 'rgba(255, 255, 255, 0.02)', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                    <button className="pro-btn btn-secondary" onClick={onClose} style={{ width: '100%', justifyContent: 'center' }}>Cerrar Vista</button>
+                <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <button className="pro-btn btn-secondary" onClick={onClose} style={{ width: '100%', justifyContent: 'center' }}>Cerrar Perfil</button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
@@ -671,8 +663,8 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
     useEffect(() => {
         if (isOpen && partido) {
             loadPlayersAndStats();
-            document.body.style.overflow = 'hidden';
-            return () => { document.body.style.overflow = 'auto'; };
+            document.body.classList.add('modal-open');
+            return () => document.body.classList.remove('modal-open');
         }
     }, [isOpen, partido, loadPlayersAndStats]);
 
@@ -697,9 +689,9 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
 
     if (!isOpen || !partido) return null;
 
-    return (
+    return createPortal(
         <div className="modal-overlay fade-in" onClick={onClose}>
-            <div className="modal-content scale-in" style={{ maxWidth: '750px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(59, 130, 246, 0.05))',
                     borderBottom: `2px solid ${tema.colorPrimario}`
@@ -715,57 +707,40 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
                             <Activity size={24} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>
-                                Control de Incidencias
-                            </h2>
-                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                {partido.local_nombre} vs {partido.visitante_nombre}
-                            </p>
+                            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>Mesa Técnica</h2>
+                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Control de incidencias y desempeño</p>
                         </div>
                     </div>
                     <button className="btn-icon-close" onClick={onClose}><X size={20} /></button>
                 </div>
 
-                <div style={{ padding: '2rem' }}>
-                    <form onSubmit={handleAddStats} style={{
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        padding: '1.5rem',
-                        borderRadius: '16px',
-                        marginBottom: '2rem',
-                        border: '1px solid rgba(255, 255, 255, 0.05)'
-                    }}>
+                <div className="modal-body">
+                    <form onSubmit={handleAddStats} style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' }}>
                         <h4 style={{ margin: '0 0 1.25rem 0', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Plus size={18} color="var(--primary)" /> Registrar Nuevo Evento
                         </h4>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
-                            <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                                <label className="form-label">Seleccionar Jugador</label>
-                                <select
-                                    className="pro-input"
-                                    value={form.jugador_cedula}
-                                    onChange={e => setForm({ ...form, jugador_cedula: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Buscar en campo...</option>
-                                    <optgroup label={`🏠 LOCAL: ${partido.local_nombre}`}>
-                                        {Array.isArray(playersLocal) && playersLocal.map(p => (
-                                            <option key={p.cedula} value={p.cedula}>#{p.numero || '?'} - {p.persona?.nombres} {p.persona?.apellidos}</option>
-                                        ))}
-                                    </optgroup>
-                                    <optgroup label={`✈️ VISITANTE: ${partido.visitante_nombre}`}>
-                                        {Array.isArray(playersVisitante) && playersVisitante.map(p => (
-                                            <option key={p.cedula} value={p.cedula}>#{p.numero || '?'} - {p.persona?.nombres} {p.persona?.apellidos}</option>
-                                        ))}
-                                    </optgroup>
-                                </select>
-                            </div>
+                        <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                            <label className="form-label" style={{ fontWeight: 800 }}>Competidor</label>
+                            <select className="pro-input" value={form.jugador_cedula} onChange={e => setForm({ ...form, jugador_cedula: e.target.value })} required>
+                                <option value="">Seleccione un atleta...</option>
+                                <optgroup label={partido.equipo_local?.nombre || 'Local'}>
+                                    {Array.isArray(playersLocal) && playersLocal.map(p => (
+                                        <option key={p.cedula} value={p.cedula}>{p.persona?.nombres} {p.persona?.apellidos}</option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label={partido.equipo_visitante?.nombre || 'Visitante'}>
+                                    {Array.isArray(playersVisitante) && playersVisitante.map(p => (
+                                        <option key={p.cedula} value={p.cedula}>{p.persona?.nombres} {p.persona?.apellidos}</option>
+                                    ))}
+                                </optgroup>
+                            </select>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                             <div className="form-group">
                                 <label className="form-label" style={{ fontSize: '0.8rem', textAlign: 'center' }}>Goles</label>
-                                <input type="number" className="pro-input" min="0" value={form.goles} onChange={e => setForm({ ...form, goles: parseInt(e.target.value) || 0 })} style={{ textAlign: 'center', fontWeight: 700 }} />
+                                <input type="number" className="pro-input" min="0" value={form.goles} onChange={e => setForm({ ...form, goles: parseInt(e.target.value) || 0 })} style={{ textAlign: 'center', fontWeight: 700, borderColor: tema.colorPrimario }} />
                             </div>
                             <div className="form-group">
                                 <label className="form-label" style={{ fontSize: '0.8rem', textAlign: 'center' }}>Asist.</label>
@@ -848,7 +823,8 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
                     <button className="pro-btn btn-secondary" onClick={onClose} style={{ width: '100%', justifyContent: 'center' }}>Cerrar Supervisor</button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
@@ -1488,6 +1464,13 @@ const TorneoDetalle = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <Users size={20} color={tema.colorPrimario} />
                                     <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Equipos Participantes ({equipos.length})</h2>
+                                    <button
+                                        className="pro-btn btn-primary"
+                                        onClick={() => navigate(`/admin/equipos/${torneoId}`)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '0.9rem' }}
+                                    >
+                                        <Plus size={18} /> Registrar Equipo
+                                    </button>
                                 </div>
                             </div>
 

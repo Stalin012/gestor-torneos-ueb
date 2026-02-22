@@ -6,21 +6,32 @@ const NotificationContext = createContext();
 export const NotificationProvider = ({ children }) => {
     const notification = useNotifications();
     const { notifications, addNotification, loadNotifications, success, error, warning, info } = notification;
-    
+
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
-    // Cargar notificaciones solo si hay token
+    // Cargar y refrescar notificaciones cuando cambia la sesion.
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
+        const syncNotifications = () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
             loadNotifications();
-        }
+        };
+
+        syncNotifications();
+        window.addEventListener('storage', syncNotifications);
+        window.addEventListener('user-updated', syncNotifications);
+
+        return () => {
+            window.removeEventListener('storage', syncNotifications);
+            window.removeEventListener('user-updated', syncNotifications);
+        };
     }, [loadNotifications]);
 
     // Calcular notificaciones no leídas
     useEffect(() => {
-        const count = notifications.filter(n => !n.leida).length;
+        const safeNotifications = Array.isArray(notifications) ? notifications : [];
+        const count = safeNotifications.filter(n => !n.leida).length;
         setUnreadCount(count);
     }, [notifications]);
 
@@ -60,6 +71,11 @@ export const NotificationProvider = ({ children }) => {
             <NotificationCenter
                 isOpen={isOpen}
                 onClose={closeNotificationCenter}
+                notifications={notifications}
+                loadNotifications={loadNotifications}
+                markAsRead={notification.markAsRead}
+                markAllAsRead={notification.markAllAsRead}
+                loading={notification.loading}
             />
         </NotificationContext.Provider>
     );

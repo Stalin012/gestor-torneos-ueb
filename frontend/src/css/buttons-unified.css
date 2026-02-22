@@ -70,18 +70,18 @@ button.primary:disabled,
 .btn-secondary,
 button.secondary,
 .btn.btn-secondary {
-  background-color: var(--text-white);
-  color: var(--primary);
-  border: var(--border-primary-button);
+  background-color: var(--celeste);
+  color: var(--background-dark); /* Darker text for contrast */
+  border: 2px solid var(--celeste);
   font-weight: var(--font-weight-semibold);
 }
 
 .btn-secondary:hover,
 button.secondary:hover,
 .btn.btn-secondary:hover {
-  background-color: var(--secondary-background-hover);
-  border-color: var(--secondary-border-hover);
-  color: var(--secondary-color-hover);
+  background-color: var(--primary); /* Use primary color on hover */
+  border-color: var(--primary);
+  color: var(--text-white);
   box-shadow: var(--secondary-shadow-hover-sm);
   transform: translateY(-2px);
 }
@@ -361,15 +361,17 @@ button.loading::after {
 .dark-theme .btn-secondary,
 .dark-theme button.secondary,
 .dark-theme .btn.btn-secondary {
-  background-color: var(--bg-secondary);
-  color: var(--primary);
-  border-color: var(--primary);
+  background-color: var(--celeste);
+  color: var(--background-dark);
+  border-color: var(--celeste);
 }
 
 .dark-theme .btn-secondary:hover,
 .dark-theme button.secondary:hover,
 .dark-theme .btn.btn-secondary:hover {
-  background-color: var(--dark-secondary-background-hover);
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-white);
 }
 
 .dark-theme .table-btn {

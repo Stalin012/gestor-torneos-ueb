@@ -14,11 +14,12 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
   const normalized = {
     cedula: data.cedula || "",
     nombres: data.nombre_completo || (data.persona ? `${data.persona.nombres} ${data.persona.apellidos}` : ""),
-    equipo: data.nombre_equipo || data.equipo_nombre || "Agente Libre",
+    equipo: data.nombre_equipo || data.equipo_nombre || data.equipo?.nombre || "Sin Equipo",
+    torneo: data.torneo_nombre || data.equipo?.torneo?.nombre || "Sin Torneo",
     posicion: data.posicion || "N/A",
     numero: data.numero || "—",
-    facultad: data.facultad || "",
-    carrera: data.carrera || "",
+    facultad: data.facultad || data.persona?.facultad || "",
+    carrera: data.carrera || data.persona?.carrera || "",
     foto: data.foto || (data.persona?.foto_url || data.persona?.foto) || null
   };
 
@@ -54,11 +55,11 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
   });
 
   return (
-    <div className="modal-overlay backdrop-blur-strong fade-in" onClick={onClose} style={{ zIndex: 9999 }}>
-      <div className="modal-content scale-in" style={{ maxWidth: '520px', padding: 0, overflow: 'hidden', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay backdrop-blur-strong fade-in" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content scale-in" style={{ maxWidth: '520px', padding: 0, overflow: 'hidden', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
 
         {/* HEADER */}
-        <div className="modal-header" style={{ padding: '1.25rem 1.5rem', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="modal-header" style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '8px', borderRadius: '10px' }}>
               <IdCard size={20} color="#3b82f6" />
@@ -113,12 +114,12 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
             </div>
 
             {/* Main Content Area */}
-            <div style={{ display: 'flex', gap: '20px', flex: 1, zIndex: 1 }}>
-              {/* Photo & Number Section */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '15px', flex: 1, zIndex: 1 }}>
+              {/* Photo Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                 <div style={{
-                  width: '90px',
-                  height: '110px',
+                  width: '85px',
+                  height: '105px',
                   background: '#111827',
                   borderRadius: '12px',
                   border: '2px solid rgba(59, 130, 246, 0.3)',
@@ -135,50 +136,55 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
                   )}
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '20px', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>#{normalized.numero}</div>
-                  <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase' }}>Dorsal</div>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>#{normalized.numero}</div>
+                  <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginTop: '2px' }}>Número</div>
                 </div>
               </div>
 
-              {/* Text Info Component */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ marginBottom: '12px' }}>
+              {/* Info Section */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                {/* Name & ID */}
+                <div style={{ marginBottom: '10px' }}>
                   <div style={{
-                    fontSize: normalized.nombres.length > 20 ? '14px' : '18px',
+                    fontSize: normalized.nombres.length > 25 ? '13px' : '16px',
                     fontWeight: 900,
                     color: '#fff',
                     textTransform: 'uppercase',
-                    lineHeight: '1.2',
+                    lineHeight: '1.15',
                     letterSpacing: '-0.3px',
-                    marginBottom: '2px'
+                    marginBottom: '3px'
                   }}>
                     {normalized.nombres}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>ID: {normalized.cedula}</div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>ID: {normalized.cedula}</div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
-                    <div style={{ fontSize: '7px', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1px' }}>Equipo</div>
-                    <div style={{ fontSize: '10px', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.equipo}</div>
+                {/* Data Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
+                    <div style={{ fontSize: '7px', color: '#a78bfa', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>Equipo</div>
+                    <div style={{ fontSize: '8.5px', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.equipo}</div>
                   </div>
-                  <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
-                    <div style={{ fontSize: '7px', color: '#10b981', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1px' }}>Posición</div>
-                    <div style={{ fontSize: '10px', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.posicion}</div>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
+                    <div style={{ fontSize: '7px', color: '#10b981', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>Posición</div>
+                    <div style={{ fontSize: '8.5px', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.posicion}</div>
                   </div>
-
-                  {(normalized.facultad || normalized.carrera) && (
-                    <div style={{ gridColumn: 'span 2', background: 'rgba(255, 255, 255, 0.03)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      {normalized.facultad && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                          <span style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', minWidth: '45px' }}>Facultad</span>
-                          <span style={{ fontSize: '9px', color: '#e2e8f0', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.facultad}</span>
+                  <div style={{ gridColumn: 'span 2', background: 'rgba(59, 130, 246, 0.08)', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.15)' }}>
+                    <div style={{ fontSize: '7px', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>Torneo</div>
+                    <div style={{ fontSize: '8.5px', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.torneo}</div>
+                  </div>
+                  {(normalized.carrera || normalized.facultad) && (
+                    <div style={{ gridColumn: 'span 2', background: 'rgba(255, 255, 255, 0.03)', padding: '6px 8px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                      {normalized.carrera && (
+                        <div style={{ marginBottom: normalized.facultad ? '3px' : '0' }}>
+                          <span style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', display: 'block', marginBottom: '1px' }}>Carrera</span>
+                          <span style={{ fontSize: '8px', color: '#e2e8f0', fontWeight: 600, display: 'block', lineHeight: '1.3' }}>{normalized.carrera}</span>
                         </div>
                       )}
-                      {normalized.carrera && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                          <span style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', minWidth: '45px' }}>Carrera</span>
-                          <span style={{ fontSize: '9px', color: '#e2e8f0', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.carrera}</span>
+                      {normalized.facultad && (
+                        <div>
+                          <span style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', display: 'block', marginBottom: '1px' }}>Facultad</span>
+                          <span style={{ fontSize: '7.5px', color: '#cbd5e1', fontWeight: 500, display: 'block', lineHeight: '1.3' }}>{normalized.facultad}</span>
                         </div>
                       )}
                     </div>
@@ -186,18 +192,18 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
                 </div>
               </div>
 
-              {/* QR Sidebar */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
+              {/* QR Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{
                   background: '#fff',
                   padding: '5px',
-                  borderRadius: '10px',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                  borderRadius: '8px',
+                  boxShadow: '0 6px 12px rgba(0,0,0,0.4)',
                   border: '2px solid #3b82f6'
                 }}>
-                  <QRCodeSVG value={qrValue} size={60} level="M" />
+                  <QRCodeSVG value={qrValue} size={55} level="M" />
                 </div>
-                <div style={{ fontSize: '7px', color: 'rgba(255,255,255,0.3)', fontWeight: 800, marginTop: '8px', letterSpacing: '1px' }}>SECURITY QR</div>
+                <div style={{ fontSize: '6.5px', color: 'rgba(255,255,255,0.3)', fontWeight: 800, marginTop: '6px', letterSpacing: '0.5px' }}>SECURITY QR</div>
               </div>
             </div>
 
@@ -217,8 +223,8 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
         </div>
 
         {/* FOOTER */}
-        <div className="modal-footer" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.08)', gap: '1rem' }}>
-          <button className="pro-btn btn-secondary" onClick={onClose} style={{ flex: 1, height: '45px' }}>
+        <div className="modal-footer" style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.08)', gap: '1.5rem', display: 'flex' }}>
+          <button className="pro-btn btn-primary" onClick={onClose} style={{ flex: 1, height: '45px' }}>
             Descartar
           </button>
           <button

@@ -1,11 +1,17 @@
 :root {
   /* Colors */
-  --primary: #3b82f6; /* Blue */
+  --primary: #3b82f6;
+  /* Blue */
   --primary-rgb: 59, 130, 246;
   --primary-dark: #2563eb;
-  --primary-ocean: #007bff; /* Example for stat card */
-  --accent: #10b981; /* Green accent */
-  --accent-teal: #00cec9; /* Example for stat card */
+  --celeste: #87CEEB;
+  /* Light blue for secondary buttons */
+  --primary-ocean: #007bff;
+  /* Example for stat card */
+  --accent: #10b981;
+  /* Green accent */
+  --accent-teal: #00cec9;
+  /* Example for stat card */
   --success: #28a745;
   --warning: #ffc107;
   --error: #dc3545;
@@ -13,14 +19,19 @@
   --error-dark: #c82333;
 
   /* Backgrounds */
-  --background-page: #0f172a; /* Dark blue-gray */
-  --background-dark: #1a202c; /* Slightly lighter dark blue-gray */
+  --background-page: #0f172a;
+  /* Dark blue-gray */
+  --background-dark: #1a202c;
+  /* Slightly lighter dark blue-gray */
   --background-dark-rgb: 26, 32, 44;
-  --background-light: #2d3748; /* Even lighter dark blue-gray */
-  --bg-primary: #0a0f1c; /* Very dark blue */
+  --background-light: #2d3748;
+  /* Even lighter dark blue-gray */
+  --bg-primary: #0a0f1c;
+  /* Very dark blue */
   --bg-secondary: #1a2332;
   --bg-tertiary: #2a3441;
-  --bg-overlay: rgba(0, 0, 0, 0.75); /* Dark overlay for modals/sidebars */
+  --bg-overlay: rgba(0, 0, 0, 0.75);
+  /* Dark overlay for modals/sidebars */
   --card-bg: rgba(30, 41, 59, 0.8);
   --card-header-bg: rgba(30, 41, 59, 0.8);
   --input-bg: rgba(30, 41, 59, 0.8);
@@ -28,8 +39,10 @@
   /* Text Colors */
   --text-primary: #ffffff;
   --text-secondary: #e2e8f0;
-  --text-color: #e2e8f0; /* General text color */
-  --text-muted: #94a3b8; /* Muted text color */
+  --text-color: #e2e8f0;
+  /* General text color */
+  --text-muted: #94a3b8;
+  /* Muted text color */
   --text-white: #ffffff;
   --text-white-rgb: 255, 255, 255;
   --text-white-90: rgba(255, 255, 255, 0.9);
@@ -41,37 +54,57 @@
   --border-accent: #3b82f6;
 
   /* Spacing */
-  --space-xs: 0.25rem; /* 4px */
-  --space-sm: 0.5rem;  /* 8px */
-  --space-md: 1rem;    /* 16px */
-  --space-lg: 1.5rem;  /* 24px */
-  --space-xl: 2rem;    /* 32px */
-  --space-2xl: 2.5rem; /* 40px */
+  --space-xs: 0.25rem;
+  /* 4px */
+  --space-sm: 0.5rem;
+  /* 8px */
+  --space-md: 1rem;
+  /* 16px */
+  --space-lg: 1.5rem;
+  /* 24px */
+  --space-xl: 2rem;
+  /* 32px */
+  --space-2xl: 2.5rem;
+  /* 40px */
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 15px rgba(59, 130, 246, 0.5); /* Primary blue glow */
+  --shadow-glow: 0 0 15px rgba(59, 130, 246, 0.5);
+  /* Primary blue glow */
 
   /* Radii */
-  --radius-md: 0.375rem; /* 6px */
-  --radius-lg: 0.5rem;  /* 8px */
-  --radius-xl: 1.25rem; /* 20px */
-  --radius-full: 9999px; /* Fully rounded */
+  --radius-md: 0.375rem;
+  /* 6px */
+  --radius-lg: 0.5rem;
+  /* 8px */
+  --radius-xl: 1.25rem;
+  /* 20px */
+  --radius-full: 9999px;
+  /* Fully rounded */
 
   /* Typography */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-size-xs: 0.75rem; /* 12px */
-  --font-size-sm: 0.875rem; /* 14px */
-  --font-size-base: 1rem; /* 16px */
-  --font-size-lg: 1.125rem; /* 18px */
-  --font-size-xl: 1.25rem; /* 20px */
-  --font-size-2xl: 1.5rem; /* 24px */
-  --font-size-3xl: 1.875rem; /* 30px */
-  --font-size-4xl: 2.25rem; /* 36px */
-  --font-size-hero-h1: 2.5rem; /* 40px */
+  --font-size-xs: 0.75rem;
+  /* 12px */
+  --font-size-sm: 0.875rem;
+  /* 14px */
+  --font-size-base: 1rem;
+  /* 16px */
+  --font-size-lg: 1.125rem;
+  /* 18px */
+  --font-size-xl: 1.25rem;
+  /* 20px */
+  --font-size-2xl: 1.5rem;
+  /* 24px */
+  --font-size-3xl: 1.875rem;
+  /* 30px */
+  --font-size-4xl: 2.25rem;
+  /* 36px */
+  --font-size-hero-h1: 2.5rem;
+  /* 40px */
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -169,8 +202,9 @@
   --loading-spinner-border-top-color: white;
 
   /* Layout */
-  --header-height: 70px;
-  --footer-height: 0px; /* Assuming no fixed footer for now, adjust if needed */
+  --header-height: 80px;
+  --footer-height: 0px;
+  /* Assuming no fixed footer for now, adjust if needed */
 
   /* Dashboard Hero Header */
   --background-hero-primary: #356ed8;
@@ -186,7 +220,8 @@
   /* Enhanced Components - General */
   --secondary-purple: #8957e5;
   --text-muted-light: rgba(234, 234, 234, 0.7);
-  --border-width-md: 2px; /* For 2px borders */
+  --border-width-md: 2px;
+  /* For 2px borders */
 
   /* Content Card */
   --background-content-card: #19293a;
@@ -249,7 +284,8 @@
   --background-glass-table-row-hover: rgba(53, 110, 216, 0.15);
 
   /* Card Badge */
-  --space-xs-plus: 5px; /* 5px */
+  --space-xs-plus: 5px;
+  /* 5px */
   --padding-badge-y: 0.3rem;
   --padding-badge-x: 0.6rem;
   --radius-badge: 15px;

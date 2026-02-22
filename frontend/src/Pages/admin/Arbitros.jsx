@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Shield, Plus, Edit, Trash2, Search, X, Save, Star,
-    Award, UserCheck, ShieldAlert, Activity
+    Award, UserCheck, ShieldAlert, Activity, ShieldCheck
 } from 'lucide-react';
 
 import LoadingScreen from '../../components/LoadingScreen';
@@ -25,6 +26,11 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
         experiencia: 0,
         especialidad: '',
         estado: 'Certificado',
+        nombres: '', // Added for new form structure
+        apellidos: '', // Added for new form structure
+        fecha_nacimiento: '', // Added for new form structure
+        email: '', // Added for new form structure
+        telefono: '', // Added for new form structure
     });
     const [personaData, setPersonaData] = useState({ nombres: '', apellidos: '', correo: '' });
     const [verificando, setVerificando] = useState(false);
@@ -38,6 +44,11 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                 experiencia: initialData.experiencia ?? 0,
                 especialidad: initialData.especialidad || '',
                 estado: initialData.estado || 'Certificado',
+                nombres: initialData.persona?.nombres || '',
+                apellidos: initialData.persona?.apellidos || '',
+                fecha_nacimiento: initialData.persona?.fecha_nacimiento || '',
+                email: initialData.persona?.email || initialData.persona?.correo || '',
+                telefono: initialData.persona?.telefono || '',
             });
             setPersonaData({
                 nombres: initialData.persona?.nombres || '',
@@ -45,11 +56,23 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                 correo: initialData.persona?.email || initialData.persona?.correo || '',
             });
         } else {
-            setFormData({ cedula: '', experiencia: 0, especialidad: '', estado: 'Certificado' });
+            setFormData({
+                cedula: '',
+                experiencia: 0,
+                especialidad: '',
+                estado: 'Certificado',
+                nombres: '',
+                apellidos: '',
+                fecha_nacimiento: '',
+                email: '',
+                telefono: '',
+            });
             setPersonaData({ nombres: '', apellidos: '', correo: '' });
         }
-        document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = 'auto'; };
+        document.body.classList.add('modal-open');
+        return () => {
+            document.body.classList.remove('modal-open');
+        };
     }, [initialData, isOpen]);
 
     const handleChange = (e) => {
@@ -72,9 +95,25 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                 apellidos: data.apellidos || '',
                 correo: data.email || data.correo || '',
             });
+            setFormData(prev => ({
+                ...prev,
+                nombres: data.nombres || '',
+                apellidos: data.apellidos || '',
+                email: data.email || data.correo || '',
+                fecha_nacimiento: data.fecha_nacimiento || '',
+                telefono: data.telefono || '',
+            }));
         } catch (err) {
             console.error('Error verificando cédula:', err);
             setPersonaData({ nombres: 'No encontrada', apellidos: '', correo: '' });
+            setFormData(prev => ({
+                ...prev,
+                nombres: '',
+                apellidos: '',
+                email: '',
+                fecha_nacimiento: '',
+                telefono: '',
+            }));
         } finally {
             setVerificando(false);
         }
@@ -90,8 +129,11 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                 experiencia: Number(formData.experiencia) || 0,
                 especialidad: formData.especialidad,
                 estado: formData.estado,
-                nombres: personaData.nombres,
-                apellidos: personaData.apellidos,
+                nombres: formData.nombres,
+                apellidos: formData.apellidos,
+                fecha_nacimiento: formData.fecha_nacimiento,
+                email: formData.email,
+                telefono: formData.telefono,
             };
             await onSave(payload, isEditMode);
             onClose();
@@ -102,9 +144,9 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
 
     if (!isOpen) return null;
 
-    return (
-        <div className="modal-overlay fade-in" onClick={onClose} style={{ zIndex: 1000 }}>
-            <div className="modal-content scale-in" style={{ maxWidth: '650px' }} onClick={e => e.stopPropagation()}>
+    return createPortal(
+        <div className="modal-overlay fade-in" onClick={onClose}>
+            <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(16, 185, 129, 0.05))',
                     borderBottom: '2px solid var(--primary)'
@@ -117,60 +159,68 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                             color: 'white',
                             boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)'
                         }}>
-                            <Shield size={28} />
+                            <ShieldCheck size={28} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>
-                                {isEditMode ? 'Expediente Técnico' : 'Registro de Oficial'}
-                            </h2>
-                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Gestión de autoridades y certificaciones</p>
+                            <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>{isEditMode ? "Perfil de Árbitro" : "Nuevo Oficial"}</h2>
+                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Gestión de credenciales y habilitaciones</p>
                         </div>
                     </div>
-                    <button className="btn-icon-close" onClick={onClose}><X size={24} /></button>
+                    <button className="btn-icon-close" onClick={onClose}>
+                        <X size={24} />
+                    </button>
                 </div>
 
-                <div className="modal-body" style={{ padding: '2.5rem' }}>
+                <div className="modal-body">
                     <form id="arbitro-form" onSubmit={handleSubmit}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-                            <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Nro. Identificación</label>
-                                <div style={{ position: 'relative' }}>
-                                    <input
-                                        type="text"
-                                        name="cedula"
-                                        value={formData.cedula}
-                                        onChange={handleChange}
-                                        required
-                                        disabled={isEditMode}
-                                        className="pro-input"
-                                        placeholder="0000000000"
-                                        style={{ fontSize: '1.1rem', fontWeight: 700 }}
-                                    />
-                                    {verificando && (
-                                        <div className="spinner" style={{ position: 'absolute', right: '12px', top: '12px', width: '22px', height: '22px' }}></div>
-                                    )}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 800 }}>Cédula de Identidad</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            type="text"
+                                            name="cedula"
+                                            value={formData.cedula}
+                                            onChange={handleChange}
+                                            required
+                                            disabled={isEditMode}
+                                            className="pro-input"
+                                            placeholder="0000000000"
+                                            style={{ fontSize: '1.1rem', fontWeight: 700 }}
+                                        />
+                                        {verificando && (
+                                            <div className="spinner" style={{ position: 'absolute', right: '12px', top: '12px', width: '22px', height: '22px' }}></div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 800 }}>Nombres Completos</label>
+                                    <input type="text" value={formData.nombres} onChange={e => setFormData({ ...formData, nombres: e.target.value.toUpperCase() })} required className="pro-input" placeholder="JUAN PEREZ" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 800 }}>Apellidos Completos</label>
+                                    <input type="text" value={formData.apellidos} onChange={e => setFormData({ ...formData, apellidos: e.target.value.toUpperCase() })} required className="pro-input" placeholder="GARCIA LOPEZ" />
                                 </div>
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Identidad Vinculada</label>
-                                <div style={{
-                                    height: '46px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    padding: '0 1rem',
-                                    background: 'rgba(255, 255, 255, 0.03)',
-                                    borderRadius: '12px',
-                                    border: '1px solid rgba(255,255,255,0.08)',
-                                    color: personaData.nombres && personaData.nombres !== 'No encontrada' ? '#fff' : 'var(--text-muted)',
-                                    fontWeight: 700
-                                }}>
-                                    {personaData.nombres === 'No encontrada' ? '⚠️ Persona no registrada' : (personaData.nombres ? `${personaData.nombres} ${personaData.apellidos}` : 'Validando...')}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 800 }}>Fecha de Nacimiento</label>
+                                    <input type="date" value={formData.fecha_nacimiento} onChange={e => setFormData({ ...formData, fecha_nacimiento: e.target.value })} required className="pro-input" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 800 }}>Correo Institucional</label>
+                                    <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required className="pro-input" placeholder="arbitro@ejemplo.com" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontWeight: 800 }}>Teléfono de Contacto</label>
+                                    <input type="tel" value={formData.telefono} onChange={e => setFormData({ ...formData, telefono: e.target.value })} required className="pro-input" placeholder="0987654321" />
                                 </div>
                             </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem', marginTop: '2rem' }}>
                             <div className="form-group">
                                 <label className="form-label" style={{ fontWeight: 800 }}>Especialidad / DISCIPLINA</label>
                                 <select name="especialidad" value={formData.especialidad} onChange={handleChange} required className="pro-input">
@@ -198,14 +248,15 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                     </form>
                 </div>
 
-                <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1.5rem 2.5rem' }}>
+                <div className="modal-footer">
                     <button type="button" className="pro-btn btn-secondary" onClick={onClose}>Descartar</button>
-                    <button type="submit" form="arbitro-form" disabled={isSubmitting} className="pro-btn btn-primary" style={{ minWidth: '200px', justifyContent: 'center' }}>
+                    <button type="submit" form="arbitro-form" disabled={isSubmitting} className="pro-btn btn-primary" style={{ minWidth: '200px' }}>
                         {isSubmitting ? <div className="spinner" style={{ width: '18px', height: '18px' }} /> : <><Save size={18} /> {isEditMode ? 'Actualizar Expediente' : 'Finalizar Registro'}</>}
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 });
 
@@ -225,6 +276,8 @@ const Arbitros = () => {
             setLoading(true);
             const resp = await api.get(`/arbitros?page=${page}`);
             const json = resp.data;
+
+            console.log('Datos de árbitros:', json);
 
             if (Array.isArray(json)) {
                 setArbitros(json);
@@ -258,7 +311,9 @@ const Arbitros = () => {
             const url = isEditMode ? `/arbitros/${data.cedula}` : `/arbitros`;
             await api[method](url, data);
             setIsModalOpen(false);
-            loadArbitros(pagination.current_page);
+            setCurrentArbitro(null);
+            await loadArbitros(pagination.current_page);
+            alert(isEditMode ? 'Árbitro actualizado correctamente' : 'Árbitro registrado correctamente');
         } catch (err) {
             alert(err.response?.data?.message || 'Error al procesar la solicitud.');
         }
@@ -286,16 +341,11 @@ const Arbitros = () => {
 
     return (
         <div className="admin-page-container module-entrance">
-            <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div>
-                    <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.85rem', letterSpacing: '2px', textTransform: 'uppercase' }}>Cuerpo Técnico</span>
-                    <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#fff', margin: '0.5rem 0' }}>Árbitros y Réferis</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Gestión profesional de autoridades de campo y certificaciones deportivas</p>
-                </div>
-                <button className="pro-btn btn-primary" onClick={() => { setCurrentArbitro(null); setIsModalOpen(true); }}>
-                    <Plus size={20} /> Registrar Oficial
+            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="pro-btn btn-primary" onClick={() => { setCurrentArbitro(null); setIsModalOpen(true); }} style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', width: 'fit-content', flex: 'none' }}>
+                    <Plus size={16} /> Registrar Oficial
                 </button>
-            </header>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 <StatCard title="Total Réferis" value={stats.total} icon={Shield} color="#356ed8" />
@@ -341,7 +391,7 @@ const Arbitros = () => {
                             ) : (
                                 filteredArbitros.map((a) => (
                                     <tr key={a.cedula}>
-                                        <td><code style={{ color: 'var(--text-muted)' }}>{a.cedula}</code></td>
+                                        <td><span style={{ color: 'var(--primary)', fontWeight: 800 }}>{a.cedula}</span></td>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(53, 110, 216, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
@@ -350,7 +400,11 @@ const Arbitros = () => {
                                                 <div style={{ fontWeight: 800, color: '#fff' }}>{a.persona ? `${a.persona.nombres} ${a.persona.apellidos}` : 'N/A'}</div>
                                             </div>
                                         </td>
-                                        <td><span className="status-pill info" style={{ textTransform: 'uppercase', fontSize: '0.7rem' }}>{a.especialidad}</span></td>
+                                        <td>
+                                            <span className="status-pill info" style={{ textTransform: 'uppercase', fontSize: '0.75rem', display: 'inline-block' }}>
+                                                {a.especialidad || 'N/A'}
+                                            </span>
+                                        </td>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <Star size={14} style={{ fill: 'var(--warning)', color: 'var(--warning)' }} />

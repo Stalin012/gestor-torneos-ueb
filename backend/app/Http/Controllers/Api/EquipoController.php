@@ -17,6 +17,7 @@ class EquipoController extends Controller
     public function index()
     {
         $equipos = Equipo::with(['torneo', 'categoria', 'deporte'])
+            ->select('equipos.*', 'logo') // Asegúrate de seleccionar el campo 'logo'
             ->orderBy('id', 'desc')
             ->paginate(15);
 
@@ -141,17 +142,20 @@ class EquipoController extends Controller
     /**
      * Obtener jugadores del equipo
      */
-    public function jugadores($id)
+    public function jugadores(Request $request, $id)
     {
-        $equipo = Equipo::with('jugadores.persona')->find($id);
+        $equipo = Equipo::find($id);
 
         if (!$equipo) {
             return response()->json(['message' => 'Equipo no encontrado'], 404);
         }
 
+        $perPage = $request->get('per_page', 10); // Default to 10 items per page
+        $jugadores = $equipo->jugadores()->with('persona')->paginate($perPage);
+
         return response()->json([
             'equipo'    => $equipo->nombre,
-            'jugadores' => $equipo->jugadores,
+            'jugadores' => $jugadores,
         ]);
     }
 

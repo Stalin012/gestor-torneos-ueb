@@ -5,7 +5,7 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 /**
  * Componente de Estadística Premium con Visualización de Barra
  */
-export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#356ed8", suffix = "" }) => {
+export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#356ed8", suffix = "", className = "" }) => {
     const calculateChange = () => {
         if (!previousValue || previousValue === 0) return null;
         const change = ((value - previousValue) / previousValue) * 100;
@@ -18,11 +18,11 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
 
     return (
         <div
-            className="card-3d clickable-scale"
+            className={`card-3d clickable-scale ${className}`}
             style={{
                 background: "linear-gradient(135deg, #19293a, #1e3147)",
                 borderRadius: "16px",
-                padding: "1.5rem",
+                padding: "0.85rem 1.25rem",
                 border: `1px solid ${color}33`,
                 position: "relative",
                 overflow: "hidden",
@@ -35,22 +35,22 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
                     position: "absolute",
                     top: "-50%",
                     right: "-20%",
-                    width: "200px",
-                    height: "200px",
+                    width: "150px",
+                    height: "150px",
                     background: `radial-gradient(circle, ${color}15, transparent)`,
                     borderRadius: "50%",
                 }}
             />
 
             <div style={{ position: "relative", zIndex: 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
                     <div>
-                        <p style={{ fontSize: "0.85rem", color: "#a1b0c1", fontWeight: "600", marginBottom: "0.5rem" }}>
+                        <p style={{ fontSize: "0.75rem", color: "#a1b0c1", fontWeight: "600", marginBottom: "0.25rem" }}>
                             {title}
                         </p>
                         <h3
                             style={{
-                                fontSize: "2.5rem",
+                                fontSize: "1.5rem",
                                 fontWeight: "900",
                                 margin: 0,
                                 background: `linear-gradient(135deg, ${color}, ${color}88)`,
@@ -60,30 +60,30 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
                             }}
                         >
                             {value}
-                            {suffix && <span style={{ fontSize: "1.5rem" }}>{suffix}</span>}
+                            {suffix && <span style={{ fontSize: "1rem" }}>{suffix}</span>}
                         </h3>
                     </div>
 
                     {Icon && (
                         <div
                             style={{
-                                width: "50px",
-                                height: "50px",
-                                borderRadius: "12px",
+                                width: "40px",
+                                height: "40px",
+                                borderRadius: "10px",
                                 background: `linear-gradient(135deg, ${color}, ${color}88)`,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                boxShadow: `0 8px 24px ${color}44`,
+                                boxShadow: `0 4px 12px ${color}44`,
                             }}
                         >
-                            <Icon size={24} color="#fff" />
+                            <Icon size={20} color="#fff" />
                         </div>
                     )}
                 </div>
 
                 {change !== null && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
                         {!isNeutral && (
                             <span
                                 style={{
@@ -94,13 +94,13 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
                                     fontWeight: "700",
                                 }}
                             >
-                                {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 {Math.abs(change).toFixed(1)}%
                             </span>
                         )}
                         {isNeutral && (
                             <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#a1b0c1", fontWeight: "700" }}>
-                                <Minus size={16} />
+                                <Minus size={14} />
                                 Sin cambio
                             </span>
                         )}
@@ -119,6 +119,7 @@ StatCard.propTypes = {
     icon: PropTypes.elementType,
     color: PropTypes.string,
     suffix: PropTypes.string,
+    className: PropTypes.string,
 };
 
 /**

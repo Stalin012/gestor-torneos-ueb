@@ -15,7 +15,6 @@ import {
   TrendingUp,
   FileText,
   Edit,
-  DollarSign,
   Shield,
   CloudUpload,
   IdCard
@@ -42,7 +41,7 @@ export default function NominaRepresentante() {
   // ---- Modal Agregar ----
   const [showModal, setShowModal] = useState(false);
   const [savingJugador, setSavingJugador] = useState(false);
-  const [formJugador, setFormJugador] = useState({ equipo_id: "", cedula: "", numero: "", posicion: "", salario_base: "", bonificaciones: "" });
+  const [formJugador, setFormJugador] = useState({ equipo_id: "", cedula: "", numero: "", posicion: "" });
   const [isEditing, setIsEditing] = useState(false);
   const [currentJugador, setCurrentJugador] = useState(null);
 
@@ -178,12 +177,10 @@ export default function NominaRepresentante() {
         equipo_id: player.equipo_id,
         cedula: player.cedula,
         numero: player.numero || "",
-        posicion: player.posicion || "",
-        salario_base: player.salario_base || "",
-        bonificaciones: player.bonificaciones || ""
+        posicion: player.posicion || ""
       });
     } else {
-      setFormJugador({ equipo_id: equipoId || "", cedula: "", numero: "", posicion: "", salario_base: "", bonificaciones: "" });
+      setFormJugador({ equipo_id: equipoId || "", cedula: "", numero: "", posicion: "" });
     }
     setShowModal(true);
   };
@@ -293,7 +290,7 @@ export default function NominaRepresentante() {
     const filename = `nomina_${equipoId || 'general'}_${timestamp}`;
 
     if (format === 'csv') {
-      const headers = ['Cedula', 'Nombres', 'Apellidos', 'Dorsal', 'Posicion', 'Equipo'];
+      const headers = ['Cedula', 'Nombres', 'Apellidos', 'Numero', 'Posicion', 'Equipo'];
       const escapeCsv = (field) => {
         const str = String(field || '');
         if (str.includes(',')) return `"${str}"`;
@@ -347,7 +344,7 @@ export default function NominaRepresentante() {
         const pageHeight = doc.internal.pageSize.height;
 
         const colX = [14, 40, 110, 130, 170]; // X positions for columns
-        const colTitles = ["Cédula", "Nombre Completo", "Dorsal", "Posición", "Equipo"];
+        const colTitles = ["Cédula", "Nombre Completo", "Numero", "Posición", "Equipo"];
 
         // Draw Header Function
         const drawHeader = (posY) => {
@@ -434,9 +431,13 @@ export default function NominaRepresentante() {
           <h1 className="content-title" style={{ color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>Nómina de Jugadores</h1>
           <p className="content-subtitle" style={{ color: '#cbd5e1' }}>Administración centralizada de atletas y cuerpos técnicos</p>
         </div>
-        <div className="header-actions" style={{ width: 'auto' }}>
-          <button onClick={() => handleModalOpen(false)} className="pro-btn btn-primary" style={{ boxShadow: 'var(--shadow-primary-button)' }}>
-            <Plus size={18} /> Registrar Jugador
+        <div className="header-actions" style={{ width: 'auto', display: 'inline-flex', flex: '0 0 auto' }}>
+          <button
+            onClick={() => handleModalOpen(false)}
+            className="pro-btn btn-primary"
+            style={{ boxShadow: 'var(--shadow-primary-button)', padding: '0.38rem 0.55rem', fontSize: '0.78rem', minHeight: '32px', width: 'fit-content', maxWidth: 'fit-content', flex: '0 0 auto', display: 'inline-flex', whiteSpace: 'nowrap' }}
+          >
+            <Plus size={13} /> Registrar Jugador
           </button>
         </div>
       </header>
@@ -454,32 +455,32 @@ export default function NominaRepresentante() {
       )}
 
       {/* KPI GRID */}
-      <div className="responsive-grid mb-8" style={{ marginBottom: '2.5rem' }}>
-        <div className="stat-card rep-card-premium stat-card-primary-ocean-border" style={{ ...glassCardStyle }}>
+      <div className="mb-8" style={{ marginBottom: '0.9rem', display: 'flex', flexWrap: 'nowrap', gap: '0.6rem', justifyContent: 'center', overflowX: 'auto' }}>
+        <div className="stat-card rep-card-premium stat-card-primary-ocean-border" style={{ ...glassCardStyle, padding: '0.58rem 0.75rem', height: '86px', minHeight: '86px', aspectRatio: 'auto', flex: '0 0 154px', width: '154px' }}>
           <div className="stat-card-header">
-            <h3 style={{ color: '#cbd5e1', fontWeight: '700' }}>Total Atletas</h3>
-            <Users size={20} color="var(--primary-ocean)" />
+            <h3 style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '0.79rem', lineHeight: 1.1 }}>Total Atletas</h3>
+            <Users size={14} color="var(--primary-ocean)" />
           </div>
-          <p className="stat-value" style={{ color: '#fff', fontWeight: '900' }}>{kpis.totalJugadores}</p>
-          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500' }}>Registrados en el sistema</p>
+          <p className="stat-value" style={{ color: '#fff', fontWeight: '900', fontSize: '1.34rem', lineHeight: 1.05, margin: '0.1rem 0' }}>{kpis.totalJugadores}</p>
+          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500', fontSize: '0.68rem', margin: 0, lineHeight: 1.15 }}>Registrados</p>
         </div>
 
-        <div className="stat-card rep-card-premium stat-card-accent-teal-border" style={{ ...glassCardStyle }}>
+        <div className="stat-card rep-card-premium stat-card-accent-teal-border" style={{ ...glassCardStyle, padding: '0.58rem 0.75rem', height: '86px', minHeight: '86px', aspectRatio: 'auto', flex: '0 0 154px', width: '154px' }}>
           <div className="stat-card-header">
-            <h3 style={{ color: '#cbd5e1', fontWeight: '700' }}>Equipos Activos</h3>
-            <Shield size={20} color="var(--accent-teal)" />
+            <h3 style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '0.79rem', lineHeight: 1.1 }}>Equipos Activos</h3>
+            <Shield size={14} color="var(--accent-teal)" />
           </div>
-          <p className="stat-value" style={{ color: '#fff', fontWeight: '900' }}>{kpis.equiposCount}</p>
-          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500' }}>Con nómina cargada</p>
+          <p className="stat-value" style={{ color: '#fff', fontWeight: '900', fontSize: '1.34rem', lineHeight: 1.05, margin: '0.1rem 0' }}>{kpis.equiposCount}</p>
+          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500', fontSize: '0.68rem', margin: 0, lineHeight: 1.15 }}>Con nomina</p>
         </div>
 
-        <div className="stat-card rep-card-premium" style={{ ...glassCardStyle, borderTop: '5px solid #f59e0b' }}>
+        <div className="stat-card rep-card-premium" style={{ ...glassCardStyle, borderTop: '4px solid #f59e0b', padding: '0.58rem 0.75rem', height: '86px', minHeight: '86px', aspectRatio: 'auto', flex: '0 0 154px', width: '154px' }}>
           <div className="stat-card-header">
-            <h3 style={{ color: '#cbd5e1', fontWeight: '700' }}>Estado Documental</h3>
-            <FileText size={20} color="#f59e0b" />
+            <h3 style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '0.79rem', lineHeight: 1.1 }}>Estado Documental</h3>
+            <FileText size={14} color="#f59e0b" />
           </div>
-          <p className="stat-value" style={{ color: '#fff', fontWeight: '900' }}>98%</p>
-          <div className="perf-bar-bg mt-3" style={{ height: '8px', background: 'rgba(255,255,255,0.1)' }}>
+          <p className="stat-value" style={{ color: '#fff', fontWeight: '900', fontSize: '1.34rem', lineHeight: 1.05, margin: '0.1rem 0' }}>98%</p>
+          <div className="perf-bar-bg mt-3" style={{ height: '3px', background: 'rgba(255,255,255,0.1)', marginTop: '0.15rem' }}>
             <div className="perf-bar-fill" style={{ width: `98%`, background: '#f59e0b', borderRadius: '4px' }}></div>
           </div>
         </div>
@@ -532,7 +533,7 @@ export default function NominaRepresentante() {
                   <tr>
                     <th onClick={() => handleSort('completo')} style={{ padding: '1rem 1.5rem', textAlign: 'left', cursor: 'pointer', fontWeight: '700' }}>Jugador</th>
                     <th onClick={() => handleSort('cedula')} className="hide-mobile" style={{ padding: '1rem 1.5rem', textAlign: 'left', cursor: 'pointer', fontWeight: '700' }}>Identificación</th>
-                    <th onClick={() => handleSort('numero')} style={{ padding: '1rem 1.5rem', textAlign: 'left', cursor: 'pointer', fontWeight: '700' }}>Dorsal</th>
+                    <th onClick={() => handleSort('numero')} style={{ padding: '1rem 1.5rem', textAlign: 'left', cursor: 'pointer', fontWeight: '700' }}>Numero</th>
                     <th onClick={() => handleSort('posicion')} className="hide-mobile" style={{ padding: '1rem 1.5rem', textAlign: 'left', cursor: 'pointer', fontWeight: '700' }}>Posición</th>
                     <th onClick={() => handleSort('equipo')} className="hide-mobile" style={{ padding: '1rem 1.5rem', textAlign: 'left', cursor: 'pointer', fontWeight: '700' }}>Equipo</th>
                     <th style={{ padding: '1rem 1.5rem', textAlign: 'right', fontWeight: '700' }}>Acciones</th>
@@ -636,17 +637,6 @@ export default function NominaRepresentante() {
             </div>
           </div>
 
-          {/* INFO PANEL */}
-          <div className="rep-card-premium" style={{ background: 'linear-gradient(135deg, #0366D6, #10B981)', color: 'white', border: 'none', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <AlertCircle size={20} /> Requisitos
-            </h3>
-            <ul style={{ paddingLeft: '1.25rem', listStyle: 'disc', fontSize: '0.9rem', opacity: 0.95, lineHeight: '1.7', fontWeight: '500' }}>
-              <li>Cédula de identidad legible</li>
-              <li>Fotografía tamaño carnet fondo blanco</li>
-              <li>Formulario de inscripción firmado</li>
-            </ul>
-          </div>
         </div>
       </div>
 
@@ -674,7 +664,7 @@ export default function NominaRepresentante() {
               </div>
               <div className="flex-mobile-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
                 <div className="form-group">
-                  <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem', color: '#cbd5e1', fontWeight: '700' }}>Dorsal</label>
+                  <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem', color: '#cbd5e1', fontWeight: '700' }}>Numero</label>
                   <input type="number" className="pro-input" value={formJugador.numero} onChange={e => setFormJugador({ ...formJugador, numero: e.target.value })} style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }} placeholder="#" />
                 </div>
                 <div className="form-group">
@@ -682,22 +672,7 @@ export default function NominaRepresentante() {
                   <input className="pro-input" value={formJugador.posicion} onChange={e => setFormJugador({ ...formJugador, posicion: e.target.value })} style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }} placeholder="Ej. Defensa" />
                 </div>
               </div>
-              <div className="flex-mobile-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-                <div className="form-group">
-                  <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem', color: '#cbd5e1', fontWeight: '700' }}>Salario Base</label>
-                  <div style={{ position: 'relative' }}>
-                    <DollarSign size={18} style={{ position: 'absolute', top: '12px', left: '12px', color: '#94a3b8' }} />
-                    <input type="number" step="0.01" className="pro-input" value={formJugador.salario_base} onChange={e => setFormJugador({ ...formJugador, salario_base: e.target.value })} style={{ width: '100%', padding: '0.85rem 0.85rem 0.85rem 2.5rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }} placeholder="0.00" />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem', color: '#cbd5e1', fontWeight: '700' }}>Incentivos</label>
-                  <div style={{ position: 'relative' }}>
-                    <TrendingUp size={18} style={{ position: 'absolute', top: '12px', left: '12px', color: '#94a3b8' }} />
-                    <input type="number" step="0.01" className="pro-input" value={formJugador.bonificaciones} onChange={e => setFormJugador({ ...formJugador, bonificaciones: e.target.value })} style={{ width: '100%', padding: '0.85rem 0.85rem 0.85rem 2.5rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }} placeholder="0.00" />
-                  </div>
-                </div>
-              </div>
+              <div style={{ marginBottom: '2.5rem' }} />
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowModal(false)} style={{ padding: '0.85rem 1.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#cbd5e1', fontWeight: '700', cursor: 'pointer', fontSize: '0.95rem' }}>Cancelar</button>

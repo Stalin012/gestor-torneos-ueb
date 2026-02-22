@@ -1,6 +1,6 @@
 @import './design-system.css';
 
-=========================================
+/* =========================================
    GLOBAL LAYOUT STYLES - PROFESSIONAL DASHBOARD
    ========================================= */
 
@@ -244,3 +244,6 @@
   }
 }
 
+body.modal-open {
+  overflow: hidden;
+}

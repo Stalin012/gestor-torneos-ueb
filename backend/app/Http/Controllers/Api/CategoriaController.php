@@ -14,9 +14,15 @@ class CategoriaController extends Controller
      * GET /api/categorias
      * Lista todas las categorías (ruta pública).
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categorias = Categoria::with('deporte')->orderBy('nombre', 'asc')->get();
+        $query = Categoria::with('deporte')->orderBy('nombre', 'asc');
+
+        if ($request->has('deporte_id')) {
+            $query->where('deporte_id', $request->deporte_id);
+        }
+
+        $categorias = $query->get();
         return response()->json($categorias);
     }
 

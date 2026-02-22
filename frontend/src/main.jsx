@@ -79,7 +79,7 @@ function App() {
           <Route path="torneos/:id" element={<TorneoDetalle />} />
           <Route path="torneos" element={<TorneosDeportes />} />
           <Route path="partidos" element={<PartidosFixtures />} />
-          <Route path="equipos" element={<EquiposInscripciones />} />
+          <Route path="equipos/:torneoId?" element={<EquiposInscripciones />} />
           <Route path="jugadores" element={<JugadoresPersonas />} />
           <Route path="arbitros" element={<Arbitros />} />
           <Route path="usuarios" element={<UsuariosSistema />} />

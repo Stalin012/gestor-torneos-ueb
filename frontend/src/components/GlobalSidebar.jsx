@@ -1,21 +1,19 @@
 import React, { memo } from 'react';
 import { NavLink } from 'react-router-dom';
 import Logo from './Logo';
-import { 
-    LayoutDashboard, 
-    Trophy, 
-    Users, 
-    User, 
-    Settings, 
-    Calendar, 
-    FileText, 
-    Shield,
-    Image,
-    Activity,
-    ClipboardList
+import {
+  LayoutDashboard,
+  Trophy,
+  Users,
+  User,
+  Settings,
+  Calendar,
+  FileText,
+  Shield,
+  Image,
+  Activity,
+  ClipboardList
 } from 'lucide-react';
-import '../css/unified-all.css';
-import '../css/unified-navigation.css';
 
 const getIcon = (label) => {
   if (!label) return <FileText size={20} />;
@@ -50,7 +48,7 @@ const GlobalSidebar = memo(({ links, role, onLogout, isOpen, isCollapsed }) => {
           <NavLink
             key={index}
             to={link.to}
-            className={({ isActive }) => 
+            className={({ isActive }) =>
               `nav-link ${isActive ? 'active' : ''}`
             }
             title={!isOpen ? link.label : ''}

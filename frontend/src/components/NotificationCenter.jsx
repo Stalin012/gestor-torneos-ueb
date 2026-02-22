@@ -1,12 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import { X, Bell, CheckCircle, AlertTriangle, Info, AlertCircle, History } from "lucide-react";
 import api from "../api";
-
-/**
- * Sistema de Notificaciones Premium con Historial
- * Centro de notificaciones tipo iOS/MacOS con persistencia en BD
- */
 
 const NOTIFICATION_TYPES = {
     SUCCESS: "success",
@@ -15,58 +10,130 @@ const NOTIFICATION_TYPES = {
     INFO: "info",
 };
 
-const NotificationItem = ({ notification, onClose, onDismiss, onMarkAsRead }) => {
+const VALID_TYPES = new Set(Object.values(NOTIFICATION_TYPES));
+
+const safeParseUser = () => {
+    try {
+        const raw = localStorage.getItem("user");
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+};
+
+const normalizeType = (value) => {
+    const type = String(value || "").toLowerCase();
+    return VALID_TYPES.has(type) ? type : NOTIFICATION_TYPES.INFO;
+};
+
+const defaultTitleByType = (type) => {
+    switch (type) {
+        case NOTIFICATION_TYPES.SUCCESS:
+            return "Operacion completada";
+        case NOTIFICATION_TYPES.ERROR:
+            return "Ocurrio un error";
+        case NOTIFICATION_TYPES.WARNING:
+            return "Atencion";
+        default:
+            return "Informacion";
+    }
+};
+
+const normalizeCreatePayload = (args) => {
+    const [arg1, arg2, arg3, arg4] = args;
+
+    if (arg1 && typeof arg1 === "object" && !Array.isArray(arg1)) {
+        const type = normalizeType(arg1.type);
+        return {
+            type,
+            title: arg1.title || defaultTitleByType(type),
+            message: arg1.message || arg1.title || defaultTitleByType(type),
+            userCedula: arg1.userCedula ?? null,
+            scope: arg1.scope || "self",
+        };
+    }
+
+    if (typeof arg1 === "string" && VALID_TYPES.has(arg1.toLowerCase())) {
+        const type = normalizeType(arg1);
+        const title = typeof arg2 === "string" ? arg2 : defaultTitleByType(type);
+        const message = typeof arg3 === "string" ? arg3 : title;
+        return {
+            type,
+            title,
+            message,
+            userCedula: arg4 ?? null,
+            scope: "self",
+        };
+    }
+
+    const message = typeof arg1 === "string" ? arg1 : defaultTitleByType(NOTIFICATION_TYPES.INFO);
+    const type = normalizeType(arg2);
+    return {
+        type,
+        title: defaultTitleByType(type),
+        message,
+        userCedula: arg3 ?? null,
+        scope: "self",
+    };
+};
+
+const resolveTargetCedula = (currentUser, payload) => {
+    if (payload.userCedula !== null && payload.userCedula !== undefined) {
+        return payload.userCedula;
+    }
+
+    const role = String(currentUser?.rol || "").toLowerCase();
+    const cedula = currentUser?.cedula || null;
+
+    if (payload.scope === "global" && role === "admin") {
+        return null;
+    }
+
+    return cedula;
+};
+
+const normalizeNotificationsResponse = (responseData) => {
+    if (Array.isArray(responseData)) return responseData;
+    if (Array.isArray(responseData?.data)) return responseData.data;
+    return [];
+};
+
+const NotificationItem = ({ notification, onDismiss, onMarkAsRead }) => {
     const { id, tipo, titulo, mensaje, created_at, leida } = notification;
 
     const getIcon = () => {
         switch (tipo) {
             case NOTIFICATION_TYPES.SUCCESS:
-                return <CheckCircle size={24} />;
+                return <CheckCircle size={22} />;
             case NOTIFICATION_TYPES.ERROR:
-                return <AlertCircle size={24} />;
+                return <AlertCircle size={22} />;
             case NOTIFICATION_TYPES.WARNING:
-                return <AlertTriangle size={24} />;
+                return <AlertTriangle size={22} />;
             default:
-                return <Info size={24} />;
+                return <Info size={22} />;
         }
     };
 
     const getColors = () => {
         switch (tipo) {
             case NOTIFICATION_TYPES.SUCCESS:
-                return {
-                    bg: "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.1))",
-                    border: "rgba(34, 197, 94, 0.5)",
-                    icon: "#86efac",
-                };
+                return { bg: "rgba(34, 197, 94, 0.15)", border: "rgba(34, 197, 94, 0.5)", icon: "#86efac" };
             case NOTIFICATION_TYPES.ERROR:
-                return {
-                    bg: "linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1))",
-                    border: "rgba(239, 68, 68, 0.5)",
-                    icon: "#fca5a5",
-                };
+                return { bg: "rgba(239, 68, 68, 0.15)", border: "rgba(239, 68, 68, 0.5)", icon: "#fca5a5" };
             case NOTIFICATION_TYPES.WARNING:
-                return {
-                    bg: "linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1))",
-                    border: "rgba(245, 158, 11, 0.5)",
-                    icon: "#fbbf24",
-                };
+                return { bg: "rgba(245, 158, 11, 0.15)", border: "rgba(245, 158, 11, 0.5)", icon: "#fbbf24" };
             default:
-                return {
-                    bg: "linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(14, 165, 233, 0.1))",
-                    border: "rgba(56, 189, 248, 0.5)",
-                    icon: "#bae6fd",
-                };
+                return { bg: "rgba(56, 189, 248, 0.15)", border: "rgba(56, 189, 248, 0.5)", icon: "#bae6fd" };
         }
     };
 
     const colors = getColors();
 
-    const handleClick = async () => {
+    const handleMarkRead = async () => {
         if (!leida && onMarkAsRead) {
             await onMarkAsRead(id);
         }
-        onDismiss?.(id);
     };
 
     return (
@@ -76,68 +143,65 @@ const NotificationItem = ({ notification, onClose, onDismiss, onMarkAsRead }) =>
                 background: colors.bg,
                 borderLeft: `4px solid ${colors.border}`,
                 borderRadius: "12px",
-                padding: "1rem 1.25rem",
-                marginBottom: "0.75rem",
-                backdropFilter: "blur(10px)",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                animation: "slideInRight 0.3s ease-out",
+                padding: "0.9rem 1rem",
+                marginBottom: "0.7rem",
                 cursor: "pointer",
-                opacity: leida ? 0.7 : 1,
+                opacity: leida ? 0.75 : 1,
             }}
-            onClick={handleClick}
+            onClick={handleMarkRead}
         >
-            <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", gap: "0.8rem", alignItems: "flex-start" }}>
                 <div style={{ color: colors.icon, flexShrink: 0 }}>{getIcon()}</div>
-
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.25rem" }}>
-                        <h4 style={{ fontSize: "0.95rem", fontWeight: "700", color: "#ffffff", margin: 0 }}>
-                            {titulo}
+                        <h4 style={{ fontSize: "0.92rem", fontWeight: "700", color: "#ffffff", margin: 0 }}>
+                            {titulo || defaultTitleByType(tipo)}
                             {!leida && (
-                                <span style={{
-                                    display: 'inline-block',
-                                    width: '8px',
-                                    height: '8px',
-                                    background: colors.border,
-                                    borderRadius: '50%',
-                                    marginLeft: '0.5rem'
-                                }}></span>
+                                <span
+                                    style={{
+                                        display: "inline-block",
+                                        width: "8px",
+                                        height: "8px",
+                                        background: colors.border,
+                                        borderRadius: "50%",
+                                        marginLeft: "0.45rem",
+                                    }}
+                                />
                             )}
                         </h4>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onClose(id);
+                                onDismiss(id);
                             }}
                             style={{
                                 background: "transparent",
                                 border: "none",
-                                color: "var(--muted)",
+                                color: "#94a3b8",
                                 cursor: "pointer",
-                                padding: "0.25rem",
+                                padding: "0.1rem",
                                 borderRadius: "4px",
-                                transition: "all 0.2s",
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                            aria-label="Cerrar notificación"
+                            aria-label="Ocultar notificacion"
                         >
-                            <X size={16} />
+                            <X size={15} />
                         </button>
                     </div>
 
-                    <p style={{ fontSize: "0.85rem", color: "#ffffff", margin: "0 0 0.5rem 0", lineHeight: 1.5 }}>
+                    <p style={{ fontSize: "0.84rem", color: "#ffffff", margin: "0 0 0.4rem 0", lineHeight: 1.45 }}>
                         {mensaje}
                     </p>
 
-                    <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontStyle: "italic" }}>
-                        {new Date(created_at).toLocaleString("es-ES", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        })}
+                    <span style={{ fontSize: "0.73rem", color: "#94a3b8" }}>
+                        {created_at
+                            ? new Date(created_at).toLocaleString("es-ES", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            })
+                            : "Fecha no disponible"}
                     </span>
                 </div>
             </div>
@@ -147,79 +211,41 @@ const NotificationItem = ({ notification, onClose, onDismiss, onMarkAsRead }) =>
 
 NotificationItem.propTypes = {
     notification: PropTypes.object.isRequired,
-    onClose: PropTypes.func.isRequired,
-    onDismiss: PropTypes.func,
+    onDismiss: PropTypes.func.isRequired,
     onMarkAsRead: PropTypes.func,
 };
 
-const NotificationCenter = ({ isOpen, onClose }) => {
-    const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    const loadNotifications = useCallback(async () => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('No token found, skipping notification load');
-                setLoading(false);
-                return;
-            }
-            const response = await api.get('/notificaciones');
-            setNotifications(response.data);
-        } catch (error) {
-            // Solo mostrar error si no es 401 (no autenticado)
-            if (error.response?.status !== 401) {
-                console.error('Error loading notifications:', error);
-            }
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+const NotificationCenter = ({ isOpen, onClose, notifications, loadNotifications, markAsRead, markAllAsRead, loading }) => {
+    const [hiddenIds, setHiddenIds] = useState([]);
+    const safeNotifications = Array.isArray(notifications) ? notifications : [];
+    const visibleNotifications = useMemo(
+        () => safeNotifications.filter((n) => !hiddenIds.includes(n.id)),
+        [safeNotifications, hiddenIds]
+    );
+    const unreadCount = safeNotifications.filter((n) => !n.leida).length;
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && loadNotifications) {
             loadNotifications();
         }
     }, [isOpen, loadNotifications]);
 
-    const markAsRead = async (id) => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-            
-            await api.patch(`/notificaciones/${id}/read`);
-            setNotifications(prev => 
-                prev.map(n => n.id === id ? { ...n, leida: true } : n)
-            );
-        } catch (error) {
-            if (error.response?.status !== 401) {
-                console.error('Error marking notification as read:', error);
-            }
+    useEffect(() => {
+        if (!isOpen) {
+            setHiddenIds([]);
         }
-    };
+    }, [isOpen]);
 
-    const markAllAsRead = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-            
-            await api.patch('/notificaciones/read-all');
-            setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
-        } catch (error) {
-            if (error.response?.status !== 401) {
-                console.error('Error marking all notifications as read:', error);
-            }
-        }
-    };
-
-    const removeNotification = (id) => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-    };
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        const onEsc = (e) => {
+            if (e.key === "Escape") onClose();
+        };
+        window.addEventListener("keydown", onEsc);
+        return () => window.removeEventListener("keydown", onEsc);
+    }, [isOpen, onClose]);
 
     if (!isOpen) return null;
-
-    const unreadCount = notifications.filter(n => !n.leida).length;
 
     return (
         <div
@@ -239,17 +265,16 @@ const NotificationCenter = ({ isOpen, onClose }) => {
                 border: "1px solid var(--border)",
                 boxShadow: "0 20px 60px rgba(0, 0, 0, 0.6)",
                 backdropFilter: "blur(20px)",
-                animation: "slideInRight 0.3s ease-out",
             }}
         >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, fontSize: "1.1rem", fontWeight: "800", color: "#ffffff" }}>
-                    <Bell size={20} />
+                <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, fontSize: "1.05rem", fontWeight: "800", color: "#ffffff" }}>
+                    <Bell size={19} />
                     Notificaciones
                     {unreadCount > 0 && (
                         <span
                             style={{
-                                fontSize: "0.75rem",
+                                fontSize: "0.72rem",
                                 padding: "0.15rem 0.5rem",
                                 background: "var(--accent)",
                                 borderRadius: "12px",
@@ -262,7 +287,7 @@ const NotificationCenter = ({ isOpen, onClose }) => {
                     )}
                 </h3>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: "flex", gap: "0.45rem" }}>
                     {unreadCount > 0 && (
                         <button
                             onClick={markAllAsRead}
@@ -270,20 +295,11 @@ const NotificationCenter = ({ isOpen, onClose }) => {
                                 background: "transparent",
                                 border: "1px solid var(--accent)",
                                 color: "var(--accent)",
-                                padding: "0.4rem 0.8rem",
+                                padding: "0.35rem 0.65rem",
                                 borderRadius: "8px",
-                                fontSize: "0.75rem",
+                                fontSize: "0.72rem",
                                 cursor: "pointer",
                                 fontWeight: "600",
-                                transition: "all 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = "var(--accent)";
-                                e.currentTarget.style.color = "#000";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = "transparent";
-                                e.currentTarget.style.color = "var(--accent)";
                             }}
                         >
                             Marcar todas
@@ -296,35 +312,34 @@ const NotificationCenter = ({ isOpen, onClose }) => {
                             border: "none",
                             color: "#ffffff",
                             cursor: "pointer",
-                            padding: "0.25rem",
+                            padding: "0.2rem",
                             borderRadius: "4px",
-                            transition: "all 0.2s",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        aria-label="Cerrar panel"
                     >
-                        <X size={20} />
+                        <X size={19} />
                     </button>
                 </div>
             </div>
 
             <div>
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '2rem', color: '#ffffff' }}>
+                    <div style={{ textAlign: "center", padding: "2rem", color: "#ffffff" }}>
                         Cargando notificaciones...
                     </div>
-                ) : notifications.length === 0 ? (
+                ) : visibleNotifications.length === 0 ? (
                     <div className="empty-state" style={{ padding: "3rem 1rem" }}>
-                        <History size={60} style={{ opacity: 0.1, margin: "0 auto 1rem", display: "block" }} />
-                        <p style={{ color: "#ffffff", fontSize: "0.9rem", textAlign: "center" }}>No hay notificaciones en el historial</p>
+                        <History size={56} style={{ opacity: 0.12, margin: "0 auto 0.8rem", display: "block" }} />
+                        <p style={{ color: "#ffffff", fontSize: "0.9rem", textAlign: "center" }}>
+                            No hay notificaciones disponibles
+                        </p>
                     </div>
                 ) : (
-                    notifications.map((notification) => (
+                    visibleNotifications.map((notification) => (
                         <NotificationItem
                             key={notification.id}
                             notification={notification}
-                            onClose={removeNotification}
-                            onDismiss={removeNotification}
+                            onDismiss={(id) => setHiddenIds((prev) => [...prev, id])}
                             onMarkAsRead={markAsRead}
                         />
                     ))
@@ -337,57 +352,98 @@ const NotificationCenter = ({ isOpen, onClose }) => {
 NotificationCenter.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
+    notifications: PropTypes.array,
+    loadNotifications: PropTypes.func,
+    markAsRead: PropTypes.func,
+    markAllAsRead: PropTypes.func,
+    loading: PropTypes.bool,
 };
 
-// Hook personalizado para notificaciones con persistencia
 export const useNotifications = () => {
     const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    const addNotification = useCallback(async (type, title, message, userCedula = null) => {
+    const loadNotifications = useCallback(async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setNotifications([]);
+            return;
+        }
+
+        setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('No token found, skipping notification creation');
-                return;
-            }
-            await api.post('/notificaciones', {
-                titulo: title,
-                mensaje: message,
-                tipo: type,
-                usuario_cedula: userCedula
-            });
-            // Recargar notificaciones después de crear una nueva
-            const response = await api.get('/notificaciones');
-            setNotifications(response.data);
+            const response = await api.get("/notificaciones");
+            const normalized = normalizeNotificationsResponse(response.data);
+            setNotifications(normalized);
         } catch (error) {
-            // Solo mostrar error si no es 401 (no autenticado)
             if (error.response?.status !== 401) {
-                console.error('Error creating notification:', error);
+                console.error("Error loading notifications:", error);
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const addNotification = useCallback(async (...args) => {
+        const token = localStorage.getItem("token");
+        if (!token) return false;
+
+        const currentUser = safeParseUser();
+        const payload = normalizeCreatePayload(args);
+        const targetCedula = resolveTargetCedula(currentUser, payload);
+
+        try {
+            await api.post("/notificaciones", {
+                titulo: payload.title,
+                mensaje: payload.message,
+                tipo: payload.type,
+                usuario_cedula: targetCedula,
+            });
+            await loadNotifications();
+            return true;
+        } catch (error) {
+            if (error.response?.status !== 401) {
+                console.error("Error creating notification:", error?.response?.data || error);
+            }
+            return false;
+        }
+    }, [loadNotifications]);
+
+    const markAsRead = useCallback(async (id) => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        try {
+            await api.patch(`/notificaciones/${id}/read`);
+            setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, leida: true } : n)));
+        } catch (error) {
+            if (error.response?.status !== 401) {
+                console.error("Error markAsRead:", error);
             }
         }
     }, []);
 
-    const loadNotifications = useCallback(async () => {
+    const markAllAsRead = useCallback(async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('No token found, skipping notification load');
-                return;
-            }
-            const response = await api.get('/notificaciones');
-            setNotifications(response.data);
+            await api.patch("/notificaciones/read-all");
+            setNotifications((prev) => prev.map((n) => ({ ...n, leida: true })));
         } catch (error) {
-            // Solo mostrar error si no es 401 (no autenticado)
             if (error.response?.status !== 401) {
-                console.error('Error loading notifications:', error);
+                console.error("Error markAllAsRead:", error);
             }
         }
     }, []);
 
     return {
         notifications,
+        loading,
         addNotification,
         loadNotifications,
+        markAsRead,
+        markAllAsRead,
         success: (title, message, userCedula) => addNotification(NOTIFICATION_TYPES.SUCCESS, title, message, userCedula),
         error: (title, message, userCedula) => addNotification(NOTIFICATION_TYPES.ERROR, title, message, userCedula),
         warning: (title, message, userCedula) => addNotification(NOTIFICATION_TYPES.WARNING, title, message, userCedula),

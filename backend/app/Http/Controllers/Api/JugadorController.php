@@ -166,7 +166,7 @@ class JugadorController extends Controller
     private function buildCarnetData(Jugador $jugador): array
     {
         // Cargar relaciones necesarias si no están cargadas
-        $jugador->loadMissing(['persona', 'equipo.categoria']);
+        $jugador->loadMissing(['persona', 'equipo.categoria', 'equipo.torneo']);
         
         $persona = $jugador->persona;
         $equipo  = $jugador->equipo;
@@ -182,13 +182,30 @@ class JugadorController extends Controller
             ? trim(($persona->nombres ?? '') . ' ' . ($persona->apellidos ?? ''))
             : 'Sin nombre';
 
-        // URL oficial de validación (debe coincidir con la ruta pública del frontend)
-        $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
-        $qrText = rtrim($frontendUrl, '/') . "/carnet/{$jugador->cedula}";
+        // Datos completos para el QR en formato texto simple (mejor compatibilidad)
+        $qrText = "=== CARNET DEPORTIVO UEB ===\n"
+            . "Cedula: {$jugador->cedula}\n"
+            . "Nombre: {$nombreCompleto}\n"
+            . "Equipo: " . ($equipo?->nombre ?? 'Sin equipo') . "\n"
+            . "Torneo: " . ($equipo?->torneo?->nombre ?? 'Sin torneo') . "\n"
+            . "Posicion: " . ($jugador->posicion ?? 'N/A') . "\n"
+            . "Numero: #" . ($jugador->numero ?? '-') . "\n";
+        
+        if ($jugador->carrera) {
+            $qrText .= "Carrera: {$jugador->carrera}\n";
+        }
+        if ($jugador->facultad) {
+            $qrText .= "Facultad: {$jugador->facultad}\n";
+        }
+        
+        $qrText .= "Temporada: " . date('Y') . "\n"
+            . "Token: {$jugador->qr_token}\n"
+            . "Emision: " . date('d/m/Y');
 
         $qrSvgRaw = (string) QrCode::format('svg')
-            ->size(200)
-            ->margin(0)
+            ->size(300)
+            ->errorCorrection('M')
+            ->margin(1)
             ->generate($qrText);
 
         return [
@@ -240,7 +257,7 @@ class JugadorController extends Controller
     {
         \Log::info("Intentando generar carnet PDF para cédula: {$cedula}");
         try {
-            $jugador = Jugador::with(['persona', 'equipo'])->find($cedula);
+            $jugador = Jugador::with(['persona', 'equipo.torneo'])->find($cedula);
 
             if (!$jugador) {
                 abort(404, 'Jugador no encontrado.');
@@ -248,7 +265,7 @@ class JugadorController extends Controller
 
             $data = $this->buildCarnetData($jugador);
 
-            $pdf = Pdf::loadView('pdf.carnet_jugador', compact('jugador') + ['qrCode' => $data['qr_base64']])
+            $pdf = Pdf::loadView('pdf.carnet_jugador', compact('jugador', 'data') + ['qrCode' => $data['qr_base64']])
                 ->setPaper([0, 0, 242.65, 153.07], 'landscape');
 
             return $pdf->download('Carnet_'.$jugador->cedula.'.pdf');

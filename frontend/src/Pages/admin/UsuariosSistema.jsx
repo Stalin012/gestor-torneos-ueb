@@ -94,7 +94,14 @@ const UsuariosSistema = () => {
                 </button>
             </header>
 
-            <div className="responsive-grid" style={{ marginBottom: '3rem' }}>
+            <div
+                className="responsive-grid stats-grid"
+                style={{
+                    marginBottom: '2rem',
+                    gap: '0.75rem',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))'
+                }}
+            >
                 <StatCard title="Total Usuarios" value={stats.total} icon={Users} color="#356ed8" />
                 <StatCard title="Cuentas Activas" value={stats.activos} icon={ShieldCheck} color="#10b981" />
                 <StatCard title="Administradores" value={stats.admins} icon={Shield} color="#f59e0b" />

@@ -160,8 +160,8 @@
         }
 
         .info-item {
-            margin-bottom: 1mm;
-            overflow: hidden;
+            margin-bottom: 0.7mm;
+            overflow: visible;
         }
 
         .info-label {
@@ -176,9 +176,10 @@
             font-size: 2.1mm;
             font-weight: 700;
             color: #f1f5f9;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis; 
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            line-height: 1.2;
             display: block;
             width: 100%;
         }
@@ -216,23 +217,23 @@
             position: absolute;
             bottom: 2mm;
             right: 2mm;
-            width: 19mm;
+            width: 22mm;
             z-index: 30;
             text-align: center;
         }
 
         .qr-white-box {
             background-color: #ffffff;
-            padding: 0.8mm;
-            border-radius: 1.2mm;
+            padding: 1mm;
+            border-radius: 1.5mm;
             box-shadow: 0 0.8mm 3mm rgba(0,0,0,0.8);
-            border: 0.4mm solid #3b82f6;
+            border: 0.5mm solid #3b82f6;
             display: inline-block;
         }
 
         .qr-white-box img {
-            width: 15mm;
-            height: 15mm;
+            width: 18mm;
+            height: 18mm;
             display: block;
         }
 
@@ -329,24 +330,31 @@
                 <div class="info-val yellow">{{ strtoupper($jugador->equipo->nombre ?? 'ESTADO LIBRE') }}</div>
             </div>
 
-            @if(isset($jugador->facultad) && $jugador->facultad)
+            @if(isset($jugador->posicion) && $jugador->posicion)
             <div class="info-item">
-                <div class="info-label">Facultad / Unidad</div>
-                <div class="info-val">{{ strtoupper($jugador->facultad) }}</div>
+                <div class="info-label">Posición</div>
+                <div class="info-val">{{ strtoupper($jugador->posicion) }}</div>
             </div>
             @endif
 
             @if(isset($jugador->carrera) && $jugador->carrera)
             <div class="info-item">
                 <div class="info-label">Carrera de Formación</div>
-                <div class="info-val">{{ strtoupper($jugador->carrera) }}</div>
+                <div class="info-val" style="font-size: 1.8mm; line-height: 1.25;">{{ strtoupper($jugador->carrera) }}</div>
+            </div>
+            @endif
+
+            @if(isset($jugador->facultad) && $jugador->facultad)
+            <div class="info-item">
+                <div class="info-label">Facultad / Unidad</div>
+                <div class="info-val" style="font-size: 1.6mm; line-height: 1.25;">{{ strtoupper($jugador->facultad) }}</div>
             </div>
             @endif
         </div>
 
-        <!-- DORSAL -->
+        <!-- NÚMERO -->
         <div class="dorsal-section">
-            <div class="dorsal-label">Dorsal</div>
+            <div class="dorsal-label">Número</div>
             <div class="dorsal-num">#{{ str_pad($jugador->numero ?? '0', 2, '0', STR_PAD_LEFT) }}</div>
         </div>
 

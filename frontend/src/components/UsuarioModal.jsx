@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, User, Mail, Tag, CheckCircle, ShieldCheck } from 'lucide-react';
 import api from '../api';
 
@@ -16,7 +17,17 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            document.body.classList.remove('modal-open');
+            return;
+        }
+
+        document.body.classList.add('modal-open');
+
+        // Cerrar con ESC
+        const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', handleEsc);
+
         if (initialData) {
             setFormData({
                 nombres: initialData.persona?.nombres || '',
@@ -39,8 +50,10 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
             });
         }
         setErrors({});
-        document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = 'auto'; };
+        return () => {
+            document.body.classList.remove('modal-open');
+            document.removeEventListener('keydown', handleEsc);
+        };
     }, [isOpen, initialData]);
 
     const handleChange = (e) => {
@@ -110,11 +123,17 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
 
     if (!isOpen) return null;
 
-    return (
-        <div className="modal-overlay fade-in" onClick={onClose} style={{ zIndex: 1000 }}>
-            <div className="modal-content scale-in" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+    return createPortal(
+        <div
+            className="modal-overlay fade-in"
+            onClick={onClose}
+        >
+            <div
+                className="modal-content modal-lg scale-in"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="modal-header" style={{
-                    background: 'linear-gradient(135deg, rgba(53, 110, 216, 0.1), rgba(245, 158, 11, 0.05))',
+                    background: 'linear-gradient(135deg, rgba(53, 110, 216, 0.1), rgba(168, 85, 247, 0.05))',
                     borderBottom: '2px solid var(--primary)'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -125,55 +144,55 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
                             color: 'white',
                             boxShadow: '0 8px 20px rgba(53, 110, 216, 0.3)'
                         }}>
-                            <ShieldCheck size={28} />
+                            <ShieldCheck size={26} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900 }}>
                                 {initialData ? 'Garantizar Acceso' : 'Nuevo Operador'}
                             </h2>
-                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Gestión de credenciales y permisos</p>
+                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Gestión de credenciales y permisos</p>
                         </div>
                     </div>
-                    <button className="btn-icon-close" onClick={onClose}><X size={24} /></button>
+                    <button className="btn-icon-close" onClick={onClose}><X size={22} /></button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="modal-body p-lg-mobile" style={{ padding: '2.5rem' }}>
-                        <div className="flex-mobile-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    <div className="modal-body">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
                             <div className="form-group">
                                 <label className="form-label">Nombres</label>
                                 <div style={{ position: 'relative' }}>
-                                    <User size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--primary)' }} />
-                                    <input type="text" name="nombres" className="pro-input" style={{ paddingLeft: '40px' }} value={formData.nombres} onChange={handleChange} disabled={loading} required placeholder="Nombre Real" />
+                                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.8 }} />
+                                <input type="text" name="nombres" className="pro-input" value={formData.nombres} onChange={handleChange} disabled={loading} required placeholder="Nombre Real" />
                                 </div>
-                                {errors.nombres && <p className="error-message" style={{ margin: '4px 0 0 0' }}>{errors.nombres}</p>}
+                                {errors.nombres && <p className="error-message">{errors.nombres}</p>}
                             </div>
 
                             <div className="form-group">
                                 <label className="form-label">Apellidos</label>
                                 <div style={{ position: 'relative' }}>
-                                    <User size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--primary)' }} />
-                                    <input type="text" name="apellidos" className="pro-input" style={{ paddingLeft: '40px' }} value={formData.apellidos} onChange={handleChange} disabled={loading} required placeholder="Apellido Real" />
+                                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.8 }} />
+                                <input type="text" name="apellidos" className="pro-input" value={formData.apellidos} onChange={handleChange} disabled={loading} required placeholder="Apellido Real" />
                                 </div>
-                                {errors.apellidos && <p className="error-message" style={{ margin: '4px 0 0 0' }}>{errors.apellidos}</p>}
+                                {errors.apellidos && <p className="error-message">{errors.apellidos}</p>}
                             </div>
                         </div>
 
                         <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                             <label className="form-label">Correo Electrónico</label>
                             <div style={{ position: 'relative' }}>
-                                <Mail size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--primary)' }} />
-                                <input type="email" name="email" className="pro-input" style={{ paddingLeft: '40px' }} value={formData.email} onChange={handleChange} disabled={loading} required placeholder="institucional@ejemplo.com" />
+                                <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.8 }} />
+                                <input type="email" name="email" className="pro-input" style={{ paddingLeft: '38px' }} value={formData.email} onChange={handleChange} disabled={loading} required placeholder="institucional@ejemplo.com" />
                             </div>
-                            {errors.email && <p className="error-message" style={{ margin: '4px 0 0 0' }}>{errors.email}</p>}
+                            {errors.email && <p className="error-message">{errors.email}</p>}
                         </div>
 
-                        <div className="flex-mobile-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
                             <div className="form-group">
                                 <label className="form-label">Rol del Sistema</label>
                                 <div style={{ position: 'relative' }}>
-                                    <Tag size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--primary)' }} />
-                                    <select name="rol" className="pro-input" style={{ paddingLeft: '40px' }} value={formData.rol} onChange={handleChange} disabled={loading}>
+                                    <Tag size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.8 }} />
+                                    <select name="rol" className="pro-input" style={{ paddingLeft: '38px' }} value={formData.rol} onChange={handleChange} disabled={loading}>
                                         <option value="admin">Administrador Maestro</option>
                                         <option value="usuario">Operador Común</option>
                                         <option value="arbitro">Cuerpo Técnico</option>
@@ -187,8 +206,10 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
                             <div className="form-group">
                                 <label className="form-label">Estatus de Cuenta</label>
                                 <div style={{ position: 'relative' }}>
-                                    {formData.estado === 'activo' ? <CheckCircle size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: '#10b981' }} /> : <X size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: '#ef4444' }} />}
-                                    <select name="estado" className="pro-input" style={{ paddingLeft: '40px' }} value={formData.estado} onChange={handleChange} disabled={loading}>
+                                    {formData.estado === 'activo'
+                                        ? <CheckCircle size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#10b981' }} />
+                                        : <X size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#ef4444' }} />}
+                                    <select name="estado" className="pro-input" style={{ paddingLeft: '38px' }} value={formData.estado} onChange={handleChange} disabled={loading}>
                                         <option value="activo">Activo / Autorizado</option>
                                         <option value="inactivo">Restringido / Inactivo</option>
                                     </select>
@@ -196,36 +217,37 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
                             </div>
                         </div>
 
-                        <div className="flex-mobile-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                             <div className="form-group">
                                 <label className="form-label">Contraseña {initialData && '(Opcional)'}</label>
                                 <input type="password" name="password" className="pro-input" value={formData.password} onChange={handleChange} disabled={loading} placeholder="••••••••" />
-                                {errors.password && <p className="error-message" style={{ margin: '4px 0 0 0' }}>{errors.password}</p>}
+                                {errors.password && <p className="error-message">{errors.password}</p>}
                             </div>
 
                             <div className="form-group">
                                 <label className="form-label">Reconfirmar</label>
                                 <input type="password" name="password_confirmation" className="pro-input" value={formData.password_confirmation} onChange={handleChange} disabled={loading} placeholder="••••••••" />
-                                {errors.password_confirmation && <p className="error-message" style={{ margin: '4px 0 0 0' }}>{errors.password_confirmation}</p>}
+                                {errors.password_confirmation && <p className="error-message">{errors.password_confirmation}</p>}
                             </div>
                         </div>
 
                         {errors.general && (
-                            <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid #ef4444', color: '#ef4444', textAlign: 'center', fontSize: '0.9rem' }}>
+                            <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', textAlign: 'center', fontSize: '0.9rem' }}>
                                 {errors.general}
                             </div>
                         )}
                     </div>
 
-                    <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1.5rem 2.5rem' }}>
+                    <div className="modal-footer">
                         <button type="button" className="pro-btn btn-secondary" onClick={onClose} disabled={loading}>Descartar</button>
-                        <button type="submit" className="pro-btn btn-primary" disabled={loading} style={{ minWidth: '180px', justifyContent: 'center' }}>
-                            {loading ? <div className="spinner" style={{ width: '18px', height: '18px' }} /> : <><Save size={20} /> {initialData ? 'Sincronizar Acceso' : 'Certificar Usuario'}</>}
+                        <button type="submit" className="pro-btn btn-primary" disabled={loading} style={{ minWidth: '180px' }}>
+                            {loading ? <div className="spinner" style={{ width: '18px', height: '18px' }} /> : <><Save size={18} /> {initialData ? 'Sincronizar Acceso' : 'Certificar Usuario'}</>}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

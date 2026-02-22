@@ -25,6 +25,14 @@ const Auditoria = () => {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedAuditEntry, setSelectedAuditEntry] = useState(null);
 
+    // Bloquear scroll cuando el modal está abierto
+    useEffect(() => {
+        if (showDetailModal) {
+            document.body.classList.add('modal-open');
+            return () => document.body.classList.remove('modal-open');
+        }
+    }, [showDetailModal]);
+
     // Action type mapping for badges and icons
     const getActionConfig = (action) => {
         if (!action) return { class: 'badge-neutral', icon: null };
@@ -209,82 +217,60 @@ const Auditoria = () => {
                     <Shield size={32} style={{ marginRight: '0.75rem', color: '#60a5fa' }} />
                     Auditoría del Sistema
                 </h1>
-                {/* Detail Modal */}
+                {/* Detail Modal - Profesional */}
                 {showDetailModal && selectedAuditEntry && (
-                    <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                        <div className="modal-content" style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '1.5rem', width: '80%', maxWidth: '800px', minWidth: '0px', minHeight: '0px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.2)' }}>
-                            <h2 className="modal-title" style={{ fontSize: '1.75rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0px', borderBottom: '1px solid #334155', paddingBottom: '0px' }}>
-                                Detalles del Evento de Auditoría
-                            </h2>
-                            <div className="modal-body" style={{ maxHeight: '40vh', overflowY: 'auto', paddingRight: '1rem', minWidth: '0px', minHeight: '0px' }}>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>ID del Evento:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500 }}>{selectedAuditEntry.id}</p>
+                    <div className="modal-overlay fade-in" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-content modal-lg scale-in" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header" style={{ background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(139, 92, 246, 0.05))', borderBottom: '2px solid rgba(96, 165, 250, 0.3)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                    <div style={{ padding: '10px', borderRadius: '12px', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: 'white', boxShadow: '0 6px 16px rgba(59, 130, 246, 0.35)' }}>
+                                        <Eye size={22} />
+                                    </div>
+                                    <div>
+                                        <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#fff' }}>Detalle del Evento</h2>
+                                        <p style={{ margin: '3px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Registro de auditoría del sistema</p>
+                                    </div>
                                 </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>Fecha y Hora:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500 }}>{formatDateTime(selectedAuditEntry.timestamp)}</p>
-                                </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>Usuario:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500 }}>{selectedAuditEntry.user}</p>
-                                </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>Acción:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500 }}>{selectedAuditEntry.action}</p>
-                                </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>Entidad:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500 }}>{selectedAuditEntry.entity}</p>
-                                </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>ID de Entidad:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500 }}>{selectedAuditEntry.entityId}</p>
-                                </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>Detalle:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{selectedAuditEntry.detail}</p>
-                                </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>Dirección IP:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500 }}>{selectedAuditEntry.ip}</p>
-                                </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>User Agent:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{selectedAuditEntry.userAgent}</p>
-                                </div>
-                                <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                    <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>Módulo:</p>
-                                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 500 }}>{selectedAuditEntry.module}</p>
-                                </div>
+                                <button className="btn-icon-close" onClick={() => setShowDetailModal(false)}><X size={20} /></button>
+                            </div>
+                            <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                {[
+                                    { label: 'ID del Evento', value: selectedAuditEntry.id },
+                                    { label: 'Fecha y Hora', value: formatDateTime(selectedAuditEntry.timestamp) },
+                                    { label: 'Usuario', value: selectedAuditEntry.user },
+                                    { label: 'Acción', value: selectedAuditEntry.action },
+                                    { label: 'Entidad', value: selectedAuditEntry.entity },
+                                    { label: 'ID de Entidad', value: selectedAuditEntry.entityId },
+                                    { label: 'Dirección IP', value: selectedAuditEntry.ip },
+                                    { label: 'Módulo', value: selectedAuditEntry.module },
+                                ].map(({ label, value }) => (
+                                    <div key={label} style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>{label}</div>
+                                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>{value || '—'}</div>
+                                    </div>
+                                ))}
+                                {selectedAuditEntry.detail && (
+                                    <div style={{ gridColumn: '1 / -1', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>Detalle</div>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{selectedAuditEntry.detail}</div>
+                                    </div>
+                                )}
+                                {selectedAuditEntry.userAgent && selectedAuditEntry.userAgent !== '-' && (
+                                    <div style={{ gridColumn: '1 / -1', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>User Agent</div>
+                                        <div style={{ fontSize: '0.82rem', fontFamily: 'monospace', color: '#94a3b8', wordBreak: 'break-all' }}>{selectedAuditEntry.userAgent}</div>
+                                    </div>
+                                )}
                                 {selectedAuditEntry.originalData && (
-                                    <div className="detail-item" style={{ marginBottom: '0px' }}>
-                                        <p style={{ color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0px' }}>Datos Originales:</p>
-                                        <pre style={{ backgroundColor: '#0f172a', color: '#FFFFFF', padding: '0px', borderRadius: '8px', overflowX: 'auto', fontSize: '0.8rem' }}>
-                                            {JSON.stringify(selectedAuditEntry.originalData, null, 2)}
-                                        </pre>
+                                    <div style={{ gridColumn: '1 / -1', padding: '0.75rem 1rem', background: 'rgba(15, 23, 42, 0.5)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Datos Originales (JSON)</div>
+                                        <pre style={{ fontSize: '0.78rem', color: '#7dd3fc', overflowX: 'auto', margin: 0, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{JSON.stringify(selectedAuditEntry.originalData, null, 2)}</pre>
                                     </div>
                                 )}
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0px', paddingTop: '0px', borderTop: '1px solid #334155' }}>
-                                <button
-                                    className="btn btn-secondary"
-                                    style={{
-                                        backgroundColor: '#475569',
-                                        color: 'white',
-                                        padding: '0.5rem 1rem',
-                                        borderRadius: '8px',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        border: 'none',
-                                        fontSize: '0.9rem',
-                                        fontWeight: 600
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#64748b'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#475569'}
-                                    onClick={() => setShowDetailModal(false)}
-                                >
-                                    Cerrar
+                            <div className="modal-footer">
+                                <button className="pro-btn btn-primary" onClick={() => setShowDetailModal(false)} style={{ minWidth: '120px' }}>
+                                    <X size={16} /> Cerrar
                                 </button>
                             </div>
                         </div>

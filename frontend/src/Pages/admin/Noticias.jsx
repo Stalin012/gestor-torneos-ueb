@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Newspaper,
     Plus,
@@ -39,71 +40,63 @@ const NoticiaModal = ({ isOpen, onClose, initialData, onSave, loading }) => {
         }
     }, [initialData, isOpen]);
 
+    useEffect(() => {
+        if (isOpen) {
+            document.body.classList.add('modal-open');
+            return () => document.body.classList.remove('modal-open');
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave(form, isEditMode, initialData?.id);
-    };
-
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content" style={{ maxWidth: "800px" }}>
+    return createPortal(
+        <div className="modal-overlay fade-in" onClick={onClose}>
+            <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ padding: '8px', background: 'rgba(59,130,246,0.1)', borderRadius: '12px', color: '#3b82f6' }}>
-                            <Newspaper size={24} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div className="modal-icon">
+                            <Newspaper size={28} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0 }}>{isEditMode ? "Editar Noticia" : "Publicar Noticia"}</h2>
-                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Completa los campos para informar a la comunidad.</p>
+                            <h2 className="modal-title">{isEditMode ? "Redactar Noticia" : "Nueva Publicación"}</h2>
+                            <p className="modal-subtitle">Comunicación institucional y novedades</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="btn-icon-close"><X size={24} /></button>
+                    <button type="button" className="btn-icon-close" onClick={onClose}>
+                        <X size={24} />
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
-                    <div className="form-group">
-                        <label><Type size={16} /> Título de la Noticia</label>
-                        <input
-                            type="text"
-                            className="pro-input"
-                            value={form.titulo}
-                            onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                            placeholder="Ej: Gran Inauguración del Torneo 2025"
-                            required
-                        />
+                <form onSubmit={e => { e.preventDefault(); onSave(form, isEditMode, initialData?.id); }}>
+                    <div className="modal-body">
+                        <div className="form-group">
+                            <label className="form-label" style={{ fontWeight: 800 }}>Encabezado Principal</label>
+                            <input
+                                type="text"
+                                className="pro-input"
+                                value={form.titulo}
+                                onChange={e => setForm({ ...form, titulo: e.target.value })}
+                                required
+                                placeholder="Escriba un título impactante..."
+                                style={{ fontSize: '1.2rem', fontWeight: 700 }}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label" style={{ fontWeight: 800 }}>Cuerpo de la Noticia</label>
+                            <textarea
+                                className="pro-input"
+                                value={form.contenido}
+                                onChange={e => setForm({ ...form, contenido: e.target.value })}
+                                required
+                                rows={8}
+                                placeholder="Desarrolle el contenido de la publicación..."
+                                style={{ resize: 'none', lineHeight: '1.6' }}
+                            />
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label><ImageIcon size={16} /> URL de Imagen de Portada</label>
-                        <input
-                            type="text"
-                            className="pro-input"
-                            value={form.imagen}
-                            onChange={(e) => setForm({ ...form, imagen: e.target.value })}
-                            placeholder="https://ejemplo.com/imagen.jpg"
-                        />
-                        {form.imagen && (
-                            <div style={{ marginTop: '10px', borderRadius: '12px', overflow: 'hidden', height: '150px', border: '1px solid var(--border)' }}>
-                                <img src={form.imagen} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="form-group">
-                        <label>Contenido de la Noticia</label>
-                        <textarea
-                            className="pro-input"
-                            style={{ minHeight: '200px', lineHeight: '1.6' }}
-                            value={form.contenido}
-                            onChange={(e) => setForm({ ...form, contenido: e.target.value })}
-                            placeholder="Escribe aquí el cuerpo de la noticia..."
-                            required
-                        />
-                    </div>
-
-                    <div className="modal-footer" style={{ marginTop: '2rem' }}>
+                    <div className="modal-footer">
                         <button type="button" className="pro-btn btn-secondary" onClick={onClose}>
                             Cancelar
                         </button>
@@ -114,7 +107,8 @@ const NoticiaModal = ({ isOpen, onClose, initialData, onSave, loading }) => {
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

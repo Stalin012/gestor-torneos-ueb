@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
-import '../css/tables-modals.css';
+// Styles provided by ../css/modals.css loaded via index.css
 
 /**
  * Professional ELITE Modal Component
@@ -32,8 +32,8 @@ const Modal = ({
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = 'auto'; };
+      document.body.classList.add('modal-open');
+      return () => document.body.classList.remove('modal-open');
     }
   }, [isOpen]);
 
@@ -42,12 +42,7 @@ const Modal = ({
   return (
     <div
       className="modal-overlay fade-in"
-      onClick={closeOnBackdrop ? onClose : undefined}
-      style={{
-        backdropFilter: 'blur(8px)',
-        backgroundColor: 'rgba(5, 10, 20, 0.85)',
-        zIndex: 1000
-      }}
+      onClick={closeOnBackdrop ? onClose : (e) => e.stopPropagation()}
     >
       <div
         className={`modal-content modal-${size} scale-in`}

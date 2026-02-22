@@ -43,18 +43,26 @@ class AuthController extends Controller
     ]);
 
     try {
+        // Verificar si la cédula ya existe
+        if (User::where('cedula', $validated['cedula'])->exists()) {
+            return response()->json([
+                'message' => 'La cédula ya se encuentra registrada.',
+                'errors'  => ['cedula' => ['La cédula ya se encuentra registrada.']],
+            ], 409); // 409 Conflict
+        }
+
         DB::beginTransaction();
 
         // Crear usuario directamente (User ya es la tabla personas)
-        $user = User::updateOrCreate(
-            ['cedula' => $validated['cedula']],
+        $user = User::create(
             [
+                'cedula'    => $validated['cedula'],
                 'nombres'   => $validated['nombres'],
                 'apellidos' => $validated['apellidos'],
-                'email'    => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'rol'      => $validated['rol'] ?? 'usuario',
-                'estado'   => true,
+                'email'     => $validated['email'],
+                'password'  => Hash::make($validated['password']),
+                'rol'       => $validated['rol'] ?? 'usuario',
+                'estado'    => true,
             ]
         );
 

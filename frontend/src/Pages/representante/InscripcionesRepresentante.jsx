@@ -188,9 +188,9 @@ export default function InscripcionesRepresentante() {
                       value={form.equipo_id}
                       onChange={e => setForm({ ...form, equipo_id: e.target.value })}
                     >
-                      <option value="" style={{ color: '#333' }}>Selecciona tu equipo</option>
+                      <option value="" style={{ color: '#e2e8f0', background: '#0f172a' }}>Selecciona tu equipo</option>
                       {equipos.map(eq => (
-                        <option key={eq.id} value={eq.id} style={{ color: '#333' }}>{eq.nombre}</option>
+                        <option key={eq.id} value={eq.id} style={{ color: '#e2e8f0', background: '#0f172a' }}>{eq.nombre}</option>
                       ))}
                     </select>
                   </div>
@@ -205,9 +205,9 @@ export default function InscripcionesRepresentante() {
                       value={form.torneo_id}
                       onChange={e => setForm({ ...form, torneo_id: e.target.value })}
                     >
-                      <option value="" style={{ color: '#333' }}>Selecciona el torneo</option>
+                      <option value="" style={{ color: '#e2e8f0', background: '#0f172a' }}>Selecciona el torneo</option>
                       {torneos.map(t => (
-                        <option key={t.id} value={t.id} style={{ color: '#333' }}>{t.nombre} ({t.deporte?.nombre})</option>
+                        <option key={t.id} value={t.id} style={{ color: '#e2e8f0', background: '#0f172a' }}>{t.nombre} ({t.deporte?.nombre})</option>
                       ))}
                     </select>
                   </div>
@@ -306,9 +306,9 @@ export default function InscripcionesRepresentante() {
                   value={filters.equipo_id}
                   onChange={e => setFilters({ ...filters, equipo_id: e.target.value })}
                 >
-                  <option value="" style={{ color: '#333' }}>Cualquiera</option>
+                  <option value="" style={{ color: '#e2e8f0', background: '#0f172a' }}>Cualquiera</option>
                   {equipos.map(eq => (
-                    <option key={eq.id} value={eq.id} style={{ color: '#333' }}>{eq.nombre}</option>
+                    <option key={eq.id} value={eq.id} style={{ color: '#e2e8f0', background: '#0f172a' }}>{eq.nombre}</option>
                   ))}
                 </select>
               </div>
@@ -320,10 +320,10 @@ export default function InscripcionesRepresentante() {
                   value={filters.status}
                   onChange={e => setFilters({ ...filters, status: e.target.value })}
                 >
-                  <option value="" style={{ color: '#333' }}>Todos</option>
-                  <option value="Pendiente" style={{ color: '#333' }}>Pendiente</option>
-                  <option value="Aprobada" style={{ color: '#333' }}>Aprobada</option>
-                  <option value="Rechazada" style={{ color: '#333' }}>Rechazada</option>
+                  <option value="" style={{ color: '#e2e8f0', background: '#0f172a' }}>Todos</option>
+                  <option value="Pendiente" style={{ color: '#e2e8f0', background: '#0f172a' }}>Pendiente</option>
+                  <option value="Aprobada" style={{ color: '#e2e8f0', background: '#0f172a' }}>Aprobada</option>
+                  <option value="Rechazada" style={{ color: '#e2e8f0', background: '#0f172a' }}>Rechazada</option>
                 </select>
               </div>
             </div>

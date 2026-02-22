@@ -253,7 +253,7 @@ const UserProfile = () => {
                   Equipo Actual
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', fontSize: '1.15rem', color: '#fff', fontWeight: 500 }}>
-                  <Shield size={20} color="#3b82f6" /> {perfil.equipo || "Agente Libre"}
+                  <Shield size={20} color="#3b82f6" /> {perfil.equipo || "Sin Equipo"}
                 </div>
               </div>
               <div>

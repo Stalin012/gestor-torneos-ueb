@@ -1,1 +1,36 @@
+/* =========================================
+   MASTER CSS IMPORT FILE - PROFESSIONAL DESIGN
+   Import this SINGLE file in your project
+   ========================================= */
 
+/* 1. DESIGN SYSTEM - Variables y tokens */
+@import './design-system.css';
+
+/* 2. BASE STYLES - Reset y tipografía */
+@import './base-styles.css';
+
+/* 3. NAVIGATION - Headers, Sidebars, Layout */
+@import './global_layout.css';
+
+/* 4. MODALS & COMPONENTS PREMIUM */
+@import './modals.css';
+
+/* 5. ENHANCED COMPONENTS */
+@import './enhanced-components.css';
+
+/* 6. BUTTONS */
+@import './buttons-unified.css';
+
+/* 7. DASHBOARD */
+@import './dashboard-enhanced.css';
+
+/* 8. UNIFIED NAVIGATION */
+@import './unified-navigation-new.css';
+
+/* Bloqueo de scroll global */
+.no-scroll,
+body.no-scroll,
+html.no-scroll,
+body.modal-open {
+    overflow: hidden !important;
+}
