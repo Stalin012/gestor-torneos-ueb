@@ -8,6 +8,7 @@ use App\Models\Persona;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Artisan;
@@ -15,6 +16,21 @@ use App\Models\Auditoria;
 
 class PersonaController extends Controller
 {
+    private function hasSexoGeneroColumns(): bool
+    {
+        return Schema::hasColumn('personas', 'sexo') && Schema::hasColumn('personas', 'genero');
+    }
+
+    private function normalizeSexo($value): ?string
+    {
+        if ($value === null) return null;
+        $s = mb_strtolower(trim((string) $value));
+        if ($s === '') return null;
+        if (in_array($s, ['m', 'masculino', 'masc', 'h', 'hombre', 'male', '1'], true)) return 'M';
+        if (in_array($s, ['f', 'femenino', 'fem', 'mujer', 'female', '2'], true)) return 'F';
+        return null;
+    }
+
     private function logAudit(string $usuarioCedula, string $accion, string $entidad, string $entidadId, string $detalle): void
     {
         Auditoria::create([
@@ -68,6 +84,8 @@ class PersonaController extends Controller
                 'cedula'           => 'required|string|size:10|unique:personas,cedula',
                 'nombres'          => 'required|string|max:100',
                 'apellidos'        => 'required|string|max:100',
+                'sexo'             => 'nullable|string|max:20',
+                'genero'           => 'nullable|string|max:20',
                 'fecha_nacimiento' => 'nullable|date|before:today',
                 'edad'             => 'nullable|integer|min:1|max:120',
                 'estatura'         => 'nullable|numeric|min:0|max:3',
@@ -82,6 +100,15 @@ class PersonaController extends Controller
             }
 
             $data = $validator->validated();
+            if ($this->hasSexoGeneroColumns()) {
+                $sexoNorm = $this->normalizeSexo($request->input('sexo', $request->input('genero')));
+                if ($sexoNorm !== null) {
+                    $data['sexo'] = $sexoNorm;
+                    $data['genero'] = $sexoNorm;
+                }
+            } else {
+                unset($data['sexo'], $data['genero']);
+            }
 
             if ($request->hasFile('foto')) {
                 Log::info('Se detectó archivo de foto en la solicitud.');
@@ -137,6 +164,8 @@ class PersonaController extends Controller
             $validator = Validator::make($request->all(), [
                 'nombres'          => 'sometimes|required|string|max:100',
                 'apellidos'        => 'sometimes|required|string|max:100',
+                'sexo'             => 'sometimes|nullable|string|max:20',
+                'genero'           => 'sometimes|nullable|string|max:20',
                 'fecha_nacimiento' => 'sometimes|nullable|date|before:today',
                 'edad'             => 'sometimes|nullable|integer|min:1|max:120',
                 'estatura'         => 'sometimes|nullable|numeric|min:0|max:3',
@@ -151,6 +180,15 @@ class PersonaController extends Controller
             }
 
             $data = $validator->validated();
+            if ($this->hasSexoGeneroColumns()) {
+                if ($request->has('sexo') || $request->has('genero')) {
+                    $sexoNorm = $this->normalizeSexo($request->input('sexo', $request->input('genero')));
+                    $data['sexo'] = $sexoNorm;
+                    $data['genero'] = $sexoNorm;
+                }
+            } else {
+                unset($data['sexo'], $data['genero']);
+            }
 
             if ($request->hasFile('foto')) {
                 Log::info('Se detectó archivo de foto en la solicitud de actualización.');

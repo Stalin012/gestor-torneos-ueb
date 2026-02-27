@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -21,6 +21,7 @@ import {
 import LoadingScreen from "../../components/LoadingScreen";
 import api from "../../api";
 import { StatCard } from "../../components/StatsComponents";
+import { useNotification } from "../../context/NotificationContext";
 
 /* ============================================================
    1. Modal de Detalle / Gestión de Equipo
@@ -30,6 +31,8 @@ import { StatCard } from "../../components/StatsComponents";
 ============================================================ */
 const EquipoDetailModal = ({ isOpen, onClose, equipo, onUpdated }) => {
     const navigate = useNavigate();
+    const { addNotification } = useNotification();
+    const contentRef = useRef(null);
 
     const [teamName, setTeamName] = useState('');
     const [teamLogo, setTeamLogo] = useState('');
@@ -43,6 +46,8 @@ const EquipoDetailModal = ({ isOpen, onClose, equipo, onUpdated }) => {
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [error, setError] = useState(null); // Nuevo estado para errores
     const [loading, setLoading] = useState(false); // Added loading state for form submission
+    const [statusType, setStatusType] = useState('');
+    const [statusText, setStatusText] = useState('');
 
     const handlePageChange = (page) => {
         if (page > 0 && page <= paginationMeta.last_page) {
@@ -136,17 +141,33 @@ const EquipoDetailModal = ({ isOpen, onClose, equipo, onUpdated }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null); // Limpiar errores previos
+        const confirmed = window.confirm("¿Deseas guardar los cambios de la comitiva?");
+        if (!confirmed) {
+            setStatusType('');
+            setStatusText('');
+            return;
+        }
+        setStatusType('info');
+        setStatusText('Guardando cambios…');
+        if (addNotification) addNotification('Guardando cambios…', 'info');
         setLoading(true); // Start loading
         try {
             await api.put(`/equipos/${equipo.id}`, {
                 nombre: teamName.trim(),
                 logo: teamLogo.trim(),
             });
+        setStatusType('success');
+        setStatusText('Los datos han sido guardados correctamente');
+        if (addNotification) addNotification('Los datos han sido guardados correctamente', 'success');
             if (onUpdated) onUpdated();
-            onClose();
+            setTimeout(() => {
+                onClose();
+            }, 600);
         } catch (err) {
             console.error('Error al actualizar equipo:', err);
             setError(err.response?.data?.message || 'Error al actualizar equipo.');
+            setStatusType('danger');
+            setStatusText(err.response?.data?.message || 'Error al guardar');
         } finally {
             setLoading(false); // End loading
         }
@@ -161,8 +182,22 @@ const EquipoDetailModal = ({ isOpen, onClose, equipo, onUpdated }) => {
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={onClose}>
-            <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
+        <div
+            className="modal-overlay fade-in"
+            onMouseDown={(e) => {
+                if (contentRef.current && !contentRef.current.contains(e.target)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }}
+            onClick={(e) => {
+                if (contentRef.current && !contentRef.current.contains(e.target)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }}
+        >
+            <div ref={contentRef} className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(53, 110, 216, 0.1), rgba(16, 185, 129, 0.05))',
                     borderBottom: '2px solid var(--primary)'
@@ -182,6 +217,11 @@ const EquipoDetailModal = ({ isOpen, onClose, equipo, onUpdated }) => {
                             <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
                                 Edición de perfil corporativo y gestión de nómina oficial
                             </p>
+                            {statusText && (
+                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
+                                    {statusText}
+                                </span>
+                            )}
                         </div>
                     </div>
                     <button className="btn-icon-close" type="button" onClick={onClose}>
@@ -470,6 +510,9 @@ const CreateEquipoModal = ({ isOpen, onClose, onCreated, torneos, deportes, cate
     const [representantes, setRepresentantes] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null); // Nuevo estado para errores
+    const [statusType, setStatusType] = useState("");
+    const [statusText, setStatusText] = useState("");
+    const { addNotification } = useNotification();
 
     const [filteredCategorias, setFilteredCategorias] = useState([]); // Nuevo estado para categorías filtradas
 
@@ -548,6 +591,17 @@ const CreateEquipoModal = ({ isOpen, onClose, onCreated, torneos, deportes, cate
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null); // Limpiar errores previos
+        const confirmed = window.confirm("¿Deseas guardar este equipo?");
+        if (!confirmed) {
+            setStatusType("");
+            setStatusText("");
+            return;
+        }
+        setStatusType("info");
+        setStatusText("Guardando equipo…");
+        if (addNotification) {
+            addNotification("Guardando equipo…", "info");
+        }
         setLoading(true);
         try {
             await api.post('/equipos', {
@@ -556,26 +610,40 @@ const CreateEquipoModal = ({ isOpen, onClose, onCreated, torneos, deportes, cate
                 deporte_id: Number(formData.deporte_id),
                 categoria_id: Number(formData.categoria_id),
             });
+            setStatusType("success");
+            setStatusText("Equipo creado con éxito");
+            if (addNotification) {
+                addNotification("Equipo creado con éxito", "success");
+            }
             onCreated();
-            onClose();
+            setTimeout(() => {
+                onClose();
+            }, 600);
         } catch (err) {
             console.error('Error al crear equipo:', err);
             setError(err.response?.data?.message || 'Error al crear equipo.');
+            setStatusType("danger");
+            setStatusText(err.response?.data?.message || "Error al guardar");
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (!isOpen) {
+        if (isOpen) {
+            setStatusType("");
+            setStatusText("");
+        } else {
             setError(null); // Limpiar errores cuando el modal se cierra
+            setStatusType("");
+            setStatusText("");
         }
     }, [isOpen]);
 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={onClose}>
+        <div className="modal-overlay fade-in">
             <div className="modal-content modal-md scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -585,6 +653,11 @@ const CreateEquipoModal = ({ isOpen, onClose, onCreated, torneos, deportes, cate
                         <div>
                             <h2 className="modal-title">Registrar Nuevo Equipo</h2>
                             <p className="modal-subtitle">Inscripción oficial del colectivo</p>
+                            {statusText && (
+                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
+                                    {statusText}
+                                </span>
+                            )}
                         </div>
                     </div>
                     <button className="btn-icon-close" onClick={onClose}><X size={24} /></button>
@@ -846,7 +919,7 @@ const EquiposInscripciones = () => {
                                         <tr key={insc.id}>
                                             <td>
                                                 <div style={{ fontWeight: 800, color: '#fff' }}>{insc.equipo?.nombre || 'Sin nombre'}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>ID: {insc.id}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.5px' }}>ID: {insc.id}</div>
                                             </td>
                                             <td>
                                                 <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{insc.torneo?.nombre || 'Torneo General'}</span>
@@ -947,7 +1020,7 @@ const EquiposInscripciones = () => {
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{equipo.categoria?.nombre || 'Abierta'}</div>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
-                                                <code style={{ color: 'var(--text-muted)' }}>#{equipo.id}</code>
+                                                <code style={{ color: 'var(--primary)', fontWeight: 800 }}>#{equipo.id}</code>
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>

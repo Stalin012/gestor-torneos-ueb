@@ -26,6 +26,8 @@ class Persona extends Model
         'cedula',
         'nombres',
         'apellidos',
+        'sexo',
+        'genero',
         'fecha_nacimiento',
         'edad',
         'estatura',

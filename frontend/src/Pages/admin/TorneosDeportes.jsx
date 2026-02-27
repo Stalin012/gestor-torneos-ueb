@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
@@ -86,6 +86,8 @@ const CreateTorneoModal = ({
     descripcion: "", estado: ESTADOS_TORNEO.ACTIVO
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusType, setStatusType] = useState("");
+  const [statusText, setStatusText] = useState("");
   const { addNotification } = useNotification();
 
   useEffect(() => {
@@ -141,6 +143,8 @@ const CreateTorneoModal = ({
       return;
     }
 
+    setStatusType("info");
+    setStatusText("Guardando competición…");
     setIsSubmitting(true);
     try {
       const payload = {
@@ -158,10 +162,16 @@ const CreateTorneoModal = ({
       );
 
       addNotification(`Torneo ${isEditMode ? 'actualizado' : 'creado'} con éxito`, "success");
+      setStatusType("success");
+      setStatusText(`Competición ${isEditMode ? 'actualizada' : 'creada'} con éxito`);
       onSaved();
-      onClose();
+      setTimeout(() => {
+        onClose();
+      }, 600);
     } catch (err) {
       addNotification(err.response?.data?.message || "Error al guardar torneo", "error");
+      setStatusType("danger");
+      setStatusText(err.response?.data?.message || "Error al guardar");
     } finally {
       setIsSubmitting(false);
     }
@@ -170,7 +180,7 @@ const CreateTorneoModal = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="modal-overlay fade-in" onClick={onClose}>
+    <div className="modal-overlay fade-in">
       <div className="modal-content modal-lg scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -184,6 +194,11 @@ const CreateTorneoModal = ({
               <p className="modal-subtitle">
                 Defina los parámetros generales del torneo deportivo
               </p>
+              {statusText && (
+                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
+                  {statusText}
+                </span>
+              )}
             </div>
           </div>
           <button onClick={onClose} className="btn-icon-close" type="button">
@@ -283,12 +298,43 @@ const CreateDeporteModal = ({ isOpen, onClose, onSaved, initialData }) => {
   const [formData, setFormData] = useState({ nombre: "", descripcion: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addNotification } = useNotification();
+  const contentRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('modal-open');
       return () => document.body.classList.remove('modal-open');
     }
+  }, [isOpen]);
+
+  // Bloquear clic fuera solo para este modal
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const guard = (e) => {
+      if (contentRef.current && !contentRef.current.contains(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') {
+          e.stopImmediatePropagation();
+        }
+      }
+    };
+    document.addEventListener('mousedown', guard, true);
+    document.addEventListener('mouseup', guard, true);
+    document.addEventListener('click', guard, true);
+    document.addEventListener('pointerdown', guard, true);
+    document.addEventListener('pointerup', guard, true);
+    document.addEventListener('touchstart', guard, true);
+    document.addEventListener('touchend', guard, true);
+    return () => {
+      document.removeEventListener('mousedown', guard, true);
+      document.removeEventListener('mouseup', guard, true);
+      document.removeEventListener('click', guard, true);
+      document.removeEventListener('pointerdown', guard, true);
+      document.removeEventListener('pointerup', guard, true);
+      document.removeEventListener('touchstart', guard, true);
+      document.removeEventListener('touchend', guard, true);
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -321,8 +367,22 @@ const CreateDeporteModal = ({ isOpen, onClose, onSaved, initialData }) => {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="modal-overlay fade-in" onClick={onClose}>
-      <div className="modal-content modal-md scale-in" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay fade-in"
+      onMouseDown={(e) => {
+        if (contentRef.current && !contentRef.current.contains(e.target)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
+      onClick={(e) => {
+        if (contentRef.current && !contentRef.current.contains(e.target)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
+    >
+      <div ref={contentRef} className="modal-content modal-md scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header" style={{ borderBottom: '2px solid #8b5cf6' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div className="modal-icon" style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' }}>
@@ -457,12 +517,44 @@ const CreateCategoriaModal = ({ isOpen, onClose, onSaved, initialData, deportes,
   const [formData, setFormData] = useState({ nombre: "", descripcion: "", deporte_id: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addNotification } = useNotification();
+  const contentRef = useRef(null);
+  const [statusType, setStatusType] = useState("");
+  const [statusText, setStatusText] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('modal-open');
       return () => document.body.classList.remove('modal-open');
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const guard = (e) => {
+      if (contentRef.current && !contentRef.current.contains(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') {
+          e.stopImmediatePropagation();
+        }
+      }
+    };
+    document.addEventListener('mousedown', guard, true);
+    document.addEventListener('mouseup', guard, true);
+    document.addEventListener('click', guard, true);
+    document.addEventListener('pointerdown', guard, true);
+    document.addEventListener('pointerup', guard, true);
+    document.addEventListener('touchstart', guard, true);
+    document.addEventListener('touchend', guard, true);
+    return () => {
+      document.removeEventListener('mousedown', guard, true);
+      document.removeEventListener('mouseup', guard, true);
+      document.removeEventListener('click', guard, true);
+      document.removeEventListener('pointerdown', guard, true);
+      document.removeEventListener('pointerup', guard, true);
+      document.removeEventListener('touchstart', guard, true);
+      document.removeEventListener('touchend', guard, true);
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -481,16 +573,25 @@ const CreateCategoriaModal = ({ isOpen, onClose, onSaved, initialData, deportes,
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
+    setStatusType("info");
+    setStatusText("Guardando categoría…");
     try {
       await api[isEditMode ? 'put' : 'post'](
         isEditMode ? `/categorias/${initialData.id}` : "/categorias",
         formData
       );
       addNotification(`Categoría ${isEditMode ? 'actualizada' : 'creada'} con éxito`, "success");
+      setStatusType("success");
+      setStatusText(`Categoría ${isEditMode ? 'actualizada' : 'creada'} con éxito`);
       onSaved();
-      onClose();
+      setTimeout(() => {
+        onClose();
+      }, 600);
     } catch (err) {
-      addNotification(err.response?.data?.message || "Error al guardar categoría", "error");
+      const msg = err.response?.data?.message || "Error al guardar categoría";
+      addNotification(msg, "error");
+      setStatusType("danger");
+      setStatusText(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -499,8 +600,22 @@ const CreateCategoriaModal = ({ isOpen, onClose, onSaved, initialData, deportes,
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="modal-overlay fade-in" onClick={onClose}>
-      <div className="modal-content modal-md scale-in" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay fade-in"
+      onMouseDown={(e) => {
+        if (contentRef.current && !contentRef.current.contains(e.target)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
+      onClick={(e) => {
+        if (contentRef.current && !contentRef.current.contains(e.target)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
+    >
+      <div ref={contentRef} className="modal-content modal-md scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header" style={{ borderBottom: '2px solid #a855f7' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div className="modal-icon" style={{ background: 'linear-gradient(135deg, #a855f7, #6366f1)' }}>
@@ -511,6 +626,11 @@ const CreateCategoriaModal = ({ isOpen, onClose, onSaved, initialData, deportes,
                 {isEditMode ? 'Configurar Categoría' : 'Nueva Categoría'}
               </h2>
               <p className="modal-subtitle">Segmentación de competencia</p>
+              {statusText && (
+                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
+                  {statusText}
+                </span>
+              )}
             </div>
           </div>
           <button onClick={onClose} className="btn-icon-close" type="button">

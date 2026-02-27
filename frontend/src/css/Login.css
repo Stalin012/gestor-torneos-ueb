@@ -185,7 +185,7 @@ body {
     top: var(--space-xl);
     left: var(--space-xl);
     z-index: var(--z-fixed);
-    background: var(--background-light);
+    background: var(--text-white);
     color: var(--bg-primary);
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);

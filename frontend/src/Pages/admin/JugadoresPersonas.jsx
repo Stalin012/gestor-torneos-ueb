@@ -71,7 +71,7 @@ const PlayerImage = ({ src, iconSize = 20, className = "" }) => {
 
 
 // 2. MODAL REGISTRO/EDICIÓN
-const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
+const JugadorModal = ({ isOpen, onClose, initialData, equipos = [], onSave }) => {
     const FACULTADES_CARRERAS = {
         "Facultad de Ciencias Administrativas, Gestión Empresarial e Informática": [
             "Administración de Empresas (Presencial y En línea)",
@@ -122,6 +122,42 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
         ]
     };
     const isEditMode = !!initialData;
+    const toDateOnly = (v) => {
+        if (!v) return "";
+        const s = String(v);
+        if (s.includes("T")) return s.split("T")[0];
+        if (s.includes(" ")) return s.split(" ")[0];
+        return s;
+    };
+    const sexoToCode = (v) => {
+        const s = String((v || "")).trim().toLowerCase();
+        if (s === "1" || s === "male") return "M";
+        if (s === "2" || s === "female") return "F";
+        if (s === "m" || s.startsWith("masc") || s === "masculino" || s === "h" || s === "hombre") return "M";
+        if (s === "f" || s.startsWith("fem") || s === "femenino" || s === "mujer") return "F";
+        return "";
+    };
+    const sexoOptionValue = (v) => {
+        const s = sexoToCode(v);
+        if (s === "M" || s === "F") return s;
+        return "";
+    };
+    const deriveSexoCode = () => {
+        const cands = [
+            formData?.sexo,
+            personaData?.sexo,
+            personaData?.genero,
+            initialData?.persona?.sexo,
+            initialData?.persona?.genero,
+            initialData?.sexo,
+            initialData?.genero
+        ];
+        for (const v of cands) {
+            const code = sexoToCode(v);
+            if (code) return code;
+        }
+        return "";
+    };
     const [formData, setFormData] = useState({
         cedula: "",
         equipo_id: "",
@@ -138,7 +174,7 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
         email: "", // Added for new form structure
         telefono: "", // Added for new form structure
     });
-    const [personaData, setPersonaData] = useState({ cedula: "", nombres: "", apellidos: "", fecha_nacimiento: "", telefono: "", email: "" });
+    const [personaData, setPersonaData] = useState({ cedula: "", nombres: "", apellidos: "", fecha_nacimiento: "", sexo: "", telefono: "", email: "" });
     const [personaExiste, setPersonaExiste] = useState(null);
     const [verificando, setVerificando] = useState(false);
     const [fotoFile, setFotoFile] = useState(null);
@@ -156,8 +192,8 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
                 numero: initialData.numero || "",
                 nombres: initialData.persona?.nombres || "",
                 apellidos: initialData.persona?.apellidos || "",
-                fecha_nacimiento: initialData.persona?.fecha_nacimiento || "",
-                sexo: initialData.persona?.sexo || "",
+                fecha_nacimiento: toDateOnly(initialData.persona?.fecha_nacimiento) || "",
+                sexo: sexoToCode(initialData.persona?.sexo || initialData.persona?.genero) || "",
                 facultad: initialData.facultad || initialData.persona?.facultad || "",
                 carrera: initialData.carrera || initialData.persona?.carrera || "",
                 estado: initialData.estado || "ACTIVO",
@@ -169,12 +205,32 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
                 cedula: initialData.cedula,
                 nombres: initialData.persona?.nombres || "",
                 apellidos: initialData.persona?.apellidos || "",
-                fecha_nacimiento: initialData.persona?.fecha_nacimiento || "",
+                fecha_nacimiento: toDateOnly(initialData.persona?.fecha_nacimiento) || "",
+                sexo: sexoToCode(initialData.persona?.sexo || initialData.persona?.genero) || "",
                 telefono: initialData.persona?.telefono || "",
                 email: initialData.persona?.email || "",
                 foto: initialData.persona?.foto_url || initialData.persona?.foto || ""
             });
             setFotoPreview(initialData.persona?.foto_url || initialData.persona?.foto || null);
+            // Hidratación adicional si sexo/fecha no están presentes en initialData
+            (async () => {
+                try {
+                    if (!initialData.persona?.sexo && !initialData.persona?.genero) {
+                        const resp = await api.get(`/personas/${initialData.cedula}`);
+                        const p = resp.data?.data || resp.data || {};
+                        setPersonaData(prev => ({
+                            ...prev,
+                            fecha_nacimiento: toDateOnly(p.fecha_nacimiento) || prev.fecha_nacimiento || "",
+                            sexo: sexoToCode(p.sexo || p.genero) || prev.sexo || ""
+                        }));
+                        setFormData(prev => ({
+                            ...prev,
+                            fecha_nacimiento: toDateOnly(p.fecha_nacimiento) || prev.fecha_nacimiento || "",
+                            sexo: sexoToCode(p.sexo || p.genero) || prev.sexo || ""
+                        }));
+                    }
+                } catch (_) { /* noop */ }
+            })();
         } else {
             setFormData({
                 cedula: "",
@@ -192,7 +248,7 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
                 email: "",
                 telefono: "",
             });
-            setPersonaData({ cedula: "", nombres: "", apellidos: "", fecha_nacimiento: "", telefono: "", email: "" });
+            setPersonaData({ cedula: "", nombres: "", apellidos: "", fecha_nacimiento: "", sexo: "", telefono: "", email: "" });
             setPersonaExiste(null);
             setFotoFile(null);
             setFotoPreview(null);
@@ -202,6 +258,14 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
             return () => document.body.classList.remove('modal-open');
         }
     }, [initialData, isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        if (!formData.sexo) {
+            const code = deriveSexoCode();
+            if (code) setFormData(prev => ({ ...prev, sexo: code }));
+        }
+    }, [isOpen, personaData.sexo, personaData.genero, initialData]);
 
     const handlePhotoChange = (e) => {
         const file = e.target.files[0];
@@ -228,13 +292,21 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
         try {
             const resp = await api.get(`/personas/${formData.cedula}`);
             setPersonaExiste(true);
-            setPersonaData(resp.data.data || resp.data);
+            setPersonaData({
+                cedula: (resp.data.data?.cedula || resp.data?.cedula || formData.cedula),
+                nombres: resp.data.data?.nombres || resp.data?.nombres || "",
+                apellidos: resp.data.data?.apellidos || resp.data?.apellidos || "",
+                fecha_nacimiento: toDateOnly(resp.data.data?.fecha_nacimiento || resp.data?.fecha_nacimiento) || "",
+                sexo: sexoToCode(resp.data.data?.sexo || resp.data?.sexo || resp.data.data?.genero || resp.data?.genero) || "",
+                telefono: resp.data.data?.telefono || resp.data?.telefono || "",
+                email: resp.data.data?.email || resp.data?.email || "",
+            });
             setFormData(prev => ({
                 ...prev,
                 nombres: resp.data.data?.nombres || resp.data?.nombres || "",
                 apellidos: resp.data.data?.apellidos || resp.data?.apellidos || "",
-                fecha_nacimiento: resp.data.data?.fecha_nacimiento || resp.data?.fecha_nacimiento || "",
-                sexo: resp.data.data?.sexo || resp.data?.sexo || "",
+                fecha_nacimiento: toDateOnly(resp.data.data?.fecha_nacimiento || resp.data?.fecha_nacimiento) || "",
+                sexo: sexoToCode(resp.data.data?.sexo || resp.data?.sexo || resp.data.data?.genero || resp.data?.genero) || "",
                 facultad: resp.data.data?.facultad || resp.data?.facultad || "",
                 carrera: resp.data.data?.carrera || resp.data?.carrera || "",
                 email: resp.data.data?.email || resp.data?.email || "",
@@ -261,6 +333,29 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
         } finally { setVerificando(false); }
     };
 
+    const [statusType, setStatusType] = useState("");
+    const [statusText, setStatusText] = useState("");
+    const sexoValue = useMemo(() => {
+        const raw =
+            formData.sexo ||
+            personaData.sexo ||
+            personaData.genero ||
+            (initialData?.persona?.sexo) ||
+            (initialData?.persona?.genero) ||
+            (initialData?.sexo) ||
+            (initialData?.genero) ||
+            "";
+        return sexoOptionValue(raw);
+    }, [formData.sexo, personaData.sexo, initialData]);
+    const maxFechaNacimiento = useMemo(() => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 18);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }, []);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
@@ -274,17 +369,34 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
 
         if (!confirmar) return;
 
+        // Validar mayoría de edad (18+)
+        const dob = new Date(formData.fecha_nacimiento);
+        const limit = new Date();
+        limit.setFullYear(limit.getFullYear() - 18);
+        if (!formData.fecha_nacimiento || dob > limit) {
+            setStatusType("danger");
+            setStatusText("La fecha de nacimiento debe indicar 18 años o más");
+            return;
+        }
+        setStatusType("info");
+        setStatusText("Guardando ficha del jugador…");
         setIsSubmitting(true);
         try {
-            await onSave(formData, isEditMode, personaData, personaExiste, fotoFile);
-            onClose();
+            const result = await onSave(formData, isEditMode, personaData, personaExiste, fotoFile);
+            if (result && result.ok) {
+                setStatusType("success");
+                setStatusText("Los datos han sido guardados correctamente");
+                setTimeout(() => {
+                    onClose();
+                }, 600);
+            }
         } finally { setIsSubmitting(false); }
     };
 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={onClose}>
+        <div className="modal-overlay fade-in" onClick={(e) => e.stopPropagation()}>
             <div className="modal-content modal-xl scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.05))',
@@ -304,6 +416,11 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
                         <div>
                             <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>{isEditMode ? "Ficha Técnica Atleta" : "Registro de Jugador"}</h2>
                             <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Gestión integral de perfiles y habilitaciones</p>
+                            {statusText && (
+                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
+                                    {statusText}
+                                </span>
+                            )}
                         </div>
                     </div>
                     <button className="btn-icon-close" onClick={onClose}>
@@ -344,7 +461,11 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
                                             style={{ display: 'none' }}
                                         />
                                         {fotoPreview ? (
-                                            <img src={fotoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img
+                                                src={resolveImgUrl(fotoPreview) || fotoPreview}
+                                                alt="Preview"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+                                            />
                                         ) : (
                                             <>
                                                 <Camera size={40} style={{ color: 'var(--primary)', marginBottom: '10px' }} />
@@ -405,20 +526,22 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
                                             className="pro-input"
                                             value={formData.fecha_nacimiento}
                                             onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
+                                            max={maxFechaNacimiento}
                                             required
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label className="form-label">Sexo</label>
                                         <select
+                                            key={`sexo-${sexoValue}-${isOpen ? 'open' : 'closed'}`}
                                             className="pro-input"
-                                            value={formData.sexo}
+                                            value={sexoValue}
                                             onChange={(e) => setFormData({ ...formData, sexo: e.target.value })}
                                             required
                                         >
                                             <option value="">Seleccione...</option>
-                                            <option value="Masculino">Masculino</option>
-                                            <option value="Femenino">Femenino</option>
+                                            <option value="M">Masculino</option>
+                                            <option value="F">Femenino</option>
                                         </select>
                                     </div>
                                 </div>
@@ -448,7 +571,7 @@ const JugadorModal = ({ isOpen, onClose, initialData, equipos, onSave }) => {
                                             disabled={!formData.facultad}
                                         >
                                             <option value="">{formData.facultad ? "Seleccione Carrera..." : "Elija Facultad"}</option>
-                                            {formData.facultad && FACULTADES_CARRERAS[formData.facultad].map(c => (
+                                            {Array.isArray(FACULTADES_CARRERAS[formData.facultad]) && FACULTADES_CARRERAS[formData.facultad].map(c => (
                                                 <option key={c} value={c}>{c}</option>
                                             ))}
                                         </select>
@@ -595,11 +718,23 @@ const JugadoresPersonas = () => {
 
             // Añadir campos de persona
             fd.append('cedula', personaData.cedula || formData.cedula);
-            fd.append('nombres', personaData.nombres);
-            fd.append('apellidos', personaData.apellidos);
-            if (personaData.email) fd.append('email', personaData.email);
-            if (personaData.telefono) fd.append('telefono', personaData.telefono);
-            if (personaData.fecha_nacimiento) fd.append('fecha_nacimiento', personaData.fecha_nacimiento);
+            fd.append('nombres', formData.nombres || personaData.nombres || "");
+            fd.append('apellidos', formData.apellidos || personaData.apellidos || "");
+            if (personaData.email || formData.email) fd.append('email', (formData.email || personaData.email || ""));
+            if (personaData.telefono || formData.telefono) fd.append('telefono', (formData.telefono || personaData.telefono || ""));
+            const toDateOnly = (v) => {
+                if (!v) return "";
+                const s = String(v);
+                if (s.includes("T")) return s.split("T")[0];
+                if (s.includes(" ")) return s.split(" ")[0];
+                return s;
+            };
+            const fechaNorm = toDateOnly(formData.fecha_nacimiento || personaData.fecha_nacimiento);
+            if (fechaNorm) fd.append('fecha_nacimiento', fechaNorm);
+            const sx = String(formData.sexo || personaData.sexo || personaData.genero || "");
+            const sxCode = sx.toLowerCase().startsWith('masc') ? 'M' : sx.toLowerCase().startsWith('fem') ? 'F' : sx.toUpperCase();
+            if (sxCode) fd.append('sexo', sxCode);
+            if (sxCode) fd.append('genero', sxCode);
 
             // Si hay foto nueva, la incluimos
             if (fotoFile instanceof File || fotoFile instanceof Blob) {
@@ -643,13 +778,14 @@ const JugadoresPersonas = () => {
                         ? "Los datos del atleta han sido actualizados correctamente."
                         : "El jugador ha sido registrado exitosamente en el sistema."
                 );
-                setIsModalOpen(false);
                 setTimeout(loadData, 500); // 500ms delay to allow FS sync
+                return { ok: true };
             }
         } catch (err) {
             console.error('Error in handleSave:', err);
             const errorMsg = err.response?.data?.message || err.response?.data?.error || "Error al procesar la solicitud.";
             error("Error al guardar", errorMsg);
+            return { ok: false, error: errorMsg };
         }
     };
 

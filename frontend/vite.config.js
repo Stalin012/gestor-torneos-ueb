@@ -15,7 +15,8 @@ export default defineConfig({
     },
     server: {
         hmr: {
-            overlay: false // Disable HMR overlay
+            overlay: false, // Disable HMR overlay
+            host: 'localhost' // Specify HMR host for WebSocket connection
         }
     },
     optimizeDeps: {

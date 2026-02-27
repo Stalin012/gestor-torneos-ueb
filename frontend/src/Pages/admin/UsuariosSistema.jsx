@@ -95,16 +95,17 @@ const UsuariosSistema = () => {
             </header>
 
             <div
-                className="responsive-grid stats-grid"
+                className="users-stats-grid"
                 style={{
+                    display: 'grid',
                     marginBottom: '2rem',
-                    gap: '0.75rem',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))'
+                    gap: '0.55rem',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
                 }}
             >
-                <StatCard title="Total Usuarios" value={stats.total} icon={Users} color="#356ed8" />
-                <StatCard title="Cuentas Activas" value={stats.activos} icon={ShieldCheck} color="#10b981" />
-                <StatCard title="Administradores" value={stats.admins} icon={Shield} color="#f59e0b" />
+                <StatCard compact title="Total Usuarios" value={stats.total} icon={Users} color="#356ed8" />
+                <StatCard compact title="Cuentas Activas" value={stats.activos} icon={ShieldCheck} color="#10b981" />
+                <StatCard compact title="Administradores" value={stats.admins} icon={Shield} color="#f59e0b" />
             </div>
 
             <div className="pro-card">
@@ -235,7 +236,7 @@ const UsuariosSistema = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 initialData={currentUsuario}
-                onSave={() => { setIsModalOpen(false); loadUsuarios(); }}
+                onSave={async () => { await loadUsuarios(); }}
             />
         </div>
     );

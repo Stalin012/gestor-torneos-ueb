@@ -5,7 +5,7 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 /**
  * Componente de Estadística Premium con Visualización de Barra
  */
-export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#356ed8", suffix = "", className = "" }) => {
+export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#356ed8", suffix = "", className = "", compact = false }) => {
     const calculateChange = () => {
         if (!previousValue || previousValue === 0) return null;
         const change = ((value - previousValue) / previousValue) * 100;
@@ -15,6 +15,14 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
     const change = calculateChange();
     const isPositive = change > 0;
     const isNeutral = change === 0;
+    const cardPadding = compact ? "0.55rem 0.8rem" : "0.85rem 1.25rem";
+    const iconBox = compact ? 30 : 40;
+    const iconSize = compact ? 16 : 20;
+    const titleSize = compact ? "0.68rem" : "0.75rem";
+    const titleMargin = compact ? "0.15rem" : "0.25rem";
+    const valueSize = compact ? "1.2rem" : "1.5rem";
+    const suffixSize = compact ? "0.82rem" : "1rem";
+    const headerGap = compact ? "0.35rem" : "0.5rem";
 
     return (
         <div
@@ -22,7 +30,7 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
             style={{
                 background: "linear-gradient(135deg, #19293a, #1e3147)",
                 borderRadius: "16px",
-                padding: "0.85rem 1.25rem",
+                padding: cardPadding,
                 border: `1px solid ${color}33`,
                 position: "relative",
                 overflow: "hidden",
@@ -43,14 +51,14 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
             />
 
             <div style={{ position: "relative", zIndex: 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: headerGap }}>
                     <div>
-                        <p style={{ fontSize: "0.75rem", color: "#a1b0c1", fontWeight: "600", marginBottom: "0.25rem" }}>
+                        <p style={{ fontSize: titleSize, color: "#a1b0c1", fontWeight: "600", marginBottom: titleMargin }}>
                             {title}
                         </p>
                         <h3
                             style={{
-                                fontSize: "1.5rem",
+                                fontSize: valueSize,
                                 fontWeight: "900",
                                 margin: 0,
                                 background: `linear-gradient(135deg, ${color}, ${color}88)`,
@@ -60,15 +68,15 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
                             }}
                         >
                             {value}
-                            {suffix && <span style={{ fontSize: "1rem" }}>{suffix}</span>}
+                            {suffix && <span style={{ fontSize: suffixSize }}>{suffix}</span>}
                         </h3>
                     </div>
 
                     {Icon && (
                         <div
                             style={{
-                                width: "40px",
-                                height: "40px",
+                                width: `${iconBox}px`,
+                                height: `${iconBox}px`,
                                 borderRadius: "10px",
                                 background: `linear-gradient(135deg, ${color}, ${color}88)`,
                                 display: "flex",
@@ -77,7 +85,7 @@ export const StatCard = ({ title, value, previousValue, icon: Icon, color = "#35
                                 boxShadow: `0 4px 12px ${color}44`,
                             }}
                         >
-                            <Icon size={20} color="#fff" />
+                            <Icon size={iconSize} color="#fff" />
                         </div>
                     )}
                 </div>
@@ -120,6 +128,7 @@ StatCard.propTypes = {
     color: PropTypes.string,
     suffix: PropTypes.string,
     className: PropTypes.string,
+    compact: PropTypes.bool,
 };
 
 /**

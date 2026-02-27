@@ -15,6 +15,8 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [statusType, setStatusType] = useState('');
+    const [statusText, setStatusText] = useState('');
 
     useEffect(() => {
         if (!isOpen) {
@@ -50,6 +52,8 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
             });
         }
         setErrors({});
+        setStatusType('');
+        setStatusText('');
         return () => {
             document.body.classList.remove('modal-open');
             document.removeEventListener('keydown', handleEsc);
@@ -88,7 +92,15 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) return;
+        const confirmar = window.confirm(
+            initialData
+                ? '¿Desea guardar los cambios realizados en este operador?'
+                : '¿Desea registrar este nuevo operador?'
+        );
+        if (!confirmar) return;
 
+        setStatusType('info');
+        setStatusText('Guardando credenciales del operador...');
         setLoading(true);
         try {
             const dataToSubmit = {
@@ -109,7 +121,10 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
                 : await api.post('/usuarios', dataToSubmit);
 
             if (response.status >= 200 && response.status < 300) {
-                onSave();
+                setStatusType('success');
+                setStatusText('Los datos han sido guardados correctamente');
+                if (onSave) await onSave();
+                setTimeout(() => onClose(), 600);
             } else {
                 setErrors(response.data.errors || { general: 'Error al guardar el usuario.' });
             }
@@ -126,7 +141,7 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
     return createPortal(
         <div
             className="modal-overlay fade-in"
-            onClick={onClose}
+            onClick={(e) => e.stopPropagation()}
         >
             <div
                 className="modal-content modal-lg scale-in"
@@ -151,6 +166,11 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
                                 {initialData ? 'Garantizar Acceso' : 'Nuevo Operador'}
                             </h2>
                             <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Gestión de credenciales y permisos</p>
+                            {statusText && (
+                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
+                                    {statusText}
+                                </span>
+                            )}
                         </div>
                     </div>
                     <button className="btn-icon-close" onClick={onClose}><X size={22} /></button>
@@ -193,12 +213,10 @@ const UsuarioModal = ({ isOpen, onClose, initialData, onSave }) => {
                                 <div style={{ position: 'relative' }}>
                                     <Tag size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.8 }} />
                                     <select name="rol" className="pro-input" style={{ paddingLeft: '38px' }} value={formData.rol} onChange={handleChange} disabled={loading}>
-                                        <option value="admin">Administrador Maestro</option>
-                                        <option value="usuario">Operador Común</option>
-                                        <option value="arbitro">Cuerpo Técnico</option>
-                                        <option value="entrenador">Director Técnico</option>
-                                        <option value="jugador">Atleta / Deportista</option>
-                                        <option value="representante">Representante Legal</option>
+                                        <option value="admin">Administrador</option>
+                                        <option value="representante">representante</option>
+                                        <option value="jugador">jugador</option>
+                                        <option value="arbitro">arbitro</option>
                                     </select>
                                 </div>
                             </div>

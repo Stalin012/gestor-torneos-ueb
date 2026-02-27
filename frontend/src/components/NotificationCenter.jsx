@@ -217,11 +217,64 @@ NotificationItem.propTypes = {
 
 const NotificationCenter = ({ isOpen, onClose, notifications, loadNotifications, markAsRead, markAllAsRead, loading }) => {
     const [hiddenIds, setHiddenIds] = useState([]);
+    const [showAllOlder, setShowAllOlder] = useState(false);
     const safeNotifications = Array.isArray(notifications) ? notifications : [];
     const visibleNotifications = useMemo(
         () => safeNotifications.filter((n) => !hiddenIds.includes(n.id)),
         [safeNotifications, hiddenIds]
     );
+    const groupedNotifications = useMemo(() => {
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const yesterdayStart = new Date(todayStart);
+        yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+        const weekStart = new Date(todayStart);
+        weekStart.setDate(weekStart.getDate() - 7);
+
+        const groups = {
+            hoy: [],
+            ayer: [],
+            semana: [],
+            anteriores: [],
+        };
+
+        const sorted = [...visibleNotifications].sort((a, b) => {
+            const ta = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const tb = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return tb - ta;
+        });
+
+        for (const notification of sorted) {
+            const created = notification?.created_at ? new Date(notification.created_at) : null;
+            if (!created || Number.isNaN(created.getTime())) {
+                groups.anteriores.push(notification);
+                continue;
+            }
+
+            if (created >= todayStart) {
+                groups.hoy.push(notification);
+            } else if (created >= yesterdayStart) {
+                groups.ayer.push(notification);
+            } else if (created >= weekStart) {
+                groups.semana.push(notification);
+            } else {
+                groups.anteriores.push(notification);
+            }
+        }
+
+        const olderLimit = 8;
+        const olderTotal = groups.anteriores.length;
+        const olderItems = showAllOlder ? groups.anteriores : groups.anteriores.slice(0, olderLimit);
+
+        const sections = [
+            { key: "hoy", label: "Hoy", items: groups.hoy },
+            { key: "ayer", label: "Ayer", items: groups.ayer },
+            { key: "semana", label: "Esta semana", items: groups.semana },
+            { key: "anteriores", label: "Anteriores", items: olderItems, total: olderTotal, limited: !showAllOlder && olderTotal > olderLimit },
+        ];
+
+        return sections.filter((section) => section.items.length > 0);
+    }, [visibleNotifications, showAllOlder]);
     const unreadCount = safeNotifications.filter((n) => !n.leida).length;
 
     useEffect(() => {
@@ -233,6 +286,7 @@ const NotificationCenter = ({ isOpen, onClose, notifications, loadNotifications,
     useEffect(() => {
         if (!isOpen) {
             setHiddenIds([]);
+            setShowAllOlder(false);
         }
     }, [isOpen]);
 
@@ -327,7 +381,7 @@ const NotificationCenter = ({ isOpen, onClose, notifications, loadNotifications,
                     <div style={{ textAlign: "center", padding: "2rem", color: "#ffffff" }}>
                         Cargando notificaciones...
                     </div>
-                ) : visibleNotifications.length === 0 ? (
+                ) : groupedNotifications.length === 0 ? (
                     <div className="empty-state" style={{ padding: "3rem 1rem" }}>
                         <History size={56} style={{ opacity: 0.12, margin: "0 auto 0.8rem", display: "block" }} />
                         <p style={{ color: "#ffffff", fontSize: "0.9rem", textAlign: "center" }}>
@@ -335,13 +389,51 @@ const NotificationCenter = ({ isOpen, onClose, notifications, loadNotifications,
                         </p>
                     </div>
                 ) : (
-                    visibleNotifications.map((notification) => (
-                        <NotificationItem
-                            key={notification.id}
-                            notification={notification}
-                            onDismiss={(id) => setHiddenIds((prev) => [...prev, id])}
-                            onMarkAsRead={markAsRead}
-                        />
+                    groupedNotifications.map((section) => (
+                        <div key={section.key} style={{ marginBottom: "0.9rem" }}>
+                            <div
+                                style={{
+                                    fontSize: "0.74rem",
+                                    fontWeight: "700",
+                                    color: "#94a3b8",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.7px",
+                                    margin: "0.45rem 0 0.6rem 0.15rem",
+                                }}
+                            >
+                                {section.label}
+                            </div>
+
+                            {section.items.map((notification) => (
+                                <NotificationItem
+                                    key={notification.id}
+                                    notification={notification}
+                                    onDismiss={(id) => setHiddenIds((prev) => [...prev, id])}
+                                    onMarkAsRead={markAsRead}
+                                />
+                            ))}
+
+                            {section.key === "anteriores" && section.limited && (
+                                <button
+                                    onClick={() => setShowAllOlder(true)}
+                                    style={{
+                                        width: "100%",
+                                        marginTop: "0.2rem",
+                                        marginBottom: "0.6rem",
+                                        background: "transparent",
+                                        border: "1px solid rgba(148, 163, 184, 0.35)",
+                                        color: "#cbd5e1",
+                                        padding: "0.45rem 0.6rem",
+                                        borderRadius: "8px",
+                                        fontSize: "0.78rem",
+                                        cursor: "pointer",
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    Ver mas ({section.total - section.items.length} restantes)
+                                </button>
+                            )}
+                        </div>
                     ))
                 )}
             </div>

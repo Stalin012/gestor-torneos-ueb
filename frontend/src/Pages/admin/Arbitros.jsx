@@ -35,9 +35,21 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
     const [personaData, setPersonaData] = useState({ nombres: '', apellidos: '', correo: '' });
     const [verificando, setVerificando] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [statusType, setStatusType] = useState('');
+    const [statusText, setStatusText] = useState('');
+    const maxFechaNacimiento = useMemo(() => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 18);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }, []);
 
     useEffect(() => {
         if (!isOpen) return;
+        setStatusType('');
+        setStatusText('');
         if (initialData) {
             setFormData({
                 cedula: initialData.cedula,
@@ -122,6 +134,25 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
+
+        const confirmar = window.confirm(
+            isEditMode
+                ? "¿Desea guardar los cambios realizados en el perfil del oficial?"
+                : "¿Desea registrar este nuevo oficial?"
+        );
+        if (!confirmar) return;
+
+        const dob = new Date(formData.fecha_nacimiento);
+        const limit = new Date();
+        limit.setFullYear(limit.getFullYear() - 18);
+        if (!formData.fecha_nacimiento || dob > limit) {
+            setStatusType('danger');
+            setStatusText('La fecha de nacimiento debe indicar 18 años o más');
+            return;
+        }
+
+        setStatusType('info');
+        setStatusText('Guardando datos del oficial...');
         setIsSubmitting(true);
         try {
             const payload = {
@@ -135,8 +166,12 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                 email: formData.email,
                 telefono: formData.telefono,
             };
-            await onSave(payload, isEditMode);
-            onClose();
+            const result = await onSave(payload, isEditMode);
+            if (result && result.ok) {
+                setStatusType('success');
+                setStatusText('Los datos han sido guardados correctamente');
+                setTimeout(() => onClose(), 600);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -145,7 +180,7 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={onClose}>
+        <div className="modal-overlay fade-in" onClick={(e) => e.stopPropagation()}>
             <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(16, 185, 129, 0.05))',
@@ -164,6 +199,11 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                         <div>
                             <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>{isEditMode ? "Perfil de Árbitro" : "Nuevo Oficial"}</h2>
                             <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Gestión de credenciales y habilitaciones</p>
+                            {statusText && (
+                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
+                                    {statusText}
+                                </span>
+                            )}
                         </div>
                     </div>
                     <button className="btn-icon-close" onClick={onClose}>
@@ -207,7 +247,7 @@ const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 <div className="form-group">
                                     <label className="form-label" style={{ fontWeight: 800 }}>Fecha de Nacimiento</label>
-                                    <input type="date" value={formData.fecha_nacimiento} onChange={e => setFormData({ ...formData, fecha_nacimiento: e.target.value })} required className="pro-input" />
+                                    <input type="date" value={formData.fecha_nacimiento} onChange={e => setFormData({ ...formData, fecha_nacimiento: e.target.value })} max={maxFechaNacimiento} required className="pro-input" />
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label" style={{ fontWeight: 800 }}>Correo Institucional</label>
@@ -310,12 +350,12 @@ const Arbitros = () => {
             const method = isEditMode ? 'put' : 'post';
             const url = isEditMode ? `/arbitros/${data.cedula}` : `/arbitros`;
             await api[method](url, data);
-            setIsModalOpen(false);
-            setCurrentArbitro(null);
             await loadArbitros(pagination.current_page);
-            alert(isEditMode ? 'Árbitro actualizado correctamente' : 'Árbitro registrado correctamente');
+            setCurrentArbitro(null);
+            return { ok: true };
         } catch (err) {
             alert(err.response?.data?.message || 'Error al procesar la solicitud.');
+            return { ok: false };
         }
     };
 
@@ -453,3 +493,4 @@ const Arbitros = () => {
 };
 
 export default Arbitros;
+
