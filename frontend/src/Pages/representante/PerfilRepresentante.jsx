@@ -66,7 +66,7 @@ export default function PerfilRepresentante() {
     try {
       await api.put('/representante/perfil', form);
       const userRes = await api.get('/user');
-      localStorage.setItem('user', JSON.stringify(userRes.data));
+      sessionStorage.setItem('user', JSON.stringify(userRes.data));
       window.dispatchEvent(new Event('user-updated'));
       setMessage({ type: "success", text: "Perfil actualizado correctamente." });
     } catch (e) {
@@ -187,7 +187,7 @@ export default function PerfilRepresentante() {
 
                       // Refresh user context
                       const userRes = await api.get('/user');
-                      localStorage.setItem('user', JSON.stringify(userRes.data));
+                      sessionStorage.setItem('user', JSON.stringify(userRes.data));
                       window.dispatchEvent(new Event('user-updated'));
 
                       setMessage({ type: "success", text: "Foto actualizada." });

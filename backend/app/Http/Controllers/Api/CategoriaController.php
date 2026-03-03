@@ -16,14 +16,23 @@ class CategoriaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Categoria::with('deporte')->orderBy('nombre', 'asc');
+        try {
+            $query = Categoria::with('deporte')->orderBy('nombre', 'asc');
 
-        if ($request->has('deporte_id')) {
-            $query->where('deporte_id', $request->deporte_id);
+            if ($request->has('deporte_id')) {
+                $query->where('deporte_id', $request->deporte_id);
+            }
+
+            $categorias = $query->get();
+            return response()->json($categorias);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error al cargar categorías (API Index)',
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ], 500);
         }
-
-        $categorias = $query->get();
-        return response()->json($categorias);
     }
 
     /**
@@ -32,31 +41,43 @@ class CategoriaController extends Controller
      */
     public function store(Request $request)
     {
-        // Seguridad adicional (middleware admin ya lo controla)
-        if ($request->user()->rol !== 'admin') {
+        // Seguridad adicional
+        if (!$request->user() || !in_array($request->user()->rol, ['admin', 'representante'])) {
             return response()->json(['message' => 'Acceso denegado.'], 403);
         }
 
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:100|unique:categorias,nombre',
-            'descripcion' => 'nullable|string',
-            'deporte_id' => 'nullable|exists:deportes,id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nombre' => 'required|string|max:100',
+                'descripcion' => 'nullable|string',
+                'deporte_id' => 'nullable|exists:deportes,id',
+            ]);
 
-        $categoria = Categoria::create($validated);
+            $categoria = Categoria::updateOrCreate(
+                ['nombre' => $validated['nombre']],
+                [
+                    'descripcion' => $validated['descripcion'] ?? null,
+                    'deporte_id'  => $validated['deporte_id'] ?? null
+                ]
+            );
 
-        $this->logAudit(
-            $request->user()->cedula,
-            'CREAR',
-            'Categoria',
-            $categoria->id,
-            'Creación de nueva categoría: ' . $categoria->nombre
-        );
+            $this->logAudit(
+                $request->user() ? $request->user()->cedula : 'SISTEMA',
+                'CREAR',
+                'Categoria',
+                (string)$categoria->id,
+                'Creación de nueva categoría: ' . $categoria->nombre
+            );
 
-        return response()->json([
-            'message' => 'Categoría creada exitosamente.',
-            'categoria' => $categoria,
-        ], 201);
+            return response()->json([
+                'message' => 'Categoría creada exitosamente.',
+                'categoria' => $categoria->load('deporte'),
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al crear categoría', 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -65,7 +86,7 @@ class CategoriaController extends Controller
      */
     public function show($id)
     {
-        $categoria = Categoria::find($id);
+        $categoria = Categoria::with('deporte')->find($id);
 
         if (!$categoria) {
             return response()->json(['message' => 'Categoría no encontrada.'], 404);
@@ -80,7 +101,7 @@ class CategoriaController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if ($request->user()->rol !== 'admin') {
+        if (!$request->user() || !in_array($request->user()->rol, ['admin', 'representante'])) {
             return response()->json(['message' => 'Acceso denegado.'], 403);
         }
 
@@ -89,26 +110,32 @@ class CategoriaController extends Controller
             return response()->json(['message' => 'Categoría no encontrada.'], 404);
         }
 
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:100|unique:categorias,nombre,' . $id,
-            'descripcion' => 'nullable|string',
-            'deporte_id' => 'nullable|exists:deportes,id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nombre' => 'sometimes|required|string|max:100',
+                'descripcion' => 'nullable|string',
+                'deporte_id' => 'nullable|exists:deportes,id',
+            ]);
 
-        $categoria->update($validated);
+            $categoria->update($validated);
 
-        $this->logAudit(
-            $request->user()->cedula,
-            'ACTUALIZAR',
-            'Categoria',
-            $categoria->id,
-            'Actualización de categoría: ' . $categoria->nombre
-        );
+            $this->logAudit(
+                $request->user() ? $request->user()->cedula : 'SISTEMA',
+                'ACTUALIZAR',
+                'Categoria',
+                (string)$categoria->id,
+                'Actualización de categoría: ' . $categoria->nombre
+            );
 
-        return response()->json([
-            'message' => 'Categoría actualizada exitosamente.',
-            'categoria' => $categoria,
-        ]);
+            return response()->json([
+                'message' => 'Categoría actualizada exitosamente.',
+                'categoria' => $categoria->load('deporte'),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al actualizar categoría', 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -117,7 +144,7 @@ class CategoriaController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        if ($request->user()->rol !== 'admin') {
+        if (!$request->user() || !in_array($request->user()->rol, ['admin', 'representante'])) {
             return response()->json(['message' => 'Acceso denegado.'], 403);
         }
 
@@ -140,10 +167,10 @@ class CategoriaController extends Controller
         $categoria->delete();
 
         $this->logAudit(
-            $request->user()->cedula,
+            $request->user() ? $request->user()->cedula : 'SISTEMA',
             'ELIMINAR',
             'Categoria',
-            $categoria->id,
+            (string)$categoria->id,
             'Eliminación de categoría: ' . $categoria->nombre
         );
 

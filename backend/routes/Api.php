@@ -2,10 +2,34 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+
+Route::get('/debug-db', [\App\Http\Controllers\Api\DebugController::class, 'inspectTables']);
+Route::get('/fix-storage', [\App\Http\Controllers\Api\DebugController::class, 'inspectAndFixStorage']);
+Route::get('/fix-sequences', [\App\Http\Controllers\Api\DebugController::class, 'fixSequences']);
 
 Route::get('/', function () {
     return response()->json(['message' => 'API is running']);
 });
+
+// ===== RUTA PÚBLICA PARA SERVIR ARCHIVOS DE STORAGE =====
+Route::get('/files/{path}', function ($path) {
+    // Limpiar el path de caracteres extraños que puedan venir del encoding
+    $path = ltrim(urldecode($path), '/');
+    
+    if (!Storage::disk('public')->exists($path)) {
+        // Enviar un 404 pequeño sin cuerpo HTML para evitar CORB
+        return response('', 404)->header('Content-Type', 'image/jpeg');
+    }
+    
+    $file = Storage::disk('public')->get($path);
+    $mime = Storage::disk('public')->mimeType($path);
+    
+    return response($file, 200)
+        ->header('Content-Type', $mime)
+        ->header('Cache-Control', 'public, max-age=86400');
+})->where('path', '.*');
+
 
 // =======================
 // Controladores API
@@ -43,6 +67,7 @@ Route::post('/register', [AuthController::class, 'register']);
 // Catálogos públicos
 Route::get('/deportes',   [DeporteController::class, 'index']);
 Route::get('/categorias', [CategoriaController::class, 'index']);
+Route::get('/carreras', function() { return response()->json([]); });
 
 // Torneos públicos
 Route::get('/torneos/publicos', [TorneoController::class, 'publicos']);
@@ -75,15 +100,9 @@ Route::get('/arbitros/{cedula}', [ArbitroController::class, 'show']);
 Route::get('/personas', [PersonaController::class, 'index']);
 Route::get('/personas/{cedula}', [PersonaController::class, 'show']);
 
-// Usuarios públicos (solo lectura)
-Route::get('/usuarios', [UsuarioController::class, 'index']);
-Route::get('/usuarios/{cedula}', [UsuarioController::class, 'show']);
-
-// Auditoría pública
-Route::get('/auditoria', [AuditoriaController::class, 'index']);
-
 // Configuración pública
 Route::get('/configuracion', [ConfiguracionController::class, 'index']);
+
 
 // Estadísticas públicas
 Route::get('/estadisticas', [EstadisticaController::class, 'index']);
@@ -104,17 +123,53 @@ Route::get('/galeria',  [GaleriaController::class, 'index']);
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/notificaciones', [NotificacionController::class, 'index']);
     Route::post('/notificaciones', [NotificacionController::class, 'store']);
-    Route::patch('/notificaciones/{id}/read', [NotificacionController::class, 'markAsRead']);
-    Route::patch('/notificaciones/read-all', [NotificacionController::class, 'markAllAsRead']);
+    // Usar POST en vez de PATCH para evitar problemas con servidores compartidos
+    Route::post('/notificaciones/read-all', [NotificacionController::class, 'markAllAsRead']);
+    Route::match(['patch', 'post'], '/notificaciones/{id}/read', [NotificacionController::class, 'markAsRead']);
+});
+
+// Ruta de diagnóstico temporal para notificaciones (ELIMINAR después de debug)
+Route::middleware(['auth:sanctum'])->get('/notificaciones/debug', function (Request $request) {
+    try {
+        $cedula = $request->user()->cedula;
+        $columns = DB::select("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'notificaciones' ORDER BY ordinal_position");
+        $count = DB::table('notificaciones')->count();
+        $sample = DB::table('notificaciones')->limit(2)->get();
+        
+        // Intentar actualizar una  
+        $testId = $sample->first()?->id;
+        $updateResult = null;
+        if ($testId) {
+            try {
+                $updateResult = DB::table('notificaciones')->where('id', $testId)->update(['leida' => true, 'updated_at' => now()]);
+            } catch (\Exception $ue) {
+                $updateResult = 'ERROR: ' . $ue->getMessage();
+            }
+        }
+
+        return response()->json([
+            'user_cedula' => $cedula,
+            'table_exists' => true,
+            'columns' => $columns,
+            'total_rows' => $count,
+            'sample' => $sample,
+            'test_update_id' => $testId,
+            'test_update_result' => $updateResult,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()], 500);
+    }
 });
 
 // Configuración pública
 Route::get('/configuracion/publica', [ConfiguracionController::class, 'publicIndex']);
 
 // Carnet público
-Route::get('/jugadores/{cedula}/carnet-pdf', [JugadorController::class, 'carnetPdf'])
-    ->name('jugadores.carnet-pdf');
-Route::get('/jugadores/{cedula}/info', [JugadorController::class, 'generarCarnet']);
+Route::get('/jugadores/{cedula}/carnet-pdf', [JugadorController::class, 'carnetPdf'])->name('jugadores.carnet-pdf')->where('cedula', '[0-9]+');
+Route::get('/jugadores/{cedula}/info', [JugadorController::class, 'generarCarnet'])->where('cedula', '[0-9]+');
+
+Route::get('/usuarios/{cedula}/carnet-pdf', [UsuarioController::class, 'carnetPdf'])->name('usuarios.public.carnet-pdf')->where('cedula', '[0-9]+');
+Route::get('/usuarios/{cedula}/info', [UsuarioController::class, 'generarCarnet'])->where('cedula', '[0-9]+');
 
 // ------------------------------------------------------------------------
 // 2. RUTAS PROTEGIDAS (Bearer Token Sanctum)
@@ -209,11 +264,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::match(['put', 'patch', 'post'], 'galeria/{id}', [GaleriaController::class, 'update']);
         Route::delete('galeria/{id}', [GaleriaController::class, 'destroy']);
 
-        // Usuarios
-        Route::post('usuarios', [UsuarioController::class, 'store']);
-        Route::patch('usuarios/{cedula}', [UsuarioController::class, 'update']);
-        Route::delete('usuarios/{cedula}', [UsuarioController::class, 'destroy']);
+        // Auditoría
+        Route::get('auditoria', [AuditoriaController::class, 'index']);
+
+        // Usuarios del sistema (gestión completa)
+        Route::get('usuarios', [UsuarioController::class, 'index']);
         Route::get('usuarios/verificar-persona/{cedula}', [UsuarioController::class, 'verificarPersona']);
+        Route::get('usuarios/{cedula}', [UsuarioController::class, 'show'])->where('cedula', '[0-9]+');
+        Route::post('usuarios', [UsuarioController::class, 'store']);
+        Route::patch('usuarios/{cedula}', [UsuarioController::class, 'update'])->where('cedula', '[0-9]+');
+        Route::delete('usuarios/{cedula}', [UsuarioController::class, 'destroy'])->where('cedula', '[0-9]+');
+
 
         // Dashboard
         Route::get('admin/dashboard', [AuthController::class, 'adminDashboard']);
@@ -255,6 +316,7 @@ Route::middleware(['auth:sanctum', 'representante'])
 
         // Inscripciones del representante
         Route::get('/equipo/inscripciones', [RepresentanteEquipoController::class, 'inscripciones']);
+        Route::post('/inscripcion', [RepresentanteEquipoController::class, 'solicitarInscripcion']);
 
         Route::get('/equipos/{id}/estadisticas', [\App\Http\Controllers\Api\EstadisticasRepresentanteController::class, 'show']);
         Route::get('/partidos', [\App\Http\Controllers\Api\PartidosRepresentanteController::class, 'index']);

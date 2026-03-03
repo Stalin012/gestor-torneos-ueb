@@ -30,67 +30,148 @@ class AuthController extends Controller
             'detalle'        => $detalle,
         ]);
     }
-  public function register(Request $request)
+    private function validarCedulaEcuatoriana(string $cedula): bool
+    {
+        if (!preg_match('/^\d{10}$/', $cedula)) {
+            return false;
+        }
+
+        $provincia = (int) substr($cedula, 0, 2);
+        if ($provincia < 1 || ($provincia > 24 && $provincia != 30)) {
+            return false;
+        }
+
+        $tercerDigito = (int) substr($cedula, 2, 1);
+        // Sólo se validan cédulas de personas naturales (0-5)
+        if ($tercerDigito >= 6) {
+            return false;
+        }
+
+        $coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+        $suma = 0;
+
+        for ($i = 0; $i < 9; $i++) {
+            $valor = (int) $cedula[$i] * $coeficientes[$i];
+            if ($valor >= 10) {
+                $valor -= 9;
+            }
+            $suma += $valor;
+        }
+
+        $digitoVerificadorCalculado = 10 - ($suma % 10);
+        if ($digitoVerificadorCalculado == 10) {
+            $digitoVerificadorCalculado = 0;
+        }
+
+        $digitoVerificadorReal = (int) $cedula[9];
+
+        return $digitoVerificadorCalculado === $digitoVerificadorReal;
+    }
+
+    public function register(Request $request)
 {
     $validated = $request->validate([
         'cedula'    => ['required','string','size:10','regex:/^\d{10}$/'],
         'nombres'   => ['required','string','max:100'],
         'apellidos' => ['required','string','max:100'],
-        'email'     => ['required','email','max:100','unique:personas,email'],
+        'email'     => [
+            'required',
+            'email',
+            'max:100',
+            // El email debe ser único en personas, pero ignoramos si ya le pertenece a esta cédula
+            Rule::unique('personas', 'email')->ignore($request->cedula, 'cedula')
+        ],
         'password'  => ['required','string','min:8','confirmed'],
-        // opcional: si quieres permitir registrar representante desde el formulario
-        'rol'       => ['nullable','string','in:usuario,representante'],
+        'rol'       => ['nullable','string','in:jugador,representante'],
+    ], [
+        'cedula.required' => 'El campo cédula es obligatorio.',
+        'cedula.size' => 'La cédula debe tener exactamente 10 caracteres.',
+        'cedula.regex' => 'El formato de la cédula es inválido.',
+        'nombres.required' => 'El campo nombres es obligatorio.',
+        'apellidos.required' => 'El campo apellidos es obligatorio.',
+        'email.required' => 'El campo correo es obligatorio.',
+        'email.email' => 'El formato del correo es inválido.',
+        'email.unique' => 'El correo ya existe en nuestros registros.',
+        'password.required' => 'El campo contraseña es obligatorio.',
+        'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+        'password.confirmed' => 'La confirmación de la contraseña no coincide.',
     ]);
 
+    if (!$this->validarCedulaEcuatoriana($validated['cedula'])) {
+        return response()->json([
+            'message' => 'La cédula ingresada no es válida para Ecuador.',
+            'errors'  => ['cedula' => ['La cédula ingresada no es matemáticamente válida.']],
+        ], 422);
+    }
+
     try {
-        // Verificar si la cédula ya existe
+        // 1. Verificar si el usuario ya existe en la tabla de acceso
         if (User::where('cedula', $validated['cedula'])->exists()) {
             return response()->json([
-                'message' => 'La cédula ya se encuentra registrada.',
+                'message' => 'La cédula ya se encuentra registrada como usuario.',
                 'errors'  => ['cedula' => ['La cédula ya se encuentra registrada.']],
-            ], 409); // 409 Conflict
+            ], 409);
         }
 
         DB::beginTransaction();
 
-        // Crear usuario directamente (User ya es la tabla personas)
-        $user = User::create(
-            [
+        // 2. Garantizar que exista el registro en la tabla 'personas' (Requisito de FK)
+        $persona = Persona::where('cedula', $validated['cedula'])->first();
+        if (!$persona) {
+            $persona = Persona::create([
                 'cedula'    => $validated['cedula'],
                 'nombres'   => $validated['nombres'],
                 'apellidos' => $validated['apellidos'],
-                'email'     => $validated['email'],
-                'password'  => Hash::make($validated['password']),
-                'rol'       => $validated['rol'] ?? 'usuario',
-                'estado'    => true,
-            ]
-        );
+                'email'     => $validated['email']
+            ]);
+        }
+
+        // 3. Crear el usuario (Eloquent)
+        // Para evitar el bug de conversión booleana de PDO en Supabase (donde manda '1' en vez de 'TRUE')
+        // inyectamos el valor nativo TRUE usando DB::raw.
+        $user = User::create([
+            'cedula'    => $validated['cedula'],
+            'nombres'   => $validated['nombres'],
+            'apellidos' => $validated['apellidos'],
+            'email'     => $validated['email'],
+            'password'  => Hash::make($validated['password']),
+            'rol'       => $validated['rol'] ?? 'jugador',
+            'estado'    => \Illuminate\Support\Facades\DB::raw('TRUE'), // 👈 Corrección final para Hostinger/Supabase
+        ]);
 
         DB::commit();
 
-        $this->logAudit(
-            $user->cedula,
-            'CREAR',
-            'Usuario',
-            $user->cedula,
-            'Registro de nuevo usuario: ' . $user->email
-        );
 
-        // 4) Token
+        // Auditoría
+        try {
+            $rolAudit = $validated['rol'] ?? 'jugador';
+            $this->logAudit(
+                $user->cedula,
+                'REGISTRO_SISTEMA',
+                'Usuario',
+                $user->cedula,
+                "Auto-registro de nuevo {$rolAudit}: " . $user->email
+            );
+        } catch (\Exception $ae) {}
+
+        // Token de sesión inmediata
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Registrado correctamente.',
-            'user'    => $user,
+            'message' => 'Cuenta creada exitosamente.',
+            'user'    => $user->load('persona'),
             'token'   => $token,
         ], 201);
 
     } catch (\Throwable $e) {
         DB::rollBack();
-        Log::error('Error en register', ['error' => $e->getMessage()]);
+        Log::error('Error crítico en register: ' . $e->getMessage(), [
+            'cedula' => $request->cedula,
+            'trace' => $e->getTraceAsString()
+        ]);
 
         return response()->json([
-            'message' => 'Error al registrar.',
+            'message' => 'No se pudo completar el registro.',
             'error'   => $e->getMessage(),
         ], 500);
     }
@@ -102,42 +183,42 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $identificador = $request->input('login') ?: $request->input('email');
-        $campo = filter_var($identificador, FILTER_VALIDATE_EMAIL) ? 'email' : 'cedula';
+        try {
+            $identificador = trim($request->input('login') ?: $request->input('email'));
+            $campo = filter_var($identificador, FILTER_VALIDATE_EMAIL) ? 'email' : 'cedula';
 
-        $user = User::where($campo, $identificador)->first();
+            // 🔑 TRIM REAL EN POSTGRESQL PARA EVITAR ESPACIOS EN BLANCO
+            $user = User::whereRaw("TRIM({$campo}) = ?", [trim($identificador)])->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Credenciales incorrectas'], 401);
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                return response()->json(['message' => 'Credenciales incorrectas'], 401);
+            }
+
+            if (!$user->estado) {
+                return response()->json(['message' => 'Usuario inactivo'], 403);
+            }
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sesión iniciada correctamente',
+                'user'    => $user->load('persona'),
+                'token'   => $token,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error en Login API: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
         }
-
-        if (!$user->estado) {
-            return response()->json(['message' => 'Usuario inactivo'], 403);
-        }
-
-        // Reemplazar token anterior
-            // $user->tokens()->delete();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        $this->logAudit(
-            $user->cedula,
-            'LOGIN',
-            'Usuario',
-            $user->cedula,
-            'Inicio de sesión de usuario: ' . $user->email
-        );
-
-        return response()->json([
-            'message' => 'Login exitoso',
-            'user'    => $user->load('persona'),
-            'token'   => $token,
-        ]);
     }
 
     public function user(Request $request)
     {
         return response()->json(
-            $request->user()->load('persona')
+            $request->user()->load(['persona', 'jugador'])
         );
     }
 

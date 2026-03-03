@@ -16,8 +16,10 @@ class PartidosRepresentanteController extends Controller
     {
         $usuario = $request->user();
 
+        $cedula = $usuario->cedula ?? $usuario->persona?->cedula;
+
         // 1️⃣ Obtener IDs de equipos del representante
-        $equiposIds = Equipo::where('representante_cedula', $usuario->cedula)
+        $equiposIds = Equipo::where('representante_cedula', $cedula)
             ->pluck('id');
 
         if ($equiposIds->isEmpty()) {

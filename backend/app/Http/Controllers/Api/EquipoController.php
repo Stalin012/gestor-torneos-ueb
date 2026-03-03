@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Equipo;
 use App\Models\Auditoria;
 use App\Models\Jugador;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class EquipoController extends Controller
@@ -16,42 +17,64 @@ class EquipoController extends Controller
      */
     public function index()
     {
-        $equipos = Equipo::with(['torneo', 'categoria', 'deporte'])
-            ->select('equipos.*', 'logo') // Asegúrate de seleccionar el campo 'logo'
-            ->orderBy('id', 'desc')
-            ->paginate(15);
+        try {
+            $equipos = Equipo::with(['torneo', 'categoria', 'deporte'])
+                ->orderBy('id', 'desc')
+                ->paginate(15);
 
-        return response()->json($equipos);
+            return response()->json($equipos);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error al cargar equipos (API Index)',
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ], 500);
+        }
     }
 
     /**
      * Crear equipo
      */
+    /**
+     * Crear equipo
+     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'nombre'     => 'required|string|max:255|unique:equipos,nombre',
-            'logo'       => 'nullable|string|max:255', // CAMPO REAL DE BD
-            'torneo_id'  => 'required|exists:torneos,id',
-            'deporte_id' => 'required|exists:deportes,id',
-            'categoria_id' => 'required|exists:categorias,id',
-            'representante_cedula' => 'nullable|exists:personas,cedula',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nombre'     => 'required|string|max:255|unique:equipos,nombre',
+                'logo'       => 'nullable|string|max:255', 
+                'torneo_id'  => 'required|exists:torneos,id',
+                'deporte_id' => 'required|exists:deportes,id',
+                'categoria_id' => 'required|exists:categorias,id',
+                'representante_cedula' => 'nullable|exists:personas,cedula',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        }
 
-        $equipo = Equipo::create($validated);
+        try {
+            DB::beginTransaction();
+            $equipo = Equipo::create($validated);
+            DB::commit();
 
-        $this->logAudit(
-            $request->user() ? $request->user()->cedula : 'SISTEMA',
-            'CREAR',
-            'Equipo',
-            (string)$equipo->id,
-            'Creación de nuevo equipo: ' . $equipo->nombre
-        );
+            $this->logAudit(
+                $request->user() ? $request->user()->cedula : 'SISTEMA',
+                'CREAR',
+                'Equipo',
+                (string)$equipo->id,
+                'Creación de nuevo equipo: ' . $equipo->nombre
+            );
 
-        return response()->json([
-            'message' => 'Equipo creado exitosamente.',
-            'data'    => $equipo
-        ], 201);
+            return response()->json([
+                'message' => 'Equipo creado exitosamente.',
+                'data'    => $equipo->load(['torneo', 'categoria', 'deporte'])
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Error al crear equipo', 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -59,7 +82,7 @@ class EquipoController extends Controller
      */
     public function show($id)
     {
-        $equipo = Equipo::with(['torneo', 'jugadores.persona'])
+        $equipo = Equipo::with(['torneo', 'jugadores.persona', 'categoria', 'deporte'])
             ->find($id);
 
         if (!$equipo) {
@@ -80,32 +103,43 @@ class EquipoController extends Controller
             return response()->json(['message' => 'Equipo no encontrado'], 404);
         }
 
-        $validated = $request->validate([
-            'nombre' => [
-                'sometimes', 'string', 'max:255',
-                Rule::unique('equipos', 'nombre')->ignore($equipo->id)
-            ],
-            'logo' => 'nullable|string|max:255',
-            'torneo_id' => 'sometimes|exists:torneos,id',
-            'deporte_id' => 'sometimes|exists:deportes,id',
-            'categoria_id' => 'sometimes|exists:categorias,id',
-            'representante_cedula' => 'nullable|exists:personas,cedula',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nombre' => [
+                    'sometimes', 'required', 'string', 'max:255',
+                    Rule::unique('equipos', 'nombre')->ignore($equipo->id)
+                ],
+                'logo' => 'nullable|string|max:255',
+                'torneo_id' => 'sometimes|required|exists:torneos,id',
+                'deporte_id' => 'sometimes|required|exists:deportes,id',
+                'categoria_id' => 'sometimes|required|exists:categorias,id',
+                'representante_cedula' => 'nullable|exists:personas,cedula',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        }
 
-        $equipo->update($validated);
+        try {
+            DB::beginTransaction();
+            $equipo->update($validated);
+            DB::commit();
 
-        $this->logAudit(
-            $request->user() ? $request->user()->cedula : 'SISTEMA',
-            'ACTUALIZAR',
-            'Equipo',
-            (string)$equipo->id,
-            'Actualización de equipo: ' . $equipo->nombre
-        );
+            $this->logAudit(
+                $request->user() ? $request->user()->cedula : 'SISTEMA',
+                'ACTUALIZAR',
+                'Equipo',
+                (string)$equipo->id,
+                'Actualización de equipo: ' . $equipo->nombre
+            );
 
-        return response()->json([
-            'message' => 'Equipo actualizado exitosamente.',
-            'data'    => $equipo
-        ]);
+            return response()->json([
+                'message' => 'Equipo actualizado exitosamente.',
+                'data'    => $equipo->load(['torneo', 'categoria', 'deporte'])
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Error al actualizar equipo', 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -164,32 +198,49 @@ class EquipoController extends Controller
      */
     public function agregarJugador(Request $request, $equipoId)
     {
-        $request->validate([
-            'cedula' => 'required|exists:jugadores,cedula', // PK real del jugador
-        ]);
-
-        $equipo = Equipo::find($equipoId);
-        if (!$equipo) {
-            return response()->json(['message' => 'Equipo no encontrado'], 404);
+        try {
+            $validated = $request->validate([
+                'cedula' => 'required|exists:jugadores,cedula',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'El deportista no está registrado en el sistema o la identificación es incorrecta.',
+                'errors'  => $e->errors()
+            ], 422);
         }
 
-        $jugador = Jugador::find($request->cedula);
-        $jugador->equipo_id = $equipoId;
-        $jugador->save();
+        try {
+            $equipo = Equipo::find($equipoId);
+            if (!$equipo) {
+                return response()->json(['message' => 'Equipo no encontrado'], 404);
+            }
 
-        $this->logAudit(
-            $request->user() ? $request->user()->cedula : 'SISTEMA',
-            'ACTUALIZAR',
-            'Equipo',
-            (string)$equipoId,
-            'Jugador ' . $jugador->cedula . ' agregado al equipo ' . $equipo->nombre
-        );
+            $jugador = Jugador::find($validated['cedula']);
+            
+            // Verificar si ya pertenece al equipo
+            if ($jugador->equipo_id == $equipoId) {
+                return response()->json(['message' => 'El deportista ya forma parte de este colectivo.'], 422);
+            }
 
-        return response()->json([
-            'message' => 'Jugador añadido al equipo.',
-            'jugador' => $jugador->cedula,
-            'equipo'  => $equipo->nombre
-        ]);
+            $jugador->equipo_id = $equipoId;
+            $jugador->save();
+
+            $this->logAudit(
+                $request->user() ? $request->user()->cedula : 'SISTEMA',
+                'ACTUALIZAR',
+                'Equipo',
+                (string)$equipoId,
+                'Jugador ' . $jugador->cedula . ' agregado al equipo ' . $equipo->nombre
+            );
+
+            return response()->json([
+                'message' => 'Deportista vinculado exitosamente.',
+                'jugador' => $jugador->cedula,
+                'equipo'  => $equipo->nombre
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al vincular el deportista.', 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -197,32 +248,36 @@ class EquipoController extends Controller
      */
     public function removerJugador($equipoId, $jugadorCedula)
     {
-        $equipo = Equipo::find($equipoId);
-        if (!$equipo) {
-            return response()->json(['message' => 'Equipo no encontrado'], 404);
+        try {
+            $equipo = Equipo::find($equipoId);
+            if (!$equipo) {
+                return response()->json(['message' => 'Equipo no encontrado'], 404);
+            }
+
+            $jugador = Jugador::find($jugadorCedula);
+            if (!$jugador) {
+                return response()->json(['message' => 'Deportista no encontrado'], 404);
+            }
+
+            if ($jugador->equipo_id != $equipoId) {
+                return response()->json(['message' => 'El deportista no pertenece a este colectivo'], 400);
+            }
+
+            $jugador->equipo_id = null;
+            $jugador->save();
+
+            $this->logAudit(
+                request()->user() ? request()->user()->cedula : 'SISTEMA',
+                'ACTUALIZAR',
+                'Equipo',
+                (string)$equipoId,
+                'Jugador ' . $jugador->cedula . ' removido del equipo ' . $equipo->nombre
+            );
+
+            return response()->json(['message' => 'Vínculo comercial finalizado correctamente.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al desvincular al deportista.', 'error' => $e->getMessage()], 500);
         }
-
-        $jugador = Jugador::find($jugadorCedula);
-        if (!$jugador) {
-            return response()->json(['message' => 'Jugador no encontrado'], 404);
-        }
-
-        if ($jugador->equipo_id != $equipoId) {
-            return response()->json(['message' => 'Este jugador no pertenece al equipo'], 400);
-        }
-
-        $jugador->equipo_id = null;
-        $jugador->save();
-
-        $this->logAudit(
-            request()->user() ? request()->user()->cedula : 'SISTEMA',
-            'ACTUALIZAR',
-            'Equipo',
-            (string)$equipoId,
-            'Jugador ' . $jugador->cedula . ' removido del equipo ' . $equipo->nombre
-        );
-
-        return response()->json(['message' => 'Jugador removido del equipo.']);
     }
 
     private function logAudit(string $usuarioCedula, string $accion, string $entidad, string $entidadId, string $detalle): void

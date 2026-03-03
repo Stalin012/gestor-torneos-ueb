@@ -44,32 +44,46 @@ export const validateCedula = (cedula) => {
     return verifier === calculatedVerifier;
 };
 
-export const debounce = (func, wait) => {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-};
-
-export const downloadFile = (blob, filename) => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-};
-
+/**
+ * Función definitiva para obtener la URL de un recurso.
+ * Resuelve problemas de:
+ * 1. Rutas locales (localhost) en la BD.
+ * 2. Problemas de symlink en hostings compartidos.
+ */
 export const getAssetUrl = (path) => {
     if (!path) return '';
-    if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
-    const baseUrl = API_BASE.replace(/\/api\/?$/, '');
-    return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+
+    // Si ya es una URL externa (Unsplash, etc), devolverla tal cual
+    if (path.startsWith('http') && !path.includes('localhost') && !path.includes('127.0.0.1') && !path.includes('/storage/')) {
+        return path;
+    }
+
+    // Base del API limpia: "https://api.deportesueb.com/api"
+    const apiBase = "https://api.deportesueb.com/api";
+
+    // Extraer la ruta limpia (sin localhost y sin /storage/)
+    let cleanPath = path;
+
+    // Si viene con localhost, quitar la base del dominio
+    if (cleanPath.includes('localhost') || cleanPath.includes('127.0.0.1')) {
+        cleanPath = cleanPath.split('/storage/').pop() || cleanPath.split('/api/files/').pop() || cleanPath;
+        // Si el cleanPath todavía tiene el dominio, quitarlo a la fuerza
+        if (cleanPath.startsWith('http')) {
+            cleanPath = cleanPath.substring(cleanPath.indexOf('/', 10) + 1);
+        }
+    }
+
+    // Limpiar prefijos comunes para quedarnos solo con la sub-ruta del archivo
+    let subPath = cleanPath.replace(/^.*\/storage\//, '')
+        .replace(/^.*\/api\/files\//, '')
+        .replace(/^\/?storage\//, '')
+        .replace(/^\//, '');
+
+    // IMPORTANTE: Si es una imagen estática del frontend
+    if (subPath.startsWith('img/') || subPath.startsWith('logos/')) {
+        return `/${subPath}`;
+    }
+
+    // TODO lo que sea de base de datos se sirve por el proxy de la API
+    return `${apiBase}/files/${subPath}`;
 };

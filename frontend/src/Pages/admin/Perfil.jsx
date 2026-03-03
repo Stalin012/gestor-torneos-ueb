@@ -64,22 +64,20 @@ export default function PerfilAdmin() {
         setSaving(true);
         setMessage({ type: "", text: "" });
         try {
-            // Para admin, usamos el endpoint de personas directamente
-            const user = JSON.parse(localStorage.getItem('user'));
-            await api.put(`/personas/${user.cedula}`, {
+            // El endpoint de usuarios ya actualiza la persona asociada
+            const user = JSON.parse(sessionStorage.getItem('user'));
+            await api.patch(`/usuarios/${user.cedula}`, {
+                email: form.email,
+                rol: user.rol,
+                estado: user.estado,
                 nombres: form.nombres,
                 apellidos: form.apellidos,
-                email: form.email,
                 telefono: form.telefono
             });
 
-            // Actualizar el usuario también
-            await api.patch(`/usuarios/${user.cedula}`, {
-                email: form.email
-            });
-
             const userRes = await api.get('/user');
-            localStorage.setItem('user', JSON.stringify(userRes.data));
+            sessionStorage.setItem('user', JSON.stringify(userRes.data));
+            setPreview(userRes.data.persona?.foto_url || userRes.data.persona?.foto || null);
             window.dispatchEvent(new Event('user-updated'));
             setMessage({ type: "success", text: "Perfil actualizado correctamente." });
         } catch (e) {
@@ -98,9 +96,11 @@ export default function PerfilAdmin() {
         setSaving(true);
         try {
             // Endpoint genérico para cambiar contraseña
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(sessionStorage.getItem('user'));
             await api.patch(`/usuarios/${user.cedula}`, {
-                password_actual: passwords.password_actual,
+                email: form.email || user.email,
+                rol: user.rol,
+                estado: user.estado,
                 password: passwords.password_nueva
             });
             setMessage({ type: "success", text: "Contraseña actualizada." });
@@ -120,17 +120,16 @@ export default function PerfilAdmin() {
 
         setSaving(true);
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const { data } = await api.post(`/personas/${user.cedula}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                params: { _method: 'PUT' }
+            const user = JSON.parse(sessionStorage.getItem('user'));
+            const { data } = await api.post(`/personas/${user.cedula}?_method=PUT`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             setPreview(data.data?.foto_url || null);
 
             // Refresh user context
             const userRes = await api.get('/user');
-            localStorage.setItem('user', JSON.stringify(userRes.data));
+            sessionStorage.setItem('user', JSON.stringify(userRes.data));
             window.dispatchEvent(new Event('user-updated'));
 
             setMessage({ type: "success", text: "Foto actualizada." });

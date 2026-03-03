@@ -13,7 +13,7 @@ const Modal = ({
   size = 'md',
   children,
   footer = null,
-  closeOnBackdrop = true,
+  closeOnBackdrop = false,
   closeOnEsc = true,
   showCloseButton = true,
   icon: Icon = null

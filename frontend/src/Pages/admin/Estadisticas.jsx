@@ -1,29 +1,66 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, Filter, Search, ClipboardX, Trophy, Users, Zap, AlertCircle } from 'lucide-react';
-
+import {
+    BarChart3, Filter, Search, ClipboardX, Trophy, Users, Zap, AlertCircle,
+    Download, RefreshCw, Star, Activity, ArrowRight, User, Trash2
+} from 'lucide-react';
 import api from "../../api";
 import LoadingScreen from "../../components/LoadingScreen";
-import { StatCard } from "../../components/StatsComponents";
+import { getAssetUrl } from "../../utils/helpers";
 
+// ================= HELPERS =====================
+const StatCard = ({ title, value, icon: Icon, color }) => (
+    <div className="pro-card dashboard-fade" style={{
+        padding: '1.5rem 2rem',
+        borderRadius: '24px',
+        background: 'rgba(30, 41, 59, 0.4)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1.5rem',
+        transition: '0.3s'
+    }}>
+        <div style={{ width: '50px', height: '50px', borderRadius: '14px', background: `${color}15`, color: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon size={24} />
+        </div>
+        <div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff' }}>{value}</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</div>
+        </div>
+    </div>
+);
+
+// ================= MAIN COMPONENT =====================
 const Estadisticas = () => {
     const [stats, setStats] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const fetchStats = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/estadisticas');
+            setStats(response.data?.data || response.data || []);
+        } catch (error) {
+            console.error("Error fetching stats:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const response = await api.get('/estadisticas');
-                setStats(response.data?.data || response.data || []);
-            } catch (error) {
-                console.error("Error fetching stats:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchStats();
     }, []);
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("¿Estás seguro de eliminar este registro estadístico?")) return;
+        try {
+            await api.delete(`/estadisticas/${id}`);
+            fetchStats();
+        } catch (error) {
+            console.error("Error deleting stat:", error);
+            alert("Error al eliminar la estadística.");
+        }
+    };
 
     const totals = useMemo(() => {
         return stats.reduce((acc, curr) => ({
@@ -34,158 +71,189 @@ const Estadisticas = () => {
         }), { goles: 0, asistencias: 0, amarillas: 0, rojas: 0 });
     }, [stats]);
 
-    const filteredStats = stats.filter(stat =>
-        stat.jugador?.persona?.nombres?.toLowerCase().includes(filter.toLowerCase()) ||
-        stat.jugador?.persona?.apellidos?.toLowerCase().includes(filter.toLowerCase())
-    );
+    const filteredStats = useMemo(() => {
+        return stats.filter(stat =>
+            stat.jugador?.persona?.nombres?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            stat.jugador?.persona?.apellidos?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            stat.jugador_cedula?.includes(searchTerm)
+        ).sort((a, b) => (b.goles || 0) - (a.goles || 0));
+    }, [stats, searchTerm]);
 
-    if (loading) return <LoadingScreen message="PROCESANDO ANALÍTICA DE RENDIMIENTO..." />;
+    const handleExportCSV = () => {
+        if (filteredStats.length === 0) return;
+
+        const headers = ["Deportista", "Cedula", "Partido ID", "Goles", "Asistencias", "Amarillas", "Rojas", "Rebotes", "Bloqueos"];
+        const rows = filteredStats.map(s => [
+            `${s.jugador?.persona?.nombres} ${s.jugador?.persona?.apellidos}`,
+            s.jugador_cedula,
+            s.partido_id,
+            s.goles || 0,
+            s.asistencias || 0,
+            s.tarjetas_amarillas || 0,
+            s.tarjetas_rojas || 0,
+            s.rebotes || 0,
+            s.bloqueos || 0
+        ]);
+
+        let csvContent = "data:text/csv;charset=utf-8,"
+            + headers.join(",") + "\n"
+            + rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `reporte_estadisticas_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    if (loading) return <LoadingScreen message="Consolidando Analítica de Rendimiento..." />;
 
     return (
-        <div className="admin-page-container module-entrance">
-            {/* HEADER SECTION */}
-            <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div>
-                    <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.85rem', letterSpacing: '2px', textTransform: 'uppercase' }}>Analítica Deportiva</span>
-                    <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#fff', margin: '0.5rem 0' }}>Estadísticas de Rendimiento</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Seguimiento detallado de desempeño individual y colectivo</p>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="pro-btn btn-primary">
-                        <Filter size={18} /> Exportar Reporte
-                    </button>
+        <div className="rep-scope rep-screen-container rep-dashboard-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+            {/* HEADER */}
+            <header className="rep-header-main" style={{ marginBottom: '0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1.5rem' }}>
+                    <div className="header-info">
+                        <small className="university-label" style={{ color: '#10b981', fontWeight: 800 }}>Módulo de Inteligencia Deportiva</small>
+                        <h1 className="content-title" style={{ color: '#fff', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', display: 'flex', alignItems: 'center', gap: '1rem', margin: '0.5rem 0' }}>
+                            <BarChart3 size={42} className="header-icon-main" color="#10b981" /> Desempeño & Analítica
+                        </h1>
+                        <p className="content-subtitle" style={{ color: '#94a3b8', fontSize: '1rem' }}>Seguimiento biométrico, efectividad táctica y registro de sanciones</p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={fetchStats}
+                            className="pro-btn btn-secondary"
+                            style={{ padding: '0.8rem 1.2rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                            disabled={loading}
+                        >
+                            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                            <span>{loading ? 'Cargando...' : 'Actualizar'}</span>
+                        </button>
+                        <button
+                            onClick={handleExportCSV}
+                            className="pro-btn btn-primary"
+                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', padding: '0.8rem 1.5rem', borderRadius: '14px', boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        >
+                            <Download size={20} />
+                            <span>Exportar Reporte</span>
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            {/* KPI SECTION */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+            {/* KPI GRID */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
                 <StatCard title="Goles Totales" value={totals.goles} icon={Trophy} color="#10b981" />
-                <StatCard title="Asistencias" value={totals.asistencias} icon={Zap} color="#356ed8" />
-                <StatCard title="T. Amarillas" value={totals.amarillas} icon={AlertCircle} color="#f59e0b" />
-                <StatCard title="T. Rojas" value={totals.rojas} icon={AlertCircle} color="#ef4444" />
+                <StatCard title="Asistencias Clave" value={totals.asistencias} icon={Zap} color="#3b82f6" />
+                <StatCard title="Expediente Amarillo" value={totals.amarillas} icon={AlertCircle} color="#f59e0b" />
+                <StatCard title="Sanción Roja" value={totals.rojas} icon={AlertCircle} color="#ef4444" />
             </div>
 
-            <div className="pro-card">
-                {/* TOOLBAR */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div className="header-search" style={{ maxWidth: '400px', width: '100%', position: 'relative' }}>
-                        <Search size={18} style={{
-                            position: 'absolute',
-                            left: '1.25rem',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: 'var(--text-muted)'
-                        }} />
-                        <input
-                            className="pro-input"
-                            style={{ paddingLeft: '3.5rem' }}
-                            type="text"
-                            placeholder="Buscar por nombre de jugador..."
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                        />
+            {/* SEARCH AND TABLES */}
+            <div className="rep-content-wrapper">
+                <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.08)', padding: '2rem' }}>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', gap: '2rem', flexWrap: 'wrap' }}>
+                        <div className="search-wrapper" style={{ flex: 1, minWidth: '280px', margin: 0 }}>
+                            <Search size={18} className="search-icon" style={{ color: '#10b981' }} />
+                            <input
+                                className="pro-input"
+                                placeholder="Busca por nombre, apellido o cédula..."
+                                style={{ paddingLeft: '3rem', height: '48px', borderRadius: '16px', width: '100%' }}
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 800, whiteSpace: 'nowrap' }}>RESULTADOS: {filteredStats.length}</div>
                     </div>
 
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>
-                        Resultados encontrados: <span style={{ color: '#fff' }}>{filteredStats.length}</span>
-                    </div>
-                </div>
-
-                {/* TABLE */}
-                <div className="table-container">
-                    <table className="modern-table">
-                        <thead>
-                            <tr>
-                                <th>Jugador</th>
-                                <th>Encuentro</th>
-                                <th style={{ textAlign: 'center' }}>Goles</th>
-                                <th style={{ textAlign: 'center' }}>Asistencias</th>
-                                <th style={{ textAlign: 'center' }}>Sanciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredStats.length === 0 ? (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead style={{ background: 'rgba(0,0,0,0.2)' }}>
                                 <tr>
-                                    <td colSpan="5" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-                                        <ClipboardX size={48} style={{ marginBottom: '1rem', opacity: 0.1 }} />
-                                        <p>No se encontraron registros estadísticos que coincidan</p>
-                                    </td>
+                                    <th style={{ padding: '1.25rem', textAlign: 'left', color: '#64748b', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Deportista</th>
+                                    <th style={{ padding: '1.25rem', textAlign: 'left', color: '#64748b', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ID Part.</th>
+                                    <th style={{ padding: '1.25rem', textAlign: 'center', color: '#64748b', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Goles</th>
+                                    <th style={{ padding: '1.25rem', textAlign: 'center', color: '#64748b', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Asist.</th>
+                                    <th style={{ padding: '1.25rem', textAlign: 'center', color: '#64748b', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Reb/Bloq</th>
+                                    <th style={{ padding: '1.25rem', textAlign: 'right', color: '#64748b', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Sanciones</th>
+                                    <th style={{ padding: '1.25rem', textAlign: 'center', color: '#64748b', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Acciones</th>
                                 </tr>
-                            ) : (
-                                filteredStats.map(stat => (
-                                    <tr key={stat.id}>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div style={{
-                                                    width: '36px',
-                                                    height: '36px',
-                                                    borderRadius: '10px',
-                                                    background: 'rgba(255,255,255,0.05)',
-                                                    color: 'var(--primary)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontWeight: 900
-                                                }}>
-                                                    {stat.jugador?.persona?.nombres?.charAt(0)}
+                            </thead>
+                            <tbody>
+                                {filteredStats.map(stat => (
+                                    <tr key={stat.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: '0.2s' }}>
+                                        <td style={{ padding: '1.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                    {stat.jugador?.persona?.foto_url || stat.jugador?.persona?.foto ? (
+                                                        <img
+                                                            src={getAssetUrl(stat.jugador.persona.foto_url || stat.jugador.persona.foto)}
+                                                            alt="Foto"
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                        />
+                                                    ) : (
+                                                        stat.jugador?.persona?.nombres?.charAt(0) || <User size={18} />
+                                                    )}
                                                 </div>
                                                 <div>
-                                                    <div style={{ fontWeight: 800, color: '#fff' }}>
-                                                        {stat.jugador?.persona?.nombres} {stat.jugador?.persona?.apellidos}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID: {stat.jugador_cedula}</div>
+                                                    <div style={{ color: '#fff', fontWeight: 800 }}>{stat.jugador?.persona?.nombres} {stat.jugador?.persona?.apellidos}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>CI: {stat.jugador_cedula}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
-                                            <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.85rem' }}>PARTIDO #{stat.partido_id}</span>
+                                        <td style={{ padding: '1.5rem' }}>
+                                            <span style={{ color: '#6366f1', fontWeight: 800 }}>#{stat.partido_id}</span>
                                         </td>
-                                        <td style={{ textAlign: 'center' }}>
-                                            <span style={{
-                                                display: 'inline-block',
-                                                padding: '4px 12px',
-                                                background: 'rgba(16, 185, 129, 0.1)',
-                                                color: '#10b981',
-                                                borderRadius: '8px',
-                                                fontWeight: 900,
-                                                minWidth: '35px'
-                                            }}>
-                                                {stat.goles}
-                                            </span>
-                                        </td>
-                                        <td style={{ textAlign: 'center', fontWeight: 700 }}>{stat.asistencias}</td>
-                                        <td style={{ textAlign: 'center' }}>
-                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                                {stat.tarjetas_amarillas > 0 && (
-                                                    <span style={{
-                                                        width: '12px',
-                                                        height: '18px',
-                                                        background: '#f59e0b',
-                                                        borderRadius: '2px',
-                                                        boxShadow: '0 0 8px rgba(245, 158, 11, 0.4)'
-                                                    }} title={`Amarillas: ${stat.tarjetas_amarillas}`}></span>
-                                                )}
-                                                {stat.tarjetas_rojas > 0 && (
-                                                    <span style={{
-                                                        width: '12px',
-                                                        height: '18px',
-                                                        background: '#ef4444',
-                                                        borderRadius: '2px',
-                                                        boxShadow: '0 0 8px rgba(239, 68, 68, 0.4)'
-                                                    }} title={`Rojas: ${stat.tarjetas_rojas}`}></span>
-                                                )}
-                                                {stat.tarjetas_amarillas === 0 && stat.tarjetas_rojas === 0 && (
-                                                    <span style={{ color: 'var(--border)', fontSize: '0.8rem' }}>Limpio</span>
-                                                )}
+                                        <td style={{ padding: '1.5rem', textAlign: 'center' }}>
+                                            <div style={{ display: 'inline-flex', padding: '4px 12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '8px', fontWeight: 900 }}>
+                                                {stat.goles || 0}
                                             </div>
                                         </td>
+                                        <td style={{ padding: '1.5rem', textAlign: 'center', color: '#fff', fontWeight: 700 }}>
+                                            {stat.asistencias || 0}
+                                        </td>
+                                        <td style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                <div>R: {stat.rebotes || 0}</div>
+                                                <div>B: {stat.bloqueos || 0}</div>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1.5rem', textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                {Array.from({ length: stat.tarjetas_amarillas || 0 }).map((_, i) => (
+                                                    <div key={`y-${i}`} style={{ width: '10px', height: '14px', background: '#f59e0b', borderRadius: '2px', boxShadow: '0 0 10px rgba(245, 158, 11, 0.3)' }} title="Tarjeta Amarilla" />
+                                                ))}
+                                                {Array.from({ length: stat.tarjetas_rojas || 0 }).map((_, i) => (
+                                                    <div key={`r-${i}`} style={{ width: '10px', height: '14px', background: '#ef4444', borderRadius: '2px', boxShadow: '0 0 10px rgba(239, 68, 68, 0.3)' }} title="Tarjeta Roja" />
+                                                ))}
+                                                {(!stat.tarjetas_amarillas && !stat.tarjetas_rojas) && <Activity size={16} color="#313d4f" />}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1.5rem', textAlign: 'center' }}>
+                                            <button
+                                                onClick={() => handleDelete(stat.id)}
+                                                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: '0.2s' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                                                title="Eliminar registro"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+
         </div>
     );
 };

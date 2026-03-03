@@ -19,10 +19,12 @@ const GlobalNavbar = memo(({ user, title, onToggleSidebar, onLogout, onNotificat
             </div>
 
             <div className="header-actions">
-                <button className="header-btn relative" onClick={onNotificationsClick}>
-                    <Bell size={20} />
-                    {notificationCount > 0 && <span className="notification-badge">{notificationCount}</span>}
-                </button>
+                {user && (
+                    <button className="header-btn relative" onClick={onNotificationsClick} aria-label="Ver notificaciones">
+                        <Bell size={20} />
+                        {notificationCount > 0 && <span className="notification-badge">{notificationCount}</span>}
+                    </button>
+                )}
 
                 <div className="user-profile" onClick={onProfileClick}>
                     <div className="user-avatar" style={{ overflow: 'hidden' }}>

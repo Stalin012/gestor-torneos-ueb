@@ -15,14 +15,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(prepend: [
-            \App\Http\Middleware\CorsMiddleware::class,
+        $middleware->validateCsrfTokens(except: [
+            'login',
+            'api/login',
+            'logout',
+            'api/logout',
         ]);
-        
-        $middleware->web(prepend: [
-            \App\Http\Middleware\CorsMiddleware::class,
-        ]);
-        
+
+        $middleware->append(\Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class);
+
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'representante' => RepresentanteMiddleware::class,

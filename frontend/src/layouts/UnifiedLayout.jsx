@@ -15,7 +15,7 @@ const UnifiedLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const { notifications, toggleNotificationCenter, unreadCount } = useNotification();
+  const { toggleNotificationCenter, unreadCount } = useNotification();
 
   useEffect(() => {
     const handleResize = () => {
@@ -37,11 +37,14 @@ const UnifiedLayout = () => {
 
   useEffect(() => {
     const loadUser = () => {
-      const token = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+      const token = sessionStorage.getItem('token');
+      const storedUser = sessionStorage.getItem('user');
 
       if (!token || !storedUser) {
-        navigate('/login');
+        if (!['/login', '/register', '/'].includes(currentPath) && !currentPath.startsWith('/noticias') && !currentPath.startsWith('/torneos') && !currentPath.startsWith('/galeria')) {
+          navigate('/login');
+        }
+        setUser(null);
         return;
       }
 
@@ -50,7 +53,7 @@ const UnifiedLayout = () => {
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
         } catch (e) {
-          console.error("Error parsing user from local storage", e);
+          console.error("Error parsing user from session storage", e);
           navigate('/login');
         }
       }
@@ -64,42 +67,61 @@ const UnifiedLayout = () => {
     return () => {
       window.removeEventListener('user-updated', handleUserUpdate);
     };
-  }, [navigate]);
+  }, [navigate, currentPath]);
 
-  const getUserRole = useCallback(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        return user.rol?.toLowerCase() || '';
-      } catch (e) {
-        console.error('Error parsing user from localStorage', e);
-      }
-    }
-    return '';
-  }, []);
-
-  const getRolePrefix = useCallback(() => {
-    const userRole = getUserRole();
-    if (userRole) {
-      if (userRole === 'admin') return '/admin';
-      if (userRole === 'representante') return '/representante';
-      if (userRole === 'arbitro') return '/referee';
-      if (userRole === 'user' || userRole === 'jugador') return '/user';
-    }
-
+  // Obtener el prefijo de ruta del usuario actual desde su rol
+  const getUserRolePrefix = useCallback(() => {
+    const userRole = user?.rol?.toLowerCase();
+    if (userRole === 'admin') return '/admin';
+    if (userRole === 'representante') return '/representante';
+    if (userRole === 'arbitro' || userRole === 'árbitro') return '/referee';
+    if (userRole === 'user' || userRole === 'jugador') return '/user';
+    // Fallback basado en URL
     if (currentPath.startsWith('/admin')) return '/admin';
     if (currentPath.startsWith('/representante')) return '/representante';
     if (currentPath.startsWith('/referee')) return '/referee';
     if (currentPath.startsWith('/user')) return '/user';
-    return '/';
-  }, [getUserRole, currentPath]);
+    return '';
+  }, [user, currentPath]);
 
-  const rolePrefix = getRolePrefix();
+
+  // --- PROTECCIÓN DE RUTAS POR ROL ---
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem('user');
+    if (!storedUser) return;
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      const userRole = parsedUser.rol?.toLowerCase();
+
+      const roleToPrefixMap = {
+        'admin': '/admin',
+        'representante': '/representante',
+        'arbitro': '/referee',
+        'árbitro': '/referee',
+        'usuario': '/user',
+        'user': '/user',
+        'jugador': '/user'
+      };
+
+      const expectedPrefix = roleToPrefixMap[userRole];
+      const prefixes = ['/admin', '/representante', '/referee', '/user'];
+      const currentPrefix = prefixes.find(p => currentPath.startsWith(p));
+
+      // Si estoy en una ruta protegida pero el prefijo no corresponde a mi rol
+      if (currentPrefix && expectedPrefix && currentPrefix !== expectedPrefix) {
+        console.warn(`Acceso denegado: Usuario ${userRole} intentó acceder a ${currentPath}. Redirigiendo a ${expectedPrefix}`);
+        navigate(`${expectedPrefix}/dashboard`);
+      }
+    } catch (e) {
+      console.error("Error en la validación de roles de la ruta", e);
+    }
+  }, [currentPath, navigate]);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    setUser(null);
     navigate('/login');
   }, [navigate]);
 
@@ -107,16 +129,15 @@ const UnifiedLayout = () => {
     setSearchTerm(value);
   }, []);
 
-
-
   const handleProfileClick = useCallback(() => {
-    navigate(`${rolePrefix}/perfil`);
-  }, [navigate, rolePrefix]);
+    const prefix = getUserRolePrefix();
+    if (prefix) {
+      navigate(`${prefix}/perfil`);
+    }
+  }, [navigate, getUserRolePrefix]);
 
   const handleToggleSidebar = useCallback(() => {
-    setIsSidebarOpen(prev => !prev); // Siempre alterna la visibilidad completa
-
-    // Si el sidebar se está abriendo en una pantalla grande, asegúrate de que no esté colapsado por defecto
+    setIsSidebarOpen(prev => !prev);
     if (!isSidebarOpen && window.innerWidth > 768) {
       setIsSidebarCollapsed(false);
     }
@@ -128,6 +149,7 @@ const UnifiedLayout = () => {
     { to: "/equipos", label: "Equipos" },
     { to: "/jugadores", label: "Jugadores" },
     { to: "/arbitros", label: "Árbitros" },
+    { to: "/partidos", label: "Partidos" },
     { to: "/usuarios", label: "Usuarios" },
     { to: "/galeria", label: "Galería" },
     { to: "/auditoria", label: "Auditoría" },
@@ -159,18 +181,39 @@ const UnifiedLayout = () => {
     { to: "/equipos", label: "Mis Equipos" },
   ], []);
 
-  const rawLinks = useMemo(() => {
-    if (rolePrefix === '/admin') return adminLinks;
-    if (rolePrefix === '/representante') return representanteLinks;
-    if (rolePrefix === '/referee') return refereeLinks;
-    if (rolePrefix === '/user') return userLinks;
-    return [];
-  }, [rolePrefix, adminLinks, representanteLinks, refereeLinks, userLinks]);
+  const roleLinks = useMemo(() => {
+    const userRole = user?.rol?.toLowerCase();
+    let baseLinks = [];
+    let currentPrefix = '';
 
-  const navLinks = useMemo(() => rawLinks.map(link => ({
-    ...link,
-    to: `${rolePrefix}${link.to}`
-  })), [rawLinks, rolePrefix]);
+    if (userRole === 'admin') {
+      baseLinks = adminLinks;
+      currentPrefix = '/admin';
+    } else if (userRole === 'representante') {
+      baseLinks = representanteLinks;
+      currentPrefix = '/representante';
+    } else if (userRole === 'arbitro' || userRole === 'árbitro') {
+      baseLinks = refereeLinks;
+      currentPrefix = '/referee';
+    } else if (userRole === 'user' || userRole === 'jugador') {
+      baseLinks = userLinks;
+      currentPrefix = '/user';
+    } else {
+      // Fallback temporal basado en path mientras carga el usuario
+      if (currentPath.startsWith('/admin')) { baseLinks = adminLinks; currentPrefix = '/admin'; }
+      else if (currentPath.startsWith('/representante')) { baseLinks = representanteLinks; currentPrefix = '/representante'; }
+      else if (currentPath.startsWith('/referee')) { baseLinks = refereeLinks; currentPrefix = '/referee'; }
+      else if (currentPath.startsWith('/user')) { baseLinks = userLinks; currentPrefix = '/user'; }
+    }
+
+    return baseLinks.map(link => ({
+      ...link,
+      to: `${currentPrefix}${link.to}`
+    }));
+  }, [user, currentPath, adminLinks, representanteLinks, refereeLinks, userLinks]);
+
+  const navLinks = roleLinks;
+
 
   const pageTitle = useMemo(() => {
     const currentLink = navLinks.find(link => currentPath.startsWith(link.to));

@@ -21,10 +21,10 @@ class GaleriaController extends Controller
             'detalle'        => $detalle,
         ]);
     }
+
     public function index()
     {
         $galeria = Galeria::orderBy('created_at', 'desc')->get();
-
         return response()->json($galeria);
     }
 
@@ -36,14 +36,14 @@ class GaleriaController extends Controller
             'archivo'     => 'required|file|max:50000|mimes:jpg,jpeg,png,webp,gif,mp4,mov,mkv,avi,pdf,docx'
         ]);
 
-        // Guardar archivo
+        // Guardar archivo — ruta relativa: "galeria/nombre.jpg"
+        // El frontend la sirve a través de /api/files/ (sin symlink)
         $path = $request->file('archivo')->store('galeria', 'public');
-        $url = Storage::url($path);
 
         $item = Galeria::create([
             'titulo'      => $request->titulo,
             'descripcion' => $request->descripcion,
-            'imagen'      => $url, // Guardamos URL pública
+            'imagen'      => $path, // Ruta relativa limpia
         ]);
 
         $this->logAudit(
@@ -56,7 +56,7 @@ class GaleriaController extends Controller
 
         return response()->json([
             'message' => 'Elemento subido con éxito.',
-            'item' => $item
+            'item'    => $item
         ], 201);
     }
 
@@ -71,18 +71,17 @@ class GaleriaController extends Controller
             'archivo'     => 'nullable|file|max:50000|mimes:jpg,jpeg,png,webp,gif,mp4,mov,mkv,avi,pdf,docx'
         ]);
 
-        // Si envía archivo nuevo >> eliminar anterior
         if ($request->hasFile('archivo')) {
-            if ($item->imagen) {
-                $oldPath = str_replace('/storage/', '', $item->imagen);
-                Storage::disk('public')->delete($oldPath);
+            // Eliminar archivo anterior solo si la ruta NO tiene http (es ruta relativa)
+            if ($item->imagen && !str_starts_with($item->imagen, 'http')) {
+                Storage::disk('public')->delete($item->imagen);
             }
 
-            $path = $request->file('archivo')->store('galeria', 'public');
-            $item->imagen = Storage::url($path);
+            // Guardar nuevo archivo con ruta relativa
+            $item->imagen = $request->file('archivo')->store('galeria', 'public');
         }
 
-        $item->titulo = $request->titulo;
+        $item->titulo      = $request->titulo;
         $item->descripcion = $request->descripcion;
         $item->save();
 
@@ -96,7 +95,7 @@ class GaleriaController extends Controller
 
         return response()->json([
             'message' => 'Elemento actualizado con éxito.',
-            'item'     => $item
+            'item'    => $item
         ]);
     }
 
@@ -105,9 +104,9 @@ class GaleriaController extends Controller
         $item = Galeria::find($id);
         if (!$item) return response()->json(['message' => 'Elemento no encontrado'], 404);
 
-        if ($item->imagen) {
-            $oldPath = str_replace('/storage/', '', $item->imagen);
-            Storage::disk('public')->delete($oldPath);
+        // Eliminar archivo del disco solo si es ruta relativa
+        if ($item->imagen && !str_starts_with($item->imagen, 'http')) {
+            Storage::disk('public')->delete($item->imagen);
         }
 
         $item->delete();

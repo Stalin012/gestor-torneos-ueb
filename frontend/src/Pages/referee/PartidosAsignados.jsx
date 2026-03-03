@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import "../../css/unified-all.css";
 import api from "../../api";
+import { getAssetUrl } from "../../utils/helpers";
 
 const PartidosAsignados = () => {
     const [partidos, setPartidos] = useState([]);
@@ -238,8 +239,22 @@ const PartidosAsignados = () => {
                                         <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>
                                             {partido.equipo_local?.nombre || partido.equipoLocal?.nombre || 'Local'}
                                         </span>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                                            <Flag size={20} color="#60a5fa" />
+                                        <div style={{
+                                            width: '50px',
+                                            height: '50px',
+                                            borderRadius: '12px',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            overflow: 'hidden'
+                                        }}>
+                                            {partido.equipo_local?.logo_url ? (
+                                                <img src={getAssetUrl(partido.equipo_local.logo_url)} alt="Logo" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                                            ) : (
+                                                <Flag size={24} color="#60a5fa" />
+                                            )}
                                         </div>
                                     </div>
 
@@ -283,8 +298,22 @@ const PartidosAsignados = () => {
 
                                     {/* Visitante */}
                                     <div style={{ flex: 1, textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '1rem' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                                            <Flag size={20} color="#fbbf24" />
+                                        <div style={{
+                                            width: '50px',
+                                            height: '50px',
+                                            borderRadius: '12px',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            overflow: 'hidden'
+                                        }}>
+                                            {partido.equipo_visitante?.logo_url ? (
+                                                <img src={getAssetUrl(partido.equipo_visitante.logo_url)} alt="Logo" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                                            ) : (
+                                                <Flag size={24} color="#fbbf24" />
+                                            )}
                                         </div>
                                         <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>
                                             {partido.equipo_visitante?.nombre || partido.equipoVisitante?.nombre || 'Visitante'}

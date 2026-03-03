@@ -14,7 +14,7 @@ const VALID_TYPES = new Set(Object.values(NOTIFICATION_TYPES));
 
 const safeParseUser = () => {
     try {
-        const raw = localStorage.getItem("user");
+        const raw = sessionStorage.getItem("user");
         if (!raw) return null;
         return JSON.parse(raw);
     } catch {
@@ -220,7 +220,7 @@ const NotificationCenter = ({ isOpen, onClose, notifications, loadNotifications,
     const [showAllOlder, setShowAllOlder] = useState(false);
     const safeNotifications = Array.isArray(notifications) ? notifications : [];
     const visibleNotifications = useMemo(
-        () => safeNotifications.filter((n) => !hiddenIds.includes(n.id)),
+        () => safeNotifications.filter((n) => !n.leida && !hiddenIds.includes(n.id)),
         [safeNotifications, hiddenIds]
     );
     const groupedNotifications = useMemo(() => {
@@ -278,7 +278,9 @@ const NotificationCenter = ({ isOpen, onClose, notifications, loadNotifications,
     const unreadCount = safeNotifications.filter((n) => !n.leida).length;
 
     useEffect(() => {
-        if (isOpen && loadNotifications) {
+        // Solo carga notificaciones del servidor si el panel se abre y no hay datos todavía
+        // Esto evita que reaparezcan notificaciones ya marcadas como leídas
+        if (isOpen && loadNotifications && safeNotifications.length === 0) {
             loadNotifications();
         }
     }, [isOpen, loadNotifications]);
@@ -456,7 +458,7 @@ export const useNotifications = () => {
     const [loading, setLoading] = useState(false);
 
     const loadNotifications = useCallback(async () => {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (!token) {
             setNotifications([]);
             return;
@@ -477,7 +479,7 @@ export const useNotifications = () => {
     }, []);
 
     const addNotification = useCallback(async (...args) => {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (!token) return false;
 
         const currentUser = safeParseUser();
@@ -502,32 +504,58 @@ export const useNotifications = () => {
     }, [loadNotifications]);
 
     const markAsRead = useCallback(async (id) => {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (!token) return;
 
+        // Actualización optimista: marca como leída de inmediato en la UI
+        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, leida: true } : n)));
+
         try {
-            await api.patch(`/notificaciones/${id}/read`);
-            setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, leida: true } : n)));
+            await api.post(`/notificaciones/${id}/read`);
         } catch (error) {
+            // Si falla, revertir
+            setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, leida: false } : n)));
             if (error.response?.status !== 401) {
-                console.error("Error markAsRead:", error);
+                console.error("Error markAsRead:", error?.response?.data || error);
             }
         }
     }, []);
 
     const markAllAsRead = useCallback(async () => {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (!token) return;
 
+        // Obtener las IDs de todas las notificaciones no leidas
+        let unreadIds = [];
+        setNotifications((current) => {
+            unreadIds = current.filter(n => !n.leida).map(n => n.id);
+            return current;
+        });
+
+        if (unreadIds.length === 0) return;
+
+        // Actualización optimista inmediata
+        setNotifications((prev) => prev.map((n) => ({ ...n, leida: true })));
+
+        // Primero intentar marcar todas de golpe
         try {
-            await api.patch("/notificaciones/read-all");
-            setNotifications((prev) => prev.map((n) => ({ ...n, leida: true })));
-        } catch (error) {
-            if (error.response?.status !== 401) {
-                console.error("Error markAllAsRead:", error);
+            await api.post("/notificaciones/read-all");
+        } catch (bulkError) {
+            console.warn("read-all falló, marcando individualmente...");
+            // Fallback: marcar cada una individualmente
+            try {
+                await Promise.allSettled(
+                    unreadIds.map((id) => api.post(`/notificaciones/${id}/read`))
+                );
+            } catch (error) {
+                if (error?.response?.status !== 401) {
+                    console.error("Error markAllAsRead:", error);
+                }
             }
         }
     }, []);
+
+
 
     return {
         notifications,

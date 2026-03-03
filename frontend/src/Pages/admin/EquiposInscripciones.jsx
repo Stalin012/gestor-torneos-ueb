@@ -14,483 +14,188 @@ import {
     ShieldAlert,
     Clock,
     Trophy,
-    User, // Added User icon
-    Save // Added Save icon
+    User,
+    Save,
+    ChevronRight,
+    Search,
+    Filter,
+    ArrowRight,
+    Camera,
+    Info,
+    AlertTriangle
 } from 'lucide-react';
 
 import LoadingScreen from "../../components/LoadingScreen";
 import api from "../../api";
-import { StatCard } from "../../components/StatsComponents";
 import { useNotification } from "../../context/NotificationContext";
 
-/* ============================================================
-   1. Modal de Detalle / Gestión de Equipo
-============================================================ */
-/* ============================================================
-   1. Modal de Detalle / Gestión de Equipo (ELITE)
-============================================================ */
+// ============================================================
+// 1. Modal de Detalle / Gestión de Equipo (PREMIUM)
+// ============================================================
 const EquipoDetailModal = ({ isOpen, onClose, equipo, onUpdated }) => {
-    const navigate = useNavigate();
     const { addNotification } = useNotification();
-    const contentRef = useRef(null);
-
     const [teamName, setTeamName] = useState('');
     const [teamLogo, setTeamLogo] = useState('');
     const [jugadores, setJugadores] = useState([]);
     const [newCedula, setNewCedula] = useState('');
     const [loadingJugadores, setLoadingJugadores] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [playersPerPage] = useState(10); // Number of players per page
-    const [paginationMeta, setPaginationMeta] = useState(null);
-    const [isEditPlayerModalOpen, setIsEditPlayerModalOpen] = useState(false);
-    const [selectedPlayer, setSelectedPlayer] = useState(null);
-    const [error, setError] = useState(null); // Nuevo estado para errores
-    const [loading, setLoading] = useState(false); // Added loading state for form submission
-    const [statusType, setStatusType] = useState('');
-    const [statusText, setStatusText] = useState('');
-
-    const handlePageChange = (page) => {
-        if (page > 0 && page <= paginationMeta.last_page) {
-            setCurrentPage(page);
-        }
-    };
-
-    const handleEditPlayer = (player) => {
-        setSelectedPlayer(player);
-        setIsEditPlayerModalOpen(true);
-    };
-
-    const handleSavePlayer = async (updatedPlayer) => {
-        try {
-            // Assuming an API endpoint for updating player details
-            await api.put(`/jugadores/${updatedPlayer.cedula}`, updatedPlayer);
-            setIsEditPlayerModalOpen(false);
-            await loadJugadores(); // Reload players to reflect changes
-            if (onUpdated) onUpdated();
-        } catch (err) {
-            alert(err.response?.data?.message || 'Error al actualizar jugador.');
-        }
-    };
+    const [saving, setSaving] = useState(false);
 
     const loadJugadores = useCallback(async () => {
         if (!equipo) return;
-
         try {
             setLoadingJugadores(true);
-            const resp = await api.get(`/equipos/${equipo.id}/jugadores?page=${currentPage}&per_page=${playersPerPage}`);
-            setJugadores(Array.isArray(resp.data?.jugadores?.data) ? resp.data.jugadores.data : []);
-            setPaginationMeta(resp.data?.jugadores);
+            const resp = await api.get(`/equipos/${equipo.id}/jugadores`);
+            // Con axios, la data está en resp.data
+            const jugadoresData = resp.data?.jugadores?.data || resp.data?.jugadores || [];
+            setJugadores(Array.isArray(jugadoresData) ? jugadoresData : []);
         } catch (err) {
             console.error('Error cargando jugadores:', err);
         } finally {
             setLoadingJugadores(false);
         }
-    }, [equipo, currentPage, playersPerPage]);
+    }, [equipo]);
 
     useEffect(() => {
         if (isOpen && equipo) {
             setTeamName(equipo.nombre || '');
             setTeamLogo(equipo.logo || '');
-            setCurrentPage(1);
             loadJugadores();
-        } else if (!isOpen) {
-            setTeamName('');
-            setJugadores([]);
-            setNewCedula('');
-            setCurrentPage(1);
-            setPaginationMeta(null);
         }
     }, [equipo, isOpen, loadJugadores]);
 
-    useEffect(() => {
-        if (isOpen) {
-            document.body.classList.add('modal-open');
-            return () => document.body.classList.remove('modal-open');
+    if (!isOpen) return null;
+
+    const handleUpdateIdentity = async () => {
+        if (!teamName.trim()) {
+            addNotification('El nombre del equipo es obligatorio.', 'warning');
+            return;
         }
-    }, [isOpen]);
 
-
+        if (!window.confirm('¿Desea actualizar la identidad corporativa del equipo?')) return;
+        setSaving(true);
+        try {
+            await api.put(`/equipos/${equipo.id}`, {
+                nombre: teamName.trim(),
+                logo: teamLogo.trim()
+            });
+            addNotification('Identidad actualizada correctamente', 'success');
+            if (onUpdated) onUpdated();
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || 'Error al actualizar datos corporativos.';
+            addNotification(errorMsg, 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const handleAddPlayer = async () => {
         if (!newCedula.trim()) return;
-
         try {
             await api.post(`/equipos/${equipo.id}/agregar-jugador`, {
-                cedula: newCedula.trim(),
+                cedula: newCedula.trim()
             });
             setNewCedula('');
-            await loadJugadores();
-            if (onUpdated) onUpdated();
+            loadJugadores();
+            addNotification('Deportista vinculado con éxito', 'success');
         } catch (err) {
-            alert(err.response?.data?.message || 'Error al agregar jugador.');
+            console.error('Error al vincular:', err.response?.data);
+            const errorMsg = err.response?.data?.message || 'Identificación no encontrada o no registrada como jugador.';
+            addNotification(errorMsg, 'error');
         }
     };
 
     const handleRemovePlayer = async (cedula) => {
-        if (!window.confirm("¿Seguro que desea eliminar este jugador del equipo?")) return;
-
+        if (!confirm("¿Deseas desvincular a este jugador del equipo?")) return;
         try {
             await api.delete(`/equipos/${equipo.id}/jugador/${cedula}`);
-            await loadJugadores();
-            if (onUpdated) onUpdated();
+            loadJugadores();
+            addNotification('Vínculo comercial finalizado', 'info');
         } catch (err) {
-            alert('Error al eliminar jugador.');
+            addNotification('Error al desvincular.', 'error');
         }
     };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError(null); // Limpiar errores previos
-        const confirmed = window.confirm("¿Deseas guardar los cambios de la comitiva?");
-        if (!confirmed) {
-            setStatusType('');
-            setStatusText('');
-            return;
-        }
-        setStatusType('info');
-        setStatusText('Guardando cambios…');
-        if (addNotification) addNotification('Guardando cambios…', 'info');
-        setLoading(true); // Start loading
-        try {
-            await api.put(`/equipos/${equipo.id}`, {
-                nombre: teamName.trim(),
-                logo: teamLogo.trim(),
-            });
-        setStatusType('success');
-        setStatusText('Los datos han sido guardados correctamente');
-        if (addNotification) addNotification('Los datos han sido guardados correctamente', 'success');
-            if (onUpdated) onUpdated();
-            setTimeout(() => {
-                onClose();
-            }, 600);
-        } catch (err) {
-            console.error('Error al actualizar equipo:', err);
-            setError(err.response?.data?.message || 'Error al actualizar equipo.');
-            setStatusType('danger');
-            setStatusText(err.response?.data?.message || 'Error al guardar');
-        } finally {
-            setLoading(false); // End loading
-        }
-    };
-
-    useEffect(() => {
-        if (!isOpen) {
-            setError(null); // Limpiar errores cuando el modal se cierra
-        }
-    }, [isOpen]);
-
-    if (!isOpen) return null;
 
     return createPortal(
-        <div
-            className="modal-overlay fade-in"
-            onMouseDown={(e) => {
-                if (contentRef.current && !contentRef.current.contains(e.target)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            }}
-            onClick={(e) => {
-                if (contentRef.current && !contentRef.current.contains(e.target)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            }}
-        >
-            <div ref={contentRef} className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
-                <div className="modal-header" style={{
-                    background: 'linear-gradient(135deg, rgba(53, 110, 216, 0.1), rgba(16, 185, 129, 0.05))',
-                    borderBottom: '2px solid var(--primary)'
-                }}>
+        <div className="modal-overlay fade-in" style={{ zIndex: 1200 }}>
+            <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()} style={{ borderRadius: '32px', background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{
-                            padding: '12px',
-                            background: 'linear-gradient(135deg, var(--primary), #3b82f6)',
-                            color: 'white',
-                            borderRadius: '16px',
-                            boxShadow: '0 8px 20px rgba(53, 110, 216, 0.25)'
-                        }}>
+                        <div className="modal-icon" style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' }}>
                             <Users size={28} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>Administrar Comitiva</h2>
-                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-                                Edición de perfil corporativo y gestión de nómina oficial
-                            </p>
-                            {statusText && (
-                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
-                                    {statusText}
-                                </span>
-                            )}
+                            <h2 className="modal-title" style={{ color: '#fff' }}>Gestión de Colectivo</h2>
+                            <p className="modal-subtitle">Administración de identidad y nómina</p>
                         </div>
                     </div>
-                    <button className="btn-icon-close" type="button" onClick={onClose}>
-                        <X size={24} />
-                    </button>
+                    <button className="btn-icon-close" onClick={onClose} style={{ color: '#fff' }}><X size={24} /></button>
                 </div>
 
-                <div className="modal-body">
-                    {error && (
-                        <div className="alert alert-danger" style={{ marginBottom: '1.5rem' }}>
-                            {error}
+                <div className="modal-body" style={{ padding: '2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
+                        {/* LEFT: IDENTITY */}
+                        <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Camera size={18} color="#3b82f6" /> Perfil Corporativo
+                            </h3>
+                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label className="form-label">Nombre del Equipo</label>
+                                <input className="pro-input" value={teamName} onChange={e => setTeamName(e.target.value)} />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '2rem' }}>
+                                <label className="form-label">URL del Logo (Opcional)</label>
+                                <input className="pro-input" value={teamLogo} onChange={e => setTeamLogo(e.target.value)} placeholder="https://..." />
+                            </div>
+                            <button className="pro-btn btn-primary" onClick={handleUpdateIdentity} disabled={saving} style={{ width: '100%', background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}>
+                                {saving ? <div className="spinner-sm" /> : <Save size={18} />} Guardar Identidad
+                            </button>
                         </div>
-                    )}
-                    <form id="equipo-form" onSubmit={handleSubmit}>
-                        <div style={{ marginBottom: '2.5rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <label className="form-label" style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '1rem', display: 'block' }}>Identidad del Colectivo</label>
-                            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                                <div style={{
-                                    width: '64px',
-                                    height: '64px',
-                                    borderRadius: '16px',
-                                    background: 'var(--bg-darkest)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '2rem',
-                                    fontWeight: 900,
-                                    color: 'var(--primary)',
-                                    border: '2px solid var(--primary-light)'
-                                }}>
-                                    {teamName.charAt(0) || 'E'}
-                                </div>
-                                <div style={{ flex: 1 }}>
+
+                        {/* RIGHT: ROSTER */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div style={{ padding: '1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '24px', border: '1px dashed rgba(59, 130, 246, 0.3)' }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>Vincular Nuevo Deportista</h3>
+                                <div style={{ display: 'flex', gap: '10px' }}>
                                     <input
-                                        type="text"
                                         className="pro-input"
-                                        value={teamName}
-                                        onChange={(e) => setTeamName(e.target.value)}
-                                        required
-                                        placeholder="Ingrese el nombre oficial del equipo..."
-                                        style={{ fontSize: '1.2rem', fontWeight: 700, height: '54px' }}
+                                        placeholder="Cédula / Identificación..."
+                                        value={newCedula}
+                                        onChange={e => setNewCedula(e.target.value)}
+                                        onKeyPress={e => e.key === 'Enter' && handleAddPlayer()}
                                     />
+                                    <button className="pro-btn btn-primary" onClick={handleAddPlayer} style={{ padding: '0 1.5rem' }}>
+                                        <Plus size={20} />
+                                    </button>
                                 </div>
-                            </div>
-                            <div style={{ marginTop: '1.5rem' }}>
-                                <label className="form-label" htmlFor="teamLogo">URL del Logo</label>
-                                <input
-                                    type="url"
-                                    id="teamLogo"
-                                    className="pro-input"
-                                    value={teamLogo}
-                                    onChange={(e) => setTeamLogo(e.target.value)}
-                                    placeholder="URL del logo del equipo (opcional)"
-                                    pattern="^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$"
-                                    title="Por favor, introduce una URL válida (ej. http://example.com/logo.png)"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="premium-card" style={{ background: 'rgba(0,0,0,0.2)', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                <div>
-                                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <List size={22} color="var(--primary)" /> Miembros del Equipo
-                                    </h3>
-                                    <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Listado de deportistas habilitados en el sistema</p>
-                                </div>
-                                <span style={{ padding: '6px 16px', background: 'rgba(53, 110, 216, 0.1)', color: 'var(--primary)', borderRadius: '100px', fontWeight: 800, fontSize: '0.9rem', border: '1px solid rgba(53, 110, 216, 0.2)' }}>
-                                    {jugadores.length} Registrados
-                                </span>
                             </div>
 
-                            {loadingJugadores ? (
-                                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                                    <div className="spinner" style={{ width: '40px', height: '40px', borderColor: 'rgba(53, 110, 216, 0.2)', borderTopColor: 'var(--primary)', margin: '0 auto' }}></div>
-                                    <p style={{ marginTop: '1.5rem', color: 'var(--text-muted)', fontWeight: 600 }}>Cargando nómina...</p>
-                                </div>
-                            ) : jugadores.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'rgba(255,255,255,0.01)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.05)' }}>
-                                    <div style={{ padding: '1.5rem', background: 'rgba(53, 110, 216, 0.05)', borderRadius: '50%', width: 'fit-content', margin: '0 auto 1.5rem' }}>
-                                        <Users size={40} color="var(--text-muted)" />
-                                    </div>
-                                    <h4 style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 800 }}>Nómina Vacía</h4>
-                                    <p style={{ color: 'var(--text-muted)', maxWidth: '280px', margin: '10px auto 0' }}>Este equipo aún no tiene deportistas asignados en el sistema.</p>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                                    {jugadores.map(jugador => (
-                                        <div key={jugador.id} className="persona-card" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.3s ease' }}>
-                                            <div style={{ width: '48px', height: '48px', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-darkest)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                {jugador.persona?.foto_url ? (
-                                                    <img src={jugador.persona.foto_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                ) : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(53, 110, 216, 0.1)', color: 'var(--primary)' }}><User size={20} /></div>}
-                                            </div>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{jugador.persona?.nombres} {jugador.persona?.apellidos}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>C.I. {jugador.persona?.cedula}</div>
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '5px' }}>
-                                                <button type="button" onClick={() => handleEditPlayer(jugador)} className="pro-btn btn-secondary" style={{ padding: '8px' }} title="Editar miembro">
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button type="button" onClick={() => handleRemovePlayer(jugador.persona?.cedula)} className="pro-btn btn-danger" style={{ padding: '8px' }} title="Eliminar miembro">
+                            <div style={{ flex: 1, maxHeight: '350px', overflowY: 'auto', paddingRight: '5px' }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#94a3b8', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+                                    Nómina Actual <span>{jugadores.length}</span>
+                                </h3>
+                                {loadingJugadores ? (
+                                    <div className="spinner-sm" style={{ margin: '2rem auto' }} />
+                                ) : jugadores.length === 0 ? (
+                                    <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>Sin jugadores inscritos.</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {jugadores.map(player => (
+                                            <div key={player.cedula} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{player.persona?.nombres} {player.persona?.apellidos}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>CI: {player.cedula}</div>
+                                                </div>
+                                                <button className="pro-btn" onClick={() => handleRemovePlayer(player.cedula)} style={{ padding: '8px', color: '#ef4444', background: 'transparent' }}>
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {paginationMeta && paginationMeta.last_page > 1 && (
-                                <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1.5rem', gap: '10px' }}>
-                                    <button
-                                        type="button"
-                                        className="pro-btn btn-secondary"
-                                        onClick={() => handlePageChange(currentPage - 1)}
-                                        disabled={currentPage === 1}
-                                        style={{ padding: '8px 16px' }}
-                                    >
-                                        Anterior
-                                    </button>
-                                    <span style={{ color: 'var(--text-color)', fontWeight: 600 }}>
-                                        Página {currentPage} de {paginationMeta.last_page}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        className="pro-btn btn-secondary"
-                                        onClick={() => handlePageChange(currentPage + 1)}
-                                        disabled={currentPage === paginationMeta.last_page}
-                                        style={{ padding: '8px 16px' }}
-                                    >
-                                        Siguiente
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </form>
-                </div>
-
-                <div className="modal-footer">
-                    <button type="button" onClick={onClose} className="pro-btn btn-secondary">Descartar</button>
-                    <button type="submit" form="equipo-form" disabled={loading} className="pro-btn btn-primary" style={{ minWidth: '180px' }}>
-                        {loading ? <div className="spinner" /> : <Save size={18} />}
-                        {loading ? 'Guardando...' : 'Aplicar Cambios'}
-                    </button>
-                </div>
-            </div>
-
-            <EditPlayerModal
-                isOpen={isEditPlayerModalOpen}
-                onClose={() => setIsEditPlayerModalOpen(false)}
-                player={selectedPlayer}
-                onSave={handleSavePlayer}
-            />
-        </div>,
-        document.body
-    );
-};
-
-const EditPlayerModal = ({ isOpen, onClose, player, onSave }) => {
-    const [formData, setFormData] = useState({
-        nombres: '',
-        apellidos: '',
-        fecha_nacimiento: '',
-        genero: '',
-        nacionalidad: '',
-        telefono: '',
-        email: '',
-    });
-
-    useEffect(() => {
-        if (isOpen && player) {
-            setFormData({
-                nombres: player.persona?.nombres || '',
-                apellidos: player.persona?.apellidos || '',
-                fecha_nacimiento: player.persona?.fecha_nacimiento || '',
-                genero: player.persona?.genero || '',
-                nacionalidad: player.persona?.nacionalidad || '',
-                telefono: player.persona?.telefono || '',
-                email: player.persona?.email || '',
-            });
-        }
-    }, [isOpen, player]);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => {
-            const newState = { ...prev, [name]: value };
-            if (name === 'deporte_id') {
-                newState.categoria_id = ''; // Reset categoria_id when deporte_id changes
-            }
-            return newState;
-        });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave({ ...player, persona: { ...player.persona, ...formData } });
-    };
-
-    if (!isOpen || !player) return null;
-
-    return createPortal(
-        <div className="modal-overlay fade-in" onClick={onClose}>
-            <div className="modal-content modal-md scale-in" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div className="modal-icon">
-                            <User size={24} />
-                        </div>
-                        <div>
-                            <h2 className="modal-title">Editar Deportista</h2>
-                            <p className="modal-subtitle">{player.persona?.nombres} {player.persona?.apellidos}</p>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                    <button className="btn-icon-close" onClick={onClose}><X size={24} /></button>
-                </div>
-                <div className="modal-body">
-                    <form id="edit-player-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Nombres</label>
-                                <input type="text" name="nombres" value={formData.nombres} onChange={handleChange} required className="pro-input" />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Apellidos</label>
-                                <input type="text" name="apellidos" value={formData.apellidos} onChange={handleChange} required className="pro-input" />
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Fecha de Nacimiento</label>
-                                <input type="date" name="fecha_nacimiento" value={formData.fecha_nacimiento} onChange={handleChange} className="pro-input" />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Género</label>
-                                <select name="genero" value={formData.genero} onChange={handleChange} className="pro-input">
-                                    <option value="">Seleccione...</option>
-                                    <option value="M">Masculino</option>
-                                    <option value="F">Femenino</option>
-                                    <option value="O">Otro</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label" style={{ fontWeight: 800 }}>Nacionalidad</label>
-                            <input type="text" name="nacionalidad" value={formData.nacionalidad} onChange={handleChange} className="pro-input" placeholder="Ej: Ecuatoriana" />
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
-                            <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Teléfono</label>
-                                <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} className="pro-input" placeholder="099..." />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Email</label>
-                                <input type="email" name="email" value={formData.email} onChange={handleChange} className="pro-input" placeholder="correo@ejemplo.com" />
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div className="modal-footer">
-                    <button type="button" className="pro-btn btn-secondary" onClick={onClose}>Descartar</button>
-                    <button type="submit" form="edit-player-form" className="pro-btn btn-primary">
-                        <Save size={18} /> Aplicar Cambios
-                    </button>
                 </div>
             </div>
         </div>,
@@ -498,550 +203,432 @@ const EditPlayerModal = ({ isOpen, onClose, player, onSave }) => {
     );
 };
 
+/* ============================================================
+   2. Modal de Creación de Equipo
+============================================================ */
 const CreateEquipoModal = ({ isOpen, onClose, onCreated, torneos, deportes, categorias, initialTorneoId }) => {
-    const [formData, setFormData] = useState({
+    const { addNotification } = useNotification();
+    const [form, setForm] = useState({
         nombre: '',
-        logo: '', // Nuevo campo para el logo
-        torneo_id: initialTorneoId || '', // Usar initialTorneoId si está presente
+        torneo_id: '',
         deporte_id: '',
         categoria_id: '',
         representante_cedula: ''
     });
-    const [representantes, setRepresentantes] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null); // Nuevo estado para errores
-    const [statusType, setStatusType] = useState("");
-    const [statusText, setStatusText] = useState("");
-    const { addNotification } = useNotification();
-
-    const [filteredCategorias, setFilteredCategorias] = useState([]); // Nuevo estado para categorías filtradas
 
     useEffect(() => {
         if (isOpen) {
-            document.body.classList.add('modal-open');
-            return () => document.body.classList.remove('modal-open');
+            setForm({
+                nombre: '',
+                torneo_id: initialTorneoId || '',
+                deporte_id: '',
+                categoria_id: '',
+                representante_cedula: ''
+            });
         }
-    }, [isOpen]);
+    }, [isOpen, initialTorneoId]);
 
-    useEffect(() => {
-        if (isOpen) {
-            const fetchRepresentantesAndCategorias = async () => {
-                try {
-                    const respRepresentantes = await api.get('/personas');
-                    const reps = Array.isArray(respRepresentantes.data) ? respRepresentantes.data.filter(p => p.rol === 'representante') : [];
-                    setRepresentantes(reps);
-
-                    // Cargar todas las categorías inicialmente
-                    const respCategorias = await api.get('/categorias');
-                    setFilteredCategorias(respCategorias.data); // Usar para el estado inicial
-                } catch (e) {
-                    console.error("Error fetching data", e);
-                }
-            };
-            fetchRepresentantesAndCategorias();
-
-            // Si hay un torneo inicial, preseleccionar el torneo y su deporte
-            if (initialTorneoId) {
-                const selectedTorneo = torneos.find(t => String(t.id) === initialTorneoId);
-                if (selectedTorneo) {
-                    setFormData(prev => ({
-                        ...prev,
-                        torneo_id: initialTorneoId,
-                        deporte_id: String(selectedTorneo.deporte_id) // Asegurarse de que sea string para el select
-                    }));
-                }
-            }
-        }
-    }, [isOpen, initialTorneoId, torneos]);
-
-    useEffect(() => {
-        if (formData.deporte_id) {
-            const fetchCategoriasByDeporte = async () => {
-                try {
-                    const resp = await api.get(`/categorias?deporte_id=${formData.deporte_id}`);
-                    setFilteredCategorias(resp.data);
-                } catch (e) {
-                    console.error("Error fetching categories by sport", e);
-                }
-            };
-            fetchCategoriasByDeporte();
-        } else {
-            // Si no hay deporte seleccionado, mostrar todas las categorías o ninguna
-            const fetchAllCategorias = async () => {
-                try {
-                    const resp = await api.get('/categorias');
-                    setFilteredCategorias(resp.data);
-                } catch (e) {
-                    console.error("Error fetching all categories", e);
-                }
-            };
-            if (isOpen) { // Solo cargar todas si el modal está abierto
-                fetchAllCategorias();
-            } else {
-                setFilteredCategorias([]); // O vaciar si el modal está cerrado
-            }
-        }
-    }, [formData.deporte_id, isOpen]);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
+    if (!isOpen) return null;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null); // Limpiar errores previos
-        const confirmed = window.confirm("¿Deseas guardar este equipo?");
-        if (!confirmed) {
-            setStatusType("");
-            setStatusText("");
+
+        // Validación de campos obligatorios
+        if (!form.nombre.trim() || !form.torneo_id || !form.deporte_id || !form.categoria_id) {
+            addNotification('Por favor, complete todos los campos obligatorios del equipo.', 'warning');
             return;
         }
-        setStatusType("info");
-        setStatusText("Guardando equipo…");
-        if (addNotification) {
-            addNotification("Guardando equipo…", "info");
-        }
+
         setLoading(true);
         try {
-            await api.post('/equipos', {
-                ...formData,
-                torneo_id: Number(formData.torneo_id),
-                deporte_id: Number(formData.deporte_id),
-                categoria_id: Number(formData.categoria_id),
-            });
-            setStatusType("success");
-            setStatusText("Equipo creado con éxito");
-            if (addNotification) {
-                addNotification("Equipo creado con éxito", "success");
-            }
-            onCreated();
-            setTimeout(() => {
-                onClose();
-            }, 600);
+            await api.post('/equipos', form);
+            addNotification('Equipo registrado exitosamente', 'success');
+            if (onCreated) onCreated();
+            onClose();
         } catch (err) {
-            console.error('Error al crear equipo:', err);
-            setError(err.response?.data?.message || 'Error al crear equipo.');
-            setStatusType("danger");
-            setStatusText(err.response?.data?.message || "Error al guardar");
+            const serverMsg = err.response?.data?.message;
+            const errors = err.response?.data?.errors;
+
+            if (errors) {
+                // Si hay errores de validación específicos (ej: nombre duplicado)
+                const firstError = Object.values(errors)[0][0];
+                addNotification(firstError, 'error');
+            } else {
+                addNotification(serverMsg || 'Error al registrar equipo.', 'error');
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        if (isOpen) {
-            setStatusType("");
-            setStatusText("");
-        } else {
-            setError(null); // Limpiar errores cuando el modal se cierra
-            setStatusType("");
-            setStatusText("");
-        }
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
     return createPortal(
-        <div className="modal-overlay fade-in">
-            <div className="modal-content modal-md scale-in" onClick={e => e.stopPropagation()}>
+        <div className="modal-overlay">
+            <div className="modal-content modal-md" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div className="modal-icon">
-                            <Plus size={24} />
+                        <div className="modal-icon" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                            <Plus size={28} />
                         </div>
                         <div>
-                            <h2 className="modal-title">Registrar Nuevo Equipo</h2>
-                            <p className="modal-subtitle">Inscripción oficial del colectivo</p>
-                            {statusText && (
-                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
-                                    {statusText}
-                                </span>
-                            )}
+                            <h2 className="modal-title">Gestión de Contingente</h2>
+                            <p className="modal-subtitle" style={{ color: '#94a3b8' }}>Alta de equipos y asignación de categorías</p>
                         </div>
                     </div>
-                    <button className="btn-icon-close" onClick={onClose}><X size={24} /></button>
+                    <button className="btn-icon-close" type="button" onClick={onClose}><X size={24} /></button>
                 </div>
-                <div className="modal-body">
-                    {error && (
-                        <div className="alert alert-danger" style={{ marginBottom: '1.5rem' }}>
-                            {error}
-                        </div>
-                    )}
-                    <form id="create-equipo-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div className="form-group">
-                            <label className="form-label" style={{ fontWeight: 800 }}>Nombre del Equipo</label>
-                            <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} required className="pro-input" placeholder="Nombre oficial..." />
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label" style={{ fontWeight: 800 }}>URL del Logo (opcional)</label>
-                            <input type="url" name="logo" value={formData.logo} onChange={handleChange} className="pro-input" placeholder="URL del logo del equipo..."
-                                pattern="^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$"
-                                title="Por favor, introduce una URL válida (ej. http://example.com/logo.png)"
-                            />
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+
+                <form onSubmit={handleSubmit}>
+                    <div className="modal-body">
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
                             <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Vincular a Torneo</label>
-                                <select name="torneo_id" value={formData.torneo_id} onChange={handleChange} required className="pro-input">
-                                    <option value="">Seleccione Torneo...</option>
-                                    {torneos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-                                </select>
+                                <label className="form-label">Nombre del Colectivo</label>
+                                <input className="pro-input" required value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Rayos del Valle" />
                             </div>
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Deporte</label>
-                                    <select name="deporte_id" value={formData.deporte_id} onChange={handleChange} required className="pro-input">
-                                        <option value="">Seleccione Deporte...</option>
+                                    <label className="form-label">Evento / Torneo</label>
+                                    <select className="pro-input" required value={form.torneo_id} onChange={e => setForm({ ...form, torneo_id: e.target.value })}>
+                                        <option value="">Seleccione...</option>
+                                        {torneos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Cédula Representante</label>
+                                    <input className="pro-input" required value={form.representante_cedula} onChange={e => setForm({ ...form, representante_cedula: e.target.value })} placeholder="0000000000" />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label className="form-label">Disciplina</label>
+                                    <select className="pro-input" required value={form.deporte_id} onChange={e => setForm({ ...form, deporte_id: e.target.value })}>
+                                        <option value="">Seleccione...</option>
                                         {deportes.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Categoría</label>
-                                    <select name="categoria_id" value={formData.categoria_id} onChange={handleChange} required className="pro-input">
-                                        <option value="">Seleccione Categoría...</option>
-                                        {filteredCategorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                                    <label className="form-label">Categoría</label>
+                                    <select className="pro-input" required value={form.categoria_id} onChange={e => setForm({ ...form, categoria_id: e.target.value })}>
+                                        <option value="">Seleccione...</option>
+                                        {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                                     </select>
                                 </div>
                             </div>
                         </div>
-                        <div className="form-group">
-                            <label className="form-label" style={{ fontWeight: 800 }}>Representante (opcional)</label>
-                            <select name="representante_cedula" value={formData.representante_cedula} onChange={handleChange} className="pro-input">
-                                <option value="">Sin representante...</option>
-                                {representantes.map(r => <option key={r.cedula} value={r.cedula}>{r.nombres} {r.apellidos}</option>)}
-                            </select>
-                        </div>
-                    </form>
-                </div>
-                <div className="modal-footer">
-                    <button type="button" className="pro-btn btn-secondary" onClick={onClose}>Cancelar</button>
-                    <button type="submit" form="create-equipo-form" className="pro-btn btn-primary" disabled={loading}>
-                        {loading ? 'Guardando...' : 'Crear Equipo'}
-                    </button>
-                </div>
+                    </div>
+
+                    <div className="modal-footer">
+                        <button type="button" className="pro-btn btn-secondary" onClick={onClose}>Cancelar</button>
+                        <button type="submit" className="pro-btn btn-primary" disabled={loading}>
+                            {loading ? <div className="spinner-sm" /> : <CheckCircle size={18} />} Crear Registro
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>,
         document.body
     );
 };
 
-
 /* ============================================================
-   2. Componente principal: Equipos e Inscripciones
+   MAIN COMPONENT: EquiposInscripciones
 ============================================================ */
 const EquiposInscripciones = () => {
-    const navigate = useNavigate();
-    const { torneoId } = useParams(); // Obtener torneoId de la URL
+    const { torneoId } = useParams();
+    const { addNotification } = useNotification();
+    const [activeTab, setActiveTab] = useState('equipos');
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
-    const [activeTab, setActiveTab] = useState('inscripciones');
-    const [inscripciones, setInscripciones] = useState([]);
     const [equipos, setEquipos] = useState([]);
+    const [inscripciones, setInscripciones] = useState([]);
     const [torneos, setTorneos] = useState([]);
     const [deportes, setDeportes] = useState([]);
     const [categorias, setCategorias] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedEquipo, setSelectedEquipo] = useState(null);
 
     const loadData = useCallback(async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const [inscData, equiposData, torneosData, deportesData, categoriasData] = await Promise.all([
-                api.get('/inscripciones/pendientes'),
-                api.get('/equipos'),
+            const [eResp, iResp, tResp, dResp, cResp] = await Promise.all([
+                api.get(torneoId ? `/torneos/${torneoId}/equipos` : '/equipos'),
+                api.get('/inscripciones'),
                 api.get('/torneos'),
                 api.get('/deportes'),
-                api.get('/categorias'),
+                api.get('/categorias')
             ]);
+            // Axios devuelve .data del body
+            setEquipos(Array.isArray(eResp.data) ? eResp.data : (eResp.data?.data || []));
 
-            setInscripciones(Array.isArray(inscData.data) ? inscData.data : []);
+            const inscData = Array.isArray(iResp.data) ? iResp.data : (iResp.data?.data || []);
+            setInscripciones(inscData.filter(i => i.estado === 'Pendiente'));
 
-            const equiposArray = equiposData.data?.data || equiposData.data || [];
-            setEquipos(Array.isArray(equiposArray) ? equiposArray : []);
-
-            setTorneos(torneosData.data?.data || torneosData.data || []);
-            setDeportes(deportesData.data || []);
-            setCategorias(categoriasData.data || []);
+            setTorneos(Array.isArray(tResp.data) ? tResp.data : (tResp.data?.data || []));
+            setDeportes(Array.isArray(dResp.data) ? dResp.data : (dResp.data?.data || []));
+            setCategorias(Array.isArray(cResp.data) ? cResp.data : (cResp.data?.data || []));
         } catch (err) {
-            console.error('Error al cargar datos:', err);
+            console.error(err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [torneoId]);
 
     useEffect(() => {
         loadData();
     }, [loadData]);
 
-    // Filtrar torneos si se proporciona un torneoId en la URL
-    const filteredTorneosForModal = useMemo(() => {
-        if (torneoId) {
-            return torneos.filter(t => String(t.id) === torneoId);
-        }
-        return torneos;
-    }, [torneos, torneoId]);
-
     const handleApprove = async (id) => {
-        if (!window.confirm("¿Aprobar esta solicitud oficial?")) return;
+        if (!confirm("¿Deseas formalizar esta inscripción? El equipo quedará habilitado.")) return;
         try {
             await api.post(`/inscripciones/${id}/aprobar`);
-            await loadData();
+            addNotification('Inscripción aprobada satisfactoriamente', 'success');
+            loadData();
         } catch (err) {
-            alert('Error al aprobar.');
+            addNotification('Error al aprobar.', 'error');
         }
     };
 
     const handleReject = async (id) => {
-        if (!window.confirm("¿Rechazar esta solicitud definitivamente?")) return;
+        if (!confirm("¿Rechazar solicitud? Esta acción notificará al representante.")) return;
         try {
             await api.post(`/inscripciones/${id}/rechazar`);
-            await loadData();
+            addNotification('Solicitud rechazada', 'info');
+            loadData();
         } catch (err) {
-            alert('Error al rechazar.');
+            addNotification('Error al procesar rechazo.', 'error');
         }
     };
 
     const handleDeleteEquipo = async (id) => {
-        if (!window.confirm("¿Eliminar este equipo del sistema?")) return;
+        if (!confirm("¿Eliminar equipo del sistema permanentemente?")) return;
         try {
             await api.delete(`/equipos/${id}`);
-            await loadData();
+            addNotification('Equipo removido del catálogo', 'success');
+            loadData();
         } catch (err) {
-            alert('Error al eliminar equipo.');
+            addNotification('Existen dependencias activas que impiden la eliminación.', 'error');
         }
     };
 
-    const stats = useMemo(() => ({
-        pendientes: inscripciones.length,
-        totalEquipos: equipos.length,
-        deportes: new Set(equipos.map(e => e.deporte_id)).size
-    }), [inscripciones, equipos]);
+    const filteredEquipos = equipos.filter(e =>
+        e.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.representante?.nombres?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-    if (loading) return <LoadingScreen message="Sincronizando gestión de equipos..." />;
+    if (loading && equipos.length === 0) return <LoadingScreen message="Auditoría de Contingente..." />;
 
     return (
-        <div className="admin-page-container module-entrance">
-            {/* HEADER SECTION */}
-            <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div>
-                    <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.85rem', letterSpacing: '2px', textTransform: 'uppercase' }}>Sistema de Gestión</span>
-                    <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#fff', margin: '0.5rem 0' }}>Equipos e Inscripciones</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Control administrativo de colectivos y solicitudes de ingreso</p>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="pro-btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-                        <Plus size={18} /> Registrar Nuevo Equipo
-                    </button>
+        <div className="rep-scope rep-screen-container rep-dashboard-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+            {/* HEADER */}
+            <header className="rep-header-main" style={{ marginBottom: '0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                    <div className="header-info">
+                        <small className="university-label" style={{ color: '#10b981', fontWeight: 800 }}>Módulo Administrativo</small>
+                        <h1 className="content-title" style={{ color: '#fff', fontSize: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <Users size={42} color="#10b981" /> Equipos & Afiliaciones
+                        </h1>
+                        <p className="content-subtitle" style={{ color: '#94a3b8' }}>Supervisión de colectivos deportivos y aprobación de solicitudes de ingreso</p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button className="pro-btn btn-secondary" style={{ padding: '0.8rem 1.2rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <Filter size={18} /> Filtrar
+                        </button>
+                        <button className="pro-btn btn-primary" onClick={() => setIsCreateModalOpen(true)} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', padding: '0.8rem 1.5rem', borderRadius: '14px', boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)' }}>
+                            <Plus size={20} /> Registrar Equipo
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            {/* KPI OVERVIEW */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-                <StatCard title="Solicitudes Pendientes" value={stats.pendientes} icon={Clock} color="#f59e0b" />
-                <StatCard title="Total Equipos" value={stats.totalEquipos} icon={Users} color="#10b981" />
-                <StatCard title="Disciplinas Activas" value={stats.deportes} icon={Trophy} color="#356ed8" />
+            {/* TAB-STYLE BUTTONS AND SEARCH */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '2rem',
+                flexWrap: 'wrap'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    background: 'rgba(30, 41, 59, 0.4)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '24px',
+                    padding: '0.5rem',
+                    border: '1px solid rgba(255,255,255,0.05)'
+                }}>
+                    <button
+                        onClick={() => setActiveTab('equipos')}
+                        style={{
+                            padding: '0.8rem 1.5rem',
+                            borderRadius: '18px',
+                            border: 'none',
+                            background: activeTab === 'equipos' ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent',
+                            color: activeTab === 'equipos' ? '#fff' : '#94a3b8',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            transition: '0.3s'
+                        }}
+                    >
+                        <Users size={18} /> Catálogo ({equipos.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('inscripciones')}
+                        style={{
+                            padding: '0.8rem 1.5rem',
+                            borderRadius: '18px',
+                            border: 'none',
+                            background: activeTab === 'inscripciones' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'transparent',
+                            color: activeTab === 'inscripciones' ? '#fff' : '#94a3b8',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            transition: '0.3s'
+                        }}
+                    >
+                        <ClipboardCheck size={18} /> Solicitudes {inscripciones.length > 0 && <span style={{ background: '#fff', color: '#f59e0b', padding: '1px 7px', borderRadius: '8px', fontSize: '0.7rem' }}>{inscripciones.length}</span>}
+                    </button>
+                </div>
+
+                <div className="search-wrapper" style={{ flex: 1, maxWidth: '450px', margin: 0 }}>
+                    <Search size={20} className="search-icon" style={{ color: '#10b981' }} />
+                    <input
+                        className="pro-input"
+                        placeholder="Filtrar por nombre de equipo o representante..."
+                        style={{ paddingLeft: '3.5rem', height: '54px', borderRadius: '20px' }}
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
 
-            {/* TABS NAVIGATION */}
-            <div className="premium-tabs-container" style={{ marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
-                <button
-                    onClick={() => setActiveTab('inscripciones')}
-                    style={{
-                        padding: '0.75rem 1.5rem',
-                        background: activeTab === 'inscripciones' ? 'linear-gradient(135deg, #356ed8, #2d62c9)' : '#19293a',
-                        color: 'white',
-                        border: activeTab === 'inscripciones' ? '1px solid #356ed8' : '1px solid rgba(53, 110, 216, 0.2)',
-                        boxShadow: activeTab === 'inscripciones' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none',
-                        borderRadius: '8px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontSize: '0.9rem'
-                    }}
-                >
-                    <ClipboardCheck size={20} />
-                    <span>Revisiones de Inscripción</span>
-                    {stats.pendientes > 0 && <span style={{ marginLeft: '8px', background: '#f59e0b', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>{stats.pendientes}</span>}
-                </button>
-                <button
-                    onClick={() => setActiveTab('equipos')}
-                    style={{
-                        padding: '0.75rem 1.5rem',
-                        background: activeTab === 'equipos' ? 'linear-gradient(135deg, #356ed8, #2d62c9)' : '#19293a',
-                        color: 'white',
-                        border: activeTab === 'equipos' ? '1px solid #356ed8' : '1px solid rgba(53, 110, 216, 0.2)',
-                        boxShadow: activeTab === 'equipos' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none',
-                        borderRadius: '8px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontSize: '0.9rem'
-                    }}
-                >
-                    <Users size={20} />
-                    <span>Catálogo de Equipos</span>
-                </button>
-            </div>
+            {/* CONTENT GRID */}
+            <div className="rep-content-wrapper">
+                {activeTab === 'equipos' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '2rem' }}>
+                        {filteredEquipos.map(equipo => (
+                            <div key={equipo.id} className="pro-card" style={{
+                                padding: '2rem',
+                                borderRadius: '28px',
+                                background: 'rgba(30, 41, 59, 0.4)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                transition: '0.4s'
+                            }}>
+                                <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                    <div style={{
+                                        width: '70px',
+                                        height: '70px',
+                                        borderRadius: '20px',
+                                        background: equipo.logo ? `url(${equipo.logo}) center/cover` : 'linear-gradient(135deg, #10b981, #059669)',
+                                        border: '3px solid rgba(255,255,255,0.05)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#fff',
+                                        fontWeight: 900,
+                                        fontSize: '1.5rem'
+                                    }}>
+                                        {!equipo.logo && equipo.nombre.charAt(0)}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                            <h3 style={{ margin: 0, color: '#fff', fontSize: '1.25rem', fontWeight: 800 }}>{equipo.nombre}</h3>
+                                            <span style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 8px', borderRadius: '8px', fontWeight: 800 }}>ID: #{equipo.id}</span>
+                                        </div>
+                                        <p style={{ margin: '5px 0 0 0', color: '#94a3b8', fontSize: '0.85rem' }}>{equipo.torneo?.nombre || 'General'}</p>
+                                    </div>
+                                </div>
 
-            {/* CONTENT AREA */}
-            <div className="pro-card">
-                {activeTab === 'inscripciones' ? (
-                    <div className="table-container">
-                        <table className="modern-table">
-                            <thead>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.15)', borderRadius: '18px', marginBottom: '1.5rem' }}>
+                                    <div>
+                                        <small style={{ color: '#64748b', textTransform: 'uppercase', fontSize: '0.65rem', fontWeight: 800 }}>Disciplina</small>
+                                        <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 700 }}>{equipo.deporte?.nombre}</div>
+                                    </div>
+                                    <div>
+                                        <small style={{ color: '#64748b', textTransform: 'uppercase', fontSize: '0.65rem', fontWeight: 800 }}>Categoría</small>
+                                        <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 700 }}>{equipo.categoria?.nombre || 'N/A'}</div>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                                            <User size={14} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 600 }}>{equipo.representante?.nombres || 'S. Representante'}</div>
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Responsable</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button className="pro-btn btn-secondary" style={{ padding: '10px', borderRadius: '12px' }} onClick={() => { setSelectedEquipo(equipo); setIsDetailModalOpen(true); }}><Edit size={16} /></button>
+                                        <button className="pro-btn btn-danger" style={{ padding: '10px', borderRadius: '12px' }} onClick={() => handleDeleteEquipo(equipo.id)}><Trash2 size={16} /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div style={{
+                        background: 'rgba(30, 41, 59, 0.4)',
+                        borderRadius: '32px',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        overflow: 'hidden'
+                    }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead style={{ background: 'rgba(0,0,0,0.2)' }}>
                                 <tr>
-                                    <th>Solicitus</th>
-                                    <th>Torneo / Destino</th>
-                                    <th>Representante</th>
-                                    <th style={{ textAlign: 'center' }}>Nómina</th>
-                                    <th style={{ textAlign: 'right' }}>Acciones</th>
+                                    <th style={{ padding: '1.5rem', textAlign: 'left', color: '#94a3b8', fontWeight: 800 }}>Club / Solicitante</th>
+                                    <th style={{ padding: '1.5rem', textAlign: 'left', color: '#94a3b8', fontWeight: 800 }}>Evento Destino</th>
+                                    <th style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontWeight: 800 }}>Miembros</th>
+                                    <th style={{ padding: '1.5rem', textAlign: 'right', color: '#94a3b8', fontWeight: 800 }}>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {inscripciones.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-muted)' }}>
-                                            <ShieldAlert size={48} style={{ marginBottom: '1rem', opacity: 0.1 }} />
-                                            <p>No existen solicitudes de inscripción a la espera de revisión</p>
+                                        <td colSpan={4} style={{ padding: '6rem', textAlign: 'center' }}>
+                                            <ShieldAlert size={64} color="#64748b" opacity={0.2} style={{ marginBottom: '1.5rem' }} />
+                                            <h3 style={{ color: '#fff', margin: 0 }}>Bandeja Limpia</h3>
+                                            <p style={{ color: '#94a3b8' }}>No hay solicitudes de inscripción pendientes.</p>
                                         </td>
                                     </tr>
                                 ) : (
-                                    inscripciones.map((insc) => (
-                                        <tr key={insc.id}>
-                                            <td>
-                                                <div style={{ fontWeight: 800, color: '#fff' }}>{insc.equipo?.nombre || 'Sin nombre'}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.5px' }}>ID: {insc.id}</div>
+                                    inscripciones.map(insc => (
+                                        <tr key={insc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <td style={{ padding: '1.5rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                    <div style={{ width: '45px', height: '45px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trophy size={20} /></div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 800, color: '#fff' }}>{insc.equipo?.nombre}</div>
+                                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Rep: {insc.equipo?.representante?.nombres}</div>
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td>
-                                                <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{insc.torneo?.nombre || 'Torneo General'}</span>
-                                            </td>
-                                            <td>
-                                                <div style={{ fontWeight: 600 }}>{insc.equipo?.representante ? `${insc.equipo.representante.nombres} ${insc.equipo.representante.apellidos}` : 'Sin representar'}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{insc.equipo?.representante_cedula || 'N/A'}</div>
-                                            </td>
-                                            <td style={{ textAlign: 'center' }}>
-                                                <span style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '8px', fontWeight: 800 }}>
-                                                    {insc.equipo?.jugadores_count ?? 0}
+                                            <td style={{ padding: '1.5rem' }}>
+                                                <span style={{ padding: '6px 12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '10px', fontWeight: 800, fontSize: '0.85rem' }}>
+                                                    {insc.torneo?.nombre || 'Torneo General'}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                    <button className="pro-btn btn-primary" onClick={() => handleApprove(insc.id)} title="Aprobar Oficialmente">
-                                                        <CheckCircle size={18} />
-                                                    </button>
-                                                    <button className="pro-btn btn-danger" onClick={() => handleReject(insc.id)} title="Rechazar Inscripción">
-                                                        <X size={18} />
-                                                    </button>
-                                                </div>
+                                            <td style={{ padding: '1.5rem', textAlign: 'center' }}>
+                                                <div style={{ fontWeight: 800, color: '#fff' }}>{insc.equipo?.jugadores_count || 0}</div>
+                                                <small style={{ color: '#64748b' }}>Participantes</small>
                                             </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <div className="table-container">
-                        <table className="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Logo / Equipo</th>
-                                    <th>Competición</th>
-                                    <th>Deporte / Categoría</th>
-                                    <th style={{ textAlign: 'center' }}>ID</th>
-                                    <th style={{ textAlign: 'right' }}>Gestión</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {equipos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-muted)' }}>
-                                            <Users size={48} style={{ marginBottom: '1rem', opacity: 0.1 }} />
-                                            <p>No se han registrado equipos en la plataforma aún</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    equipos.map((equipo) => (
-                                        <tr key={equipo.id}>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                                    <div style={{
-                                                        width: '50px',
-                                                        height: '50px',
-                                                        borderRadius: '16px',
-                                                        background: equipo.logo ? `url(${equipo.logo})` : 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
-                                                        backgroundSize: 'cover',
-                                                        backgroundPosition: 'center',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: 'white',
-                                                        fontWeight: 900,
-                                                        fontSize: '1.4rem',
-                                                        boxShadow: '0 8px 25px rgba(53, 110, 216, 0.3)',
-                                                        border: '2px solid rgba(255, 255, 255, 0.1)'
-                                                    }}>
-                                                        {!equipo.logo && equipo.nombre?.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem', marginBottom: '4px' }}>{equipo.nombre}</div>
-                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Representante: {equipo.representante?.nombres || 'Sin asignar'}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '8px',
-                                                        padding: '6px 12px',
-                                                        background: 'rgba(53, 110, 216, 0.1)',
-                                                        borderRadius: '8px',
-                                                        border: '1px solid rgba(53, 110, 216, 0.2)'
-                                                    }}>
-                                                        <Trophy size={16} color="var(--primary)" />
-                                                        <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>{equipo.torneo?.nombre || 'General'}</span>
-                                                    </div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingLeft: '8px' }}>Estado: Activo</div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style={{ fontSize: '0.9rem', color: '#fff' }}>{equipo.deporte?.nombre}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{equipo.categoria?.nombre || 'Abierta'}</div>
-                                            </td>
-                                            <td style={{ textAlign: 'center' }}>
-                                                <code style={{ color: 'var(--primary)', fontWeight: 800 }}>#{equipo.id}</code>
-                                            </td>
-                                            <td style={{ textAlign: 'right' }}>
+                                            <td style={{ padding: '1.5rem', textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                                    <button
-                                                        className="pro-btn btn-secondary"
-                                                        onClick={() => { setSelectedEquipo(equipo); setIsDetailModalOpen(true); }}
-                                                        title="Gestionar Nómina"
-                                                        style={{ padding: '12px 16px', borderRadius: '12px' }}
-                                                    >
-                                                        <Edit size={16} />
-                                                        <span>Gestionar</span>
-                                                    </button>
-
-                                                    <button
-                                                        className="pro-btn btn-danger"
-                                                        onClick={() => handleDeleteEquipo(equipo.id)}
-                                                        title="Eliminar Equipo"
-                                                        style={{ padding: '12px', borderRadius: '12px' }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    <button className="pro-btn btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)', padding: '10px 15px' }} onClick={() => handleApprove(insc.id)}><CheckCircle size={18} /> Validar</button>
+                                                    <button className="pro-btn btn-danger" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.1)', padding: '10px 15px' }} onClick={() => handleReject(insc.id)}><X size={18} /> Rechazar</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1053,21 +640,21 @@ const EquiposInscripciones = () => {
                 )}
             </div>
 
-            {/* MODALS */}
             <EquipoDetailModal
                 isOpen={isDetailModalOpen}
                 onClose={() => setIsDetailModalOpen(false)}
                 equipo={selectedEquipo}
                 onUpdated={loadData}
             />
+
             <CreateEquipoModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onCreated={loadData}
-                torneos={filteredTorneosForModal} // Usar los torneos filtrados
+                torneos={torneos}
                 deportes={deportes}
                 categorias={categorias}
-                initialTorneoId={torneoId} // Pasar el torneoId de la URL
+                initialTorneoId={torneoId}
             />
         </div>
     );

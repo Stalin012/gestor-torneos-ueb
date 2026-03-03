@@ -89,8 +89,9 @@ export default function EstadisticasRepresentante() {
             <header className="rep-header-main" style={{ marginBottom: '2.5rem' }}>
                 <div className="header-info">
                     <small className="university-label" style={{ fontWeight: '700', letterSpacing: '0.5px', color: 'var(--accent-teal)' }}>Analytics Deportivo</small>
-                    <h1 className="content-title" style={{ color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>Estadísticas de Rendimiento</h1>
-                    <p className="content-subtitle" style={{ color: '#cbd5e1' }}>Métricas y análisis de resultados de tus equipos</p>
+                    <h1 className="content-title" style={{ color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)', margin: '0 0 0.25rem 0' }}>Estadísticas de Rendimiento</h1>
+                    <p className="content-subtitle" style={{ color: '#cbd5e1', marginBottom: '0.25rem' }}>Métricas y análisis de resultados de tus equipos</p>
+                    <small style={{ color: 'var(--accent-teal)', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase' }}>Datos del torneo actual</small>
                 </div>
                 <div className="header-actions">
                     <div style={{ position: 'relative' }}>
@@ -133,8 +134,12 @@ export default function EstadisticasRepresentante() {
                                 <h3 style={{ color: '#cbd5e1', fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase' }}>Posición</h3>
                                 <Award size={20} color="#f59e0b" />
                             </div>
-                            <p className="stat-value" style={{ color: '#fff', fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>#{stats?.posicion}</p>
-                            <p className="stat-desc" style={{ color: '#f59e0b', fontSize: '0.85rem', fontWeight: 700 }}>En zona de clasificación</p>
+                            <p className="stat-value" style={{ color: '#fff', fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>
+                                {stats?.posicion && stats.posicion > 0 ? `#${stats.posicion}` : "N/D"}
+                            </p>
+                            <p className="stat-desc" style={{ color: (stats?.posicion && stats.posicion > 0) ? '#f59e0b' : '#94a3b8', fontSize: '0.85rem', fontWeight: 700 }}>
+                                {stats?.posicion && stats.posicion > 0 ? "En zona de clasificación" : "Posición aún no disponible"}
+                            </p>
                         </div>
                     </div>
 
@@ -175,18 +180,24 @@ export default function EstadisticasRepresentante() {
                                     <Trophy size={24} color="#f59e0b" /> Top Goleadores
                                 </h2>
                                 <div className="top-scorers-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    {stats?.topGoleadores.map((sc, i) => (
-                                        <div key={i} className="scorer-item" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '1.25rem 1.5rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div className="scorer-info" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                <span className="scorer-rank" style={{ width: '30px', height: '30px', background: i === 0 ? '#f59e0b' : 'rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{i + 1}</span>
-                                                <span className="scorer-name" style={{ color: '#fff', fontWeight: 700, fontSize: '1rem' }}>{sc.nombre}</span>
+                                    {stats?.topGoleadores && stats.topGoleadores.length > 0 ? (
+                                        stats.topGoleadores.map((sc, i) => (
+                                            <div key={i} className="scorer-item" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '1.25rem 1.5rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div className="scorer-info" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <span className="scorer-rank" style={{ width: '30px', height: '30px', background: i === 0 ? '#f59e0b' : 'rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{i + 1}</span>
+                                                    <span className="scorer-name" style={{ color: '#fff', fontWeight: 700, fontSize: '1rem' }}>{sc.nombre}</span>
+                                                </div>
+                                                <div className="scorer-stats" style={{ textAlign: 'right' }}>
+                                                    <span className="scorer-goals" style={{ color: '#60a5fa', fontWeight: 900, fontSize: '1.1rem', display: 'block' }}>{sc.goles} Goles</span>
+                                                    <small style={{ color: '#94a3b8', fontWeight: 600 }}>{sc.partidos} PJ</small>
+                                                </div>
                                             </div>
-                                            <div className="scorer-stats" style={{ textAlign: 'right' }}>
-                                                <span className="scorer-goals" style={{ color: '#60a5fa', fontWeight: 900, fontSize: '1.1rem', display: 'block' }}>{sc.goles} Goles</span>
-                                                <small style={{ color: '#94a3b8', fontWeight: 600 }}>{sc.partidos} PJ</small>
-                                            </div>
+                                        ))
+                                    ) : (
+                                        <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px dotted rgba(255,255,255,0.1)' }}>
+                                            <p style={{ color: '#94a3b8', margin: 0 }}>Aún no hay goleadores registrados</p>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -220,7 +231,11 @@ export default function EstadisticasRepresentante() {
                                     <Activity size={22} color="rgba(255,255,255,0.9)" /> Proyecciones
                                 </h2>
                                 <p className="small mt-4" style={{ opacity: 0.95, lineHeight: 1.6, fontWeight: 500 }}>
-                                    Basado en el rendimiento actual, el equipo tiene un <strong style={{ color: '#fff', textDecoration: 'underline' }}>85% de probabilidad</strong> de clasificar directamente.
+                                    {((stats?.ganados || 0) + (stats?.empatados || 0) + (stats?.perdidos || 0)) > 0 ? (
+                                        <>Basado en el rendimiento actual, el equipo tiene un <strong style={{ color: '#fff', textDecoration: 'underline' }}>85% de probabilidad</strong> de clasificar directamente.</>
+                                    ) : (
+                                        "Aún no hay suficientes datos para calcular proyecciones."
+                                    )}
                                 </p>
                             </div>
                         </div>

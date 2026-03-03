@@ -21,9 +21,18 @@ import "../../css/unified-all.css";
 const UserProfile = () => {
   const navigate = useNavigate();
   const { success, error: notifyError } = useNotification();
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
   const [perfil, setPerfil] = useState(null);
+  const [stats, setStats] = useState({
+    goles: 0,
+    asistencias: 0,
+    amarillas: 0,
+    rojas: 0,
+    rebotes: 0,
+    bloqueos: 0,
+    partidos: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -44,6 +53,24 @@ const UserProfile = () => {
     try {
       const { data } = await api.get("/jugador/perfil");
       setPerfil(data);
+
+      // Cargar estadísticas
+      try {
+        const { data: statsRes } = await api.get(`/jugadores/${data.cedula}/estadisticas`);
+        const s = statsRes.estadisticas || [];
+        const totals = s.reduce((acc, curr) => ({
+          goles: acc.goles + (curr.goles || 0),
+          asistencias: acc.asistencias + (curr.asistencias || 0),
+          amarillas: acc.amarillas + (curr.tarjetas_amarillas || 0),
+          rojas: acc.rojas + (curr.tarjetas_rojas || 0),
+          rebotes: acc.rebotes + (curr.rebotes || 0),
+          bloqueos: acc.bloqueos + (curr.bloqueos || 0),
+        }), { goles: 0, asistencias: 0, amarillas: 0, rojas: 0, rebotes: 0, bloqueos: 0 });
+
+        setStats({ ...totals, partidos: s.length });
+      } catch (e) {
+        console.warn("Error al cargar estadísticas", e);
+      }
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 403) {
         setError(err.response?.data?.error || "Acceso denegado.");
@@ -75,12 +102,12 @@ const UserProfile = () => {
       setPerfil(updatedProfile);
 
       // Update user in localStorage to sync header
-      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const storedUser = JSON.parse(sessionStorage.getItem('user') || '{}');
       storedUser.foto_url = data.foto_url;
       if (storedUser.persona) {
         storedUser.persona.foto_url = data.foto_url;
       }
-      localStorage.setItem('user', JSON.stringify(storedUser));
+      sessionStorage.setItem('user', JSON.stringify(storedUser));
 
       // Dispatch event to update navbar
       window.dispatchEvent(new Event('user-updated'));
@@ -264,6 +291,36 @@ const UserProfile = () => {
                   <Award size={20} color="#fbbf24" /> {perfil.disciplina || "N/A"}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* PERFORMANCE METRICS GRID */}
+          <div style={{ marginTop: '2.5rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Activity size={20} color="#10b981" /> Métricas de Desempeño
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+              {[
+                { label: 'Goles', value: stats.goles, color: '#10b981' },
+                { label: 'Asist.', value: stats.asistencias, color: '#3b82f6' },
+                { label: 'Partidos', value: stats.partidos, color: '#8b5cf6' },
+                { label: 'Racha', value: '4W', color: '#f59e0b' },
+                { label: 'Amarillas', value: stats.amarillas, color: '#fbbf24' },
+                { label: 'Rojas', value: stats.rojas, color: '#ef4444' },
+                { label: 'Rebotes', value: stats.rebotes, color: '#60a5fa' },
+                { label: 'Bloqueos', value: stats.bloqueos, color: '#ec4899' },
+              ].map((m, i) => (
+                <div key={i} style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  padding: '1rem',
+                  borderRadius: '16px',
+                  textAlign: 'center',
+                  border: '1px solid rgba(255,255,255,0.05)'
+                }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>{m.value}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginTop: '0.25rem' }}>{m.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

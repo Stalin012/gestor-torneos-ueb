@@ -5,6 +5,7 @@ import {
   ExternalLink, Zap, ArrowRight, Calendar, Facebook, Instagram, Youtube
 } from "lucide-react";
 import api, { apiPublic } from "../api";
+import { getAssetUrl } from "../utils/helpers";
 import "../css/home.css";
 
 const STORAGE_BASE = import.meta.env?.VITE_STORAGE_URL || "http://127.0.0.1:8000/storage";
@@ -13,10 +14,11 @@ const HERO_FALLBACK = "https://images.unsplash.com/photo-1504450758481-7338eba75
 export default function Home() {
   const navigate = useNavigate();
 
-  const getImageUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    return `${STORAGE_BASE}/${path.replace('public/', '')}`;
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "Reciente";
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "Reciente";
+    return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   const [scrolled, setScrolled] = useState(false);
@@ -102,7 +104,13 @@ export default function Home() {
         <div className="nav-content">
           <div className="brand" onClick={() => scrollTo("inicio")}>
             <div className="brand-icon">
-              <img src="/img/logo-ueb.png" alt="Logo UEB" className="brand-logo-img" />
+              <img
+                src="/img/logo-ueb.png"
+                alt="Logo UEB"
+                className="brand-logo-img"
+                width="150"
+                height="45"
+              />
             </div>
           </div>
 
@@ -115,7 +123,7 @@ export default function Home() {
           </ul>
 
           <div className="flex items-center gap-4">
-            <button className="btn-primary-lg" onClick={() => navigate("/login")}>Acceso Clubes</button>
+            <button className="btn-primary-lg" onClick={() => navigate("/login")}>Acceso</button>
             <button className="mobile-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -129,7 +137,7 @@ export default function Home() {
             <li><button onClick={() => scrollTo("estadisticas")}>Estadísticas</button></li>
             <li><button onClick={() => scrollTo("galeria")}>Galería</button></li>
             <li><button onClick={() => scrollTo("noticias")}>Noticias</button></li>
-            <li><button onClick={() => navigate("/login")}>Acceso Clubes</button></li>
+            <li><button onClick={() => navigate("/login")}>Acceso</button></li>
           </ul>
         </div>
       </nav>
@@ -140,12 +148,20 @@ export default function Home() {
           <img src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=2669&auto=format&fit=crop" alt="Estadio" />
         </div>
         <div className="hero-overlay"></div>
-        <div className="hero-content" style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+        <div className="hero-content">
+          <div className="badge-promo">PROYECCIÓN UNIVERSITARIA</div>
           <h1 className="hero-title">
-            PASIÓN QUE NOS<br />
+            <span style={{ color: '#3b82f6' }}>Pasión</span> que nos<br />
             UNE
           </h1>
-          <p className="hero-desc">Plataforma Oficial</p>
+          <p className="hero-desc">
+            Plataforma oficial de deportes de la Universidad Estatal de Bolívar.
+            Conectando deportistas, facultades y pasión deportiva.
+          </p>
+          <div className="hero-actions">
+            <button className="btn-primary-xl" onClick={() => scrollTo("disciplinas")}>Explorar Disciplinas</button>
+            <button className="btn-outline-xl" onClick={() => scrollTo("estadisticas")}>Ver Estadísticas</button>
+          </div>
         </div>
       </header>
 
@@ -157,20 +173,20 @@ export default function Home() {
           </div>
           <div className="bento-grid">
             <div className="bento-card">
-              <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80" alt="Fútbol" />
+              <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800" alt="Fútbol" loading="lazy" width="400" height="300" />
               <div className="bento-content">
                 <h3>Fútbol Profesional</h3>
                 <p>Interfacultades 2025</p>
               </div>
             </div>
             <div className="bento-card">
-              <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80" alt="Basket" />
+              <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800" alt="Basket" loading="lazy" width="400" height="300" />
               <div className="bento-content">
                 <h3>Basketball</h3>
               </div>
             </div>
             <div className="bento-card">
-              <img src="https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1000&auto=format&fit=crop" alt="Voley" />
+              <img src="https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=800&auto=format&fit=crop" alt="Voley" loading="lazy" width="400" height="300" />
               <div className="bento-content">
                 <h3>Voley</h3>
               </div>
@@ -239,82 +255,97 @@ export default function Home() {
             </div>
 
             {/* Stats Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
               <div className="stat-card player-star-card">
                 <div className="player-avatar-large">
-                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #22c55e, #16a34a)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: '900', color: 'white' }}>🏆</div>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #22c55e, #16a34a)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>🏆</div>
                 </div>
                 <div className="stat-highlight">{ranking.length > 0 ? ranking[0]?.puntos || 0 : 0}</div>
                 <span className="stat-label">Puntos Líder</span>
-                <h3 style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>{ranking.length > 0 ? ranking[0]?.nombre || 'Equipo Líder' : 'Sin Datos'}</h3>
+                <h3 style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#cbd5e1' }}>{ranking.length > 0 ? ranking[0]?.nombre || 'Equipo Líder' : 'Sin Datos'}</h3>
               </div>
 
               <div className="stat-card player-star-card">
                 <div className="player-avatar-large">
-                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: '900', color: 'white' }}>⚽</div>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>⚽</div>
                 </div>
                 <div className="stat-highlight">{ranking.reduce((total, team) => total + (team.goles_favor || 0), 0)}</div>
                 <span className="stat-label">Goles Totales</span>
-                <h3 style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>En el Torneo</h3>
+                <h3 style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#cbd5e1' }}>En el Torneo</h3>
               </div>
 
               <div className="stat-card player-star-card">
                 <div className="player-avatar-large">
-                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #ec4899, #be185d)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: '900', color: 'white' }}>🔥</div>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #ec4899, #be185d)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>🔥</div>
                 </div>
                 <div className="stat-highlight">{Math.max(...ranking.map(team => team.goles_favor || 0), 0)}</div>
                 <span className="stat-label">Más Goleador</span>
-                <h3 style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                <h3 style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#cbd5e1' }}>
                   {ranking.find(team => team.goles_favor === Math.max(...ranking.map(t => t.goles_favor || 0)))?.nombre || 'Sin Datos'}
                 </h3>
               </div>
 
               <div className="stat-card player-star-card">
                 <div className="player-avatar-large">
-                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: '900', color: 'white' }}>🛡️</div>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>🛡️</div>
                 </div>
                 <div className="stat-highlight">{Math.min(...ranking.map(team => team.goles_contra || 0).filter(gc => gc >= 0), 999)}</div>
                 <span className="stat-label">Mejor Defensa</span>
-                <h3 style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                <h3 style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#cbd5e1' }}>
                   {ranking.find(team => team.goles_contra === Math.min(...ranking.map(t => t.goles_contra || 0).filter(gc => gc >= 0)))?.nombre || 'Sin Datos'}
                 </h3>
               </div>
 
               <div className="stat-card player-star-card">
                 <div className="player-avatar-large">
-                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: '900', color: 'white' }}>🎯</div>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>🎯</div>
                 </div>
                 <div className="stat-highlight">{ranking.reduce((total, team) => total + (team.jugados || 0), 0)}</div>
                 <span className="stat-label">Partidos Jugados</span>
-                <h3 style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Total General</h3>
+                <h3 style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#cbd5e1' }}>Total General</h3>
               </div>
 
               <div className="stat-card player-star-card">
                 <div className="player-avatar-large">
-                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #06b6d4, #0891b2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: '900', color: 'white' }}>📊</div>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #06b6d4, #0891b2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>📊</div>
                 </div>
                 <div className="stat-highlight">{ranking.length}</div>
                 <span className="stat-label">Equipos</span>
-                <h3 style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Participantes</h3>
+                <h3 style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#cbd5e1' }}>Participantes</h3>
               </div>
             </div>
+
           </div>
         </div>
       </section>
 
-      {/* GALERÍA */}
-      <section id="galeria" className="section">
+      {/* GALERÍA HORIZONTAL */}
+      <section id="galeria" className="section" style={{ padding: '6rem 0' }}>
         <div className="container">
-          <div className="section-header"><h2>Galería <span className="text-highlight">Multimedia</span></h2></div>
-          <div className="gallery-grid">
-            {galeria.map((item, i) => (
-              <div key={i} className="gallery-item">
-                <img src={getImageUrl(item.imagen)} alt={item.titulo} />
-                <div className="gallery-overlay">
-                  <div><h4>{item.titulo}</h4></div>
+          <div className="section-header" style={{ marginBottom: '3rem', padding: '0 2rem' }}>
+            <h2>Galería <span className="text-highlight">Multimedia</span></h2>
+            <p>Momentos destacados de nuestra comunidad deportiva</p>
+          </div>
+        </div>
+
+        <div className="gallery-section-wrapper">
+          <div className="gallery-track-container">
+            <div className="gallery-track">
+              {/* Triplicamos items para asegurar que el track siempre esté lleno */}
+              {galeria.length > 0 ? [...galeria, ...galeria, ...galeria].map((item, i) => (
+                <div key={i} className="gallery-item" onClick={() => navigate('/galeria')}>
+                  <img src={getAssetUrl(item.imagen)} alt={item.titulo} loading="lazy" width="400" height="250" />
+                  <div className="gallery-overlay">
+                    <div>
+                      <h4 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{item.titulo}</h4>
+                      <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', margin: '5px 0 0' }}>Explorar Galería</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )) : (
+                <div style={{ color: '#94a3b8', padding: '2rem' }}>No hay imágenes disponibles.</div>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -327,14 +358,14 @@ export default function Home() {
             <p>Mantente al día con lo último</p>
           </div>
           <div className="news-grid">
-            {noticias.slice(0, 3).map((item, i) => (
-              <div key={i} className="news-card" onClick={() => navigate(`/noticias/${item.id}`)}>
-                <div className="news-image" style={{ backgroundImage: item.imagen ? `url(${item.imagen})` : 'none' }}>
+            {noticias.slice(0, 6).map((item, i) => (
+              <div key={i} className="news-card" onClick={() => navigate(`/noticias/${item.id}`)} style={{ textDecoration: 'none' }}>
+                <div className="news-image" style={{ backgroundImage: item.imagen ? `url("${getAssetUrl(item.imagen)}")` : 'none' }}>
                   <div className="news-badge">NUEVO</div>
                 </div>
                 <div className="news-content">
                   <div className="news-meta">
-                    <Calendar size={14} /> {new Date(item.created_at).toLocaleDateString()}
+                    <Calendar size={14} /> {formatDate(item.created_at)}
                   </div>
                   <h3 className="news-title">{item.titulo}</h3>
                   <p className="news-excerpt">{item.contenido}</p>

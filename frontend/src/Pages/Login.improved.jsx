@@ -4,7 +4,7 @@ import { User, Lock, ArrowLeft, Shield, AlertCircle } from "lucide-react";
 import "../css/home.css";
 
 // Constants
-const API_BASE = import.meta.env?.VITE_API_URL || "http://127.0.0.1:8000/api";
+import { apiFetch, getCsrfCookie } from "../../services/api";
 const ROUTES = {
   HOME: "/",
   ADMIN_DASHBOARD: "/admin/dashboard",
@@ -105,25 +105,14 @@ const Login = () => {
     clearAuthData();
 
     try {
-      const response = await fetch(`${API_BASE}/login`, {
+      await getCsrfCookie();
+      const data = await apiFetch("/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
         body: JSON.stringify({
           login: validation.trimmedLogin,
           password: validation.trimmedPassword,
         }),
       });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const errorMessage = data.message || ERROR_MESSAGES.INVALID_CREDENTIALS;
-        setError(errorMessage);
-        return;
-      }
 
       // Validate response data
       if (!data.token || !data.user) {

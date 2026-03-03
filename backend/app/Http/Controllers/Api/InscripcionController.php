@@ -31,12 +31,18 @@ class InscripcionController extends Controller
         try {
             $inscripciones = Inscripcion::with([
                 'torneo:id,nombre',
-                'equipo:id,nombre,representante_cedula'
+                'equipo:id,nombre,representante_cedula',
+                'equipo.representante:cedula,nombres,apellidos'
             ])->get();
 
             return response()->json($inscripciones);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Error al obtener inscripciones.'], 500);
+            return response()->json([
+                'message' => 'Error al obtener inscripciones.',
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine()
+            ], 500);
         }
     }
 
@@ -65,7 +71,13 @@ class InscripcionController extends Controller
     public function store(Request $request)
     {
         try {
-            $inscripcion = Inscripcion::create($request->all());
+            $validated = $request->validate([
+                'equipo_id' => 'required|exists:equipos,id',
+                'torneo_id' => 'required|exists:torneos,id',
+                'estado'    => 'nullable|string|in:Pendiente,Aprobada,Rechazada',
+            ]);
+
+            $inscripcion = Inscripcion::create($validated);
             
             $this->logAudit(
                 $request->user() ? $request->user()->cedula : 'SISTEMA',
@@ -76,8 +88,10 @@ class InscripcionController extends Controller
             );
 
             return response()->json($inscripcion->load(['torneo', 'equipo']), 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Error al crear inscripción.'], 500);
+            return response()->json(['message' => 'Error al crear inscripción.', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -89,19 +103,28 @@ class InscripcionController extends Controller
     {
         try {
             $inscripcion = Inscripcion::findOrFail($id);
-            $inscripcion->update($request->all());
+            
+            $validated = $request->validate([
+                'equipo_id' => 'sometimes|required|exists:equipos,id',
+                'torneo_id' => 'sometimes|required|exists:torneos,id',
+                'estado'    => 'sometimes|required|string|in:Pendiente,Aprobada,Rechazada',
+            ]);
+
+            $inscripcion->update($validated);
 
             $this->logAudit(
                 $request->user() ? $request->user()->cedula : 'SISTEMA',
                 'ACTUALIZAR',
                 'Inscripcion',
                 (string)$inscripcion->id,
-                'Inscripción actualizada. Estado anterior: ' . $inscripcion->getOriginal('estado')
+                'Inscripción actualizada. Estado: ' . $inscripcion->estado
             );
 
             return response()->json($inscripcion->load(['torneo', 'equipo']));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Error al actualizar inscripción.'], 500);
+            return response()->json(['message' => 'Error al actualizar inscripción.', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -158,6 +181,9 @@ class InscripcionController extends Controller
 
             return response()->json([
                 'message' => 'Error al obtener inscripciones pendientes.',
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine()
             ], 500);
         }
     }

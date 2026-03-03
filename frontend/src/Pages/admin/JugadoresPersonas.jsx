@@ -1,936 +1,712 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from 'react-dom';
+import CarnetModal from "../../components/CarnetModal";
 import {
     UserCheck, Plus, Edit, Trash2, Search, X, User, Save,
-    IdCard, Layout, List, Users, Activity, Target, ShieldCheck, FileText, Download, Upload, Camera
+    IdCard, Layout, List, Users, Activity, Target, ShieldCheck, FileText, Download, Upload, Camera,
+    ChevronRight, Filter, MoreHorizontal, GraduationCap, Phone, Mail, Calendar, MapPin, Grid
 } from "lucide-react";
 import { QRCodeCanvas } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { useNavigate } from "react-router-dom";
 import LoadingScreen from "../../components/LoadingScreen";
-import SkeletonLoader from "../../components/SkeletonLoader";
-import VirtualPitch from "../../components/VirtualPitch";
-import { StatCard } from "../../components/StatsComponents";
-import CarnetModal from "../../components/CarnetModal";
-import { X as CloseIcon } from "lucide-react";
-import api, { apiPublic, API_BASE } from "../../api";
+import api, { API_BASE } from "../../api";
 import { useNotification } from "../../context/NotificationContext";
+import { getAssetUrl } from "../../utils/helpers";
 
-// Determinar la base para las imágenes (quita el /api del final)
-const IMG_BASE = API_BASE.replace('/api', '');
-
-const resolveImgUrl = (path) => {
-    if (!path || typeof path !== 'string') return null;
-    if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('blob:')) return path;
-    const base = IMG_BASE;
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-    const storagePath = cleanPath.startsWith('storage/') ? cleanPath : `storage/${cleanPath}`;
-    const fullUrl = `${base.endsWith('/') ? base : base + '/'}${storagePath}`;
-    return fullUrl;
+// ================= HELPERS / CONSTANTS =====================
+const FACULTADES_CARRERAS = {
+    "Ciencias Administrativas e Informática": [
+        "Software",
+        "Tecnologías de la Información",
+        "Administración de Empresas",
+        "Contabilidad y Auditoría"
+    ],
+    "Ciencias de la Salud": [
+        "Enfermería",
+        "Terapia Física",
+        "Psicología"
+    ],
+    "Jurisprudencia y Sociales": [
+        "Derecho",
+        "Sociología",
+        "Comunicación"
+    ],
+    "Ciencias Agropecuarias": [
+        "Agronomía",
+        "Veterinaria"
+    ]
 };
 
-const PlayerImage = ({ src, iconSize = 20, className = "" }) => {
-    const [error, setError] = useState(false);
-    const resolved = resolveImgUrl(src);
-
-    useEffect(() => { setError(false); }, [src]);
-
-    if (!resolved || error) {
-        return (
-            <div style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-muted)',
-                background: 'var(--bg-main)'
-            }} className={className}>
-                <User size={iconSize} />
-            </div>
-        );
-    }
-
-    return (
-        <img
-            src={resolved}
-            alt="Deportista"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            className={className}
-            onError={() => setError(true)}
-        />
-    );
+const POSICIONES_DEPORTE = {
+    futbol: [
+        'Arquero',
+        'Lateral Derecho',
+        'Defensa Central 1',
+        'Defensa Central 2',
+        'Lateral Izquierdo',
+        'Volante de Marca',
+        'Volante Mixto',
+        'Volante Creativo',
+        'Extremo Derecho',
+        'Extremo Izquierdo',
+        'Centrodelantero'
+    ],
+    basquet: [
+        'Base (Armador)',
+        'Alero',
+        'Poste (Pívot)'
+    ],
+    voley: [
+        'Armador',
+        'Rematador',
+        'Central',
+        'Líbero',
+        'Zaguero'
+    ]
 };
 
-/* ============================================================
-   COMPONENTES DE APOYO (MODALES)
-============================================================ */
+const DEPORTES_INFO = [
+    { key: 'futbol', label: '⚽ Fútbol', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+    { key: 'basquet', label: '🏀 Básquet', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+    { key: 'voley', label: '🏐 Vóley', color: '#6366f1', bg: 'rgba(99,102,241,0.1)' }
+];
 
-
-
-
-// 2. MODAL REGISTRO/EDICIÓN
-const JugadorModal = ({ isOpen, onClose, initialData, equipos = [], onSave }) => {
-    const FACULTADES_CARRERAS = {
-        "Facultad de Ciencias Administrativas, Gestión Empresarial e Informática": [
-            "Administración de Empresas (Presencial y En línea)",
-            "Contabilidad y Auditoría",
-            "Mercadotecnia",
-            "Marketing Digital (En línea)",
-            "Software",
-            "Tecnologías de la Información (TICS)",
-            "Emprendimiento e Innovación Social (En línea)"
-        ],
-        "Facultad de Ciencias de la Salud y del Ser Humano": [
-            "Enfermería",
-            "Terapia Física",
-            "Psicología"
-        ],
-        "Facultad de Ciencias Agropecuarias, Recursos Naturales y del Ambiente": [
-            "Agronomía",
-            "Agroindustria",
-            "Medicina Veterinaria",
-            "Ingeniería en Gestión de Riesgos"
-        ],
-        "Facultad de Jurisprudencia, Ciencias Sociales y Políticas": [
-            "Derecho",
-            "Sociología",
-            "Comunicación",
-            "Criminalística",
-            "Turismo y Hotelería"
-        ],
-        "Facultad de Ciencias de la Educación, Sociales, Filosóficas y Humanísticas": [
-            "Educación Básica",
-            "Educación Inicial",
-            "Educación Intercultural Bilingüe",
-            "Pedagogía de la Informática",
-            "Pedagogía de las Matemáticas y la Física",
-            "Pedagogía de los Idiomas Nacionales y Extranjeros"
-        ]
-    };
-
-    const POSICIONES_POR_DEPORTE = {
-        "Fútbol": [
-            { grupo: "Posiciones", posiciones: ["Portero", "Defensa Central", "Lateral Derecho", "Lateral Izquierdo", "Mediocentro Defensivo", "Mediocentro", "Volante", "Extremo Derecho", "Extremo Izquierdo", "Media Punta", "Delantero"] }
-        ],
-        "Baloncesto": [
-            { grupo: "Posiciones", posiciones: ["Base (1)", "Escolta (2)", "Alero (3)", "Ala-Pívot (4)", "Pívot (5)"] }
-        ],
-        "Ecuavóley": [
-            { grupo: "Posiciones", posiciones: ["Colocador", "Servidor", "Volador"] }
-        ]
-    };
+// ================= MODALS =====================
+const PlayerModal = ({ isOpen, onClose, initialData, equipos, deportes, onSave, loading }) => {
     const isEditMode = !!initialData;
-    const toDateOnly = (v) => {
-        if (!v) return "";
-        const s = String(v);
-        if (s.includes("T")) return s.split("T")[0];
-        if (s.includes(" ")) return s.split(" ")[0];
-        return s;
-    };
-    const sexoToCode = (v) => {
-        const s = String((v || "")).trim().toLowerCase();
-        if (s === "1" || s === "male") return "M";
-        if (s === "2" || s === "female") return "F";
-        if (s === "m" || s.startsWith("masc") || s === "masculino" || s === "h" || s === "hombre") return "M";
-        if (s === "f" || s.startsWith("fem") || s === "femenino" || s === "mujer") return "F";
-        return "";
-    };
-    const sexoOptionValue = (v) => {
-        const s = sexoToCode(v);
-        if (s === "M" || s === "F") return s;
-        return "";
-    };
-    const deriveSexoCode = () => {
-        const cands = [
-            formData?.sexo,
-            personaData?.sexo,
-            personaData?.genero,
-            initialData?.persona?.sexo,
-            initialData?.persona?.genero,
-            initialData?.sexo,
-            initialData?.genero
-        ];
-        for (const v of cands) {
-            const code = sexoToCode(v);
-            if (code) return code;
-        }
-        return "";
-    };
-    const [formData, setFormData] = useState({
-        cedula: "",
-        equipo_id: "",
-        posicion: "",
-        numero: "",
-        carrera: "",
-        facultad: "",
-        nombres: "", // Added for new form structure
-        apellidos: "", // Added for new form structure
-        fecha_nacimiento: "", // Added for new form structure
-        sexo: "", // Added for new form structure
-        carrera_id: "", // Added for new form structure, assuming it's different from 'carrera'
-        estado: "ACTIVO", // Added for new form structure
-        email: "", // Added for new form structure
-        telefono: "", // Added for new form structure
+    const [form, setForm] = useState({
+        cedula: '',
+        nombres: '',
+        apellidos: '',
+        email: '',
+        telefono: '',
+        fecha_nacimiento: '',
+        sexo: 'M',
+        equipo_id: '',
+        facultad: '',
+        carrera: '',
+        posicion: '',
+        numero: ''
     });
-    const [personaData, setPersonaData] = useState({ cedula: "", nombres: "", apellidos: "", fecha_nacimiento: "", sexo: "", telefono: "", email: "" });
-    const [personaExiste, setPersonaExiste] = useState(null);
-    const [verificando, setVerificando] = useState(false);
-    const [fotoFile, setFotoFile] = useState(null);
-    const [fotoPreview, setFotoPreview] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const fileInputRef = useRef(null);
+    const [deporteModal, setDeporteModal] = useState(''); // SOLO para controlar el selector de posiciones
+    const [fotoFile, setFotoFile] = useState(null); // Nuevo estado para el archivo de la foto
+    const [fotoPreview, setFotoPreview] = useState(null); // Nuevo estado para la vista previa de la foto
 
     useEffect(() => {
-        if (!isOpen) return;
+        console.log("Initial Data received by PlayerModal:", initialData);
         if (initialData) {
-            setFormData({
-                cedula: initialData.cedula,
-                equipo_id: initialData.equipo_id || "",
-                posicion: initialData.posicion || "",
-                numero: initialData.numero || "",
-                nombres: initialData.persona?.nombres || "",
-                apellidos: initialData.persona?.apellidos || "",
-                fecha_nacimiento: toDateOnly(initialData.persona?.fecha_nacimiento) || "",
-                sexo: sexoToCode(initialData.persona?.sexo || initialData.persona?.genero) || "",
-                facultad: initialData.facultad || initialData.persona?.facultad || "",
-                carrera: initialData.carrera || initialData.persona?.carrera || "",
-                estado: initialData.estado || "ACTIVO",
-                email: initialData.persona?.email || "",
-                telefono: initialData.persona?.telefono || "",
+            setForm({
+                cedula: initialData.cedula || '',
+                nombres: initialData.persona?.nombres || '',
+                apellidos: initialData.persona?.apellidos || '',
+                email: initialData.persona?.email || '',
+                telefono: initialData.persona?.telefono || '',
+                fecha_nacimiento: initialData.persona?.fecha_nacimiento ? new Date(initialData.persona.fecha_nacimiento).toISOString().split('T')[0] : '',
+                sexo: initialData.persona?.sexo || 'M',
+                equipo_id: initialData.equipo_id || '',
+                facultad: initialData.facultad || '',
+                carrera: initialData.carrera || '',
+                posicion: initialData.posicion || '',
+                numero: initialData.numero || ''
             });
-            setPersonaExiste(true);
-            setPersonaData({
-                cedula: initialData.cedula,
-                nombres: initialData.persona?.nombres || "",
-                apellidos: initialData.persona?.apellidos || "",
-                fecha_nacimiento: toDateOnly(initialData.persona?.fecha_nacimiento) || "",
-                sexo: sexoToCode(initialData.persona?.sexo || initialData.persona?.genero) || "",
-                telefono: initialData.persona?.telefono || "",
-                email: initialData.persona?.email || "",
-                foto: initialData.persona?.foto_url || initialData.persona?.foto || ""
-            });
-            setFotoPreview(initialData.persona?.foto_url || initialData.persona?.foto || null);
-            // Hidratación adicional si sexo/fecha no están presentes en initialData
-            (async () => {
-                try {
-                    if (!initialData.persona?.sexo && !initialData.persona?.genero) {
-                        const resp = await api.get(`/personas/${initialData.cedula}`);
-                        const p = resp.data?.data || resp.data || {};
-                        setPersonaData(prev => ({
-                            ...prev,
-                            fecha_nacimiento: toDateOnly(p.fecha_nacimiento) || prev.fecha_nacimiento || "",
-                            sexo: sexoToCode(p.sexo || p.genero) || prev.sexo || ""
-                        }));
-                        setFormData(prev => ({
-                            ...prev,
-                            fecha_nacimiento: toDateOnly(p.fecha_nacimiento) || prev.fecha_nacimiento || "",
-                            sexo: sexoToCode(p.sexo || p.genero) || prev.sexo || ""
-                        }));
-                    }
-                } catch (_) { /* noop */ }
-            })();
-        } else {
-            setFormData({
-                cedula: "",
-                equipo_id: "",
-                posicion: "",
-                numero: "",
-                carrera: "",
-                facultad: "",
-                nombres: "",
-                apellidos: "",
-                fecha_nacimiento: "",
-                sexo: "",
-                carrera_id: "",
-                estado: "ACTIVO",
-                email: "",
-                telefono: "",
-            });
-            setPersonaData({ cedula: "", nombres: "", apellidos: "", fecha_nacimiento: "", sexo: "", telefono: "", email: "" });
-            setPersonaExiste(null);
+            // Detectar el deporte por la posicion guardada
+            const savedPos = initialData.posicion || '';
+            const detectedDeporte = POSICIONES_DEPORTE.futbol.includes(savedPos) ? 'futbol'
+                : POSICIONES_DEPORTE.basquet.includes(savedPos) ? 'basquet'
+                    : POSICIONES_DEPORTE.voley.includes(savedPos) ? 'voley'
+                        : '';
+            setDeporteModal(detectedDeporte);
+            const existingFoto = initialData.persona?.foto_url || initialData.persona?.foto;
+            setFotoPreview(existingFoto ? getAssetUrl(existingFoto) : null);
             setFotoFile(null);
-            setFotoPreview(null);
-        }
-        if (isOpen) {
-            document.body.classList.add('modal-open');
-            return () => document.body.classList.remove('modal-open');
+        } else {
+            setForm({
+                cedula: '', nombres: '', apellidos: '', email: '', telefono: '',
+                fecha_nacimiento: '', sexo: 'M', equipo_id: '', facultad: '',
+                carrera: '', posicion: '', numero: ''
+            });
+            setDeporteModal('');
+            setFotoFile(null); // Limpiar archivo al crear
+            setFotoPreview(null); // Limpiar vista previa al crear
         }
     }, [initialData, isOpen]);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        if (!formData.sexo) {
-            const code = deriveSexoCode();
-            if (code) setFormData(prev => ({ ...prev, sexo: code }));
-        }
-    }, [isOpen, personaData.sexo, personaData.genero, initialData]);
-
-    const handlePhotoChange = (e) => {
+    const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             setFotoFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => setFotoPreview(reader.result);
-            reader.readAsDataURL(file);
+            setFotoPreview(URL.createObjectURL(file)); // Crear URL para vista previa
+        } else {
+            setFotoFile(null);
+            setFotoPreview(null);
         }
-    };
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        if (name === "cedula" || name === "numero") {
-            setFormData(prev => ({ ...prev, [name]: value.replace(/[^0-9]/g, "") }));
-            return;
-        }
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const verificarCedula = async () => {
-        if (isEditMode || formData.cedula.length !== 10) return;
-        setVerificando(true);
-        try {
-            const resp = await api.get(`/personas/${formData.cedula}`);
-            setPersonaExiste(true);
-            setPersonaData({
-                cedula: (resp.data.data?.cedula || resp.data?.cedula || formData.cedula),
-                nombres: resp.data.data?.nombres || resp.data?.nombres || "",
-                apellidos: resp.data.data?.apellidos || resp.data?.apellidos || "",
-                fecha_nacimiento: toDateOnly(resp.data.data?.fecha_nacimiento || resp.data?.fecha_nacimiento) || "",
-                sexo: sexoToCode(resp.data.data?.sexo || resp.data?.sexo || resp.data.data?.genero || resp.data?.genero) || "",
-                telefono: resp.data.data?.telefono || resp.data?.telefono || "",
-                email: resp.data.data?.email || resp.data?.email || "",
-            });
-            setFormData(prev => ({
-                ...prev,
-                nombres: resp.data.data?.nombres || resp.data?.nombres || "",
-                apellidos: resp.data.data?.apellidos || resp.data?.apellidos || "",
-                fecha_nacimiento: toDateOnly(resp.data.data?.fecha_nacimiento || resp.data?.fecha_nacimiento) || "",
-                sexo: sexoToCode(resp.data.data?.sexo || resp.data?.sexo || resp.data.data?.genero || resp.data?.genero) || "",
-                facultad: resp.data.data?.facultad || resp.data?.facultad || "",
-                carrera: resp.data.data?.carrera || resp.data?.carrera || "",
-                email: resp.data.data?.email || resp.data?.email || "",
-                telefono: resp.data.data?.telefono || resp.data?.telefono || "",
-            }));
-            setFotoPreview(resp.data.data?.foto_url || resp.data.data?.foto || null);
-        } catch (err) {
-            if (err.response?.status === 404) {
-                setPersonaExiste(false);
-                setPersonaData(p => ({ ...p, cedula: formData.cedula }));
-                setFormData(prev => ({
-                    ...prev,
-                    nombres: "",
-                    apellidos: "",
-                    fecha_nacimiento: "",
-                    sexo: "",
-                    facultad: "",
-                    carrera: "",
-                    email: "",
-                    telefono: "",
-                }));
-                setFotoPreview(null);
-            }
-        } finally { setVerificando(false); }
-    };
-
-    const [statusType, setStatusType] = useState("");
-    const [statusText, setStatusText] = useState("");
-    const sexoValue = useMemo(() => {
-        const raw =
-            formData.sexo ||
-            personaData.sexo ||
-            personaData.genero ||
-            (initialData?.persona?.sexo) ||
-            (initialData?.persona?.genero) ||
-            (initialData?.sexo) ||
-            (initialData?.genero) ||
-            "";
-        return sexoOptionValue(raw);
-    }, [formData.sexo, personaData.sexo, initialData]);
-    const maxFechaNacimiento = useMemo(() => {
-        const d = new Date();
-        d.setFullYear(d.getFullYear() - 18);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-    }, []);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (isSubmitting) return;
-
-        // Confirmación antes de guardar
-        const confirmar = window.confirm(
-            isEditMode
-                ? "¿Desea guardar los cambios realizados en la ficha del atleta?"
-                : "¿Desea registrar este nuevo jugador?"
-        );
-
-        if (!confirmar) return;
-
-        // Validar mayoría de edad (18+)
-        const dob = new Date(formData.fecha_nacimiento);
-        const limit = new Date();
-        limit.setFullYear(limit.getFullYear() - 18);
-        if (!formData.fecha_nacimiento || dob > limit) {
-            setStatusType("danger");
-            setStatusText("La fecha de nacimiento debe indicar 18 años o más");
-            return;
-        }
-        setStatusType("info");
-        setStatusText("Guardando ficha del jugador…");
-        setIsSubmitting(true);
-        try {
-            const result = await onSave(formData, isEditMode, personaData, personaExiste, fotoFile);
-            if (result && result.ok) {
-                setStatusType("success");
-                setStatusText("Los datos han sido guardados correctamente");
-                setTimeout(() => {
-                    onClose();
-                }, 600);
-            }
-        } finally { setIsSubmitting(false); }
     };
 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-content modal-xl scale-in" onClick={e => e.stopPropagation()}>
-                <div className="modal-header" style={{
-                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.05))',
-                    borderBottom: '2px solid var(--primary)',
-                    padding: '0.75rem 1.5rem'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                            padding: '10px',
-                            borderRadius: '12px',
-                            background: 'linear-gradient(135deg, var(--primary), #a855f7)',
-                            color: 'white',
-                            boxShadow: '0 4px 12px rgba(53, 110, 216, 0.2)'
-                        }}>
-                            <User size={24} />
+        <div className="modal-overlay">
+            <div className="modal-content modal-lg" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15.px' }}>
+                        <div className="modal-icon" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                            <UserCheck size={28} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>{isEditMode ? "Ficha Técnica Atleta" : "Registro de Jugador"}</h2>
-                            <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Gestión integral de perfiles y habilitaciones</p>
-                            {statusText && (
-                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
-                                    {statusText}
-                                </span>
-                            )}
+                            <h2 className="modal-title">{isEditMode ? "Modificar Deportista" : "Alta de Deportista"}</h2>
+                            <p className="modal-subtitle" style={{ color: '#94a3b8' }}>Registro oficial en base de datos universitaria</p>
                         </div>
                     </div>
-                    <button className="btn-icon-close" onClick={onClose}>
-                        <CloseIcon size={24} />
-                    </button>
+                    <button className="btn-icon-close" type="button" onClick={onClose}><X size={24} /></button>
                 </div>
 
-                <div className="modal-body">
-                    <form id="jugador-form" onSubmit={handleSubmit}>
-                        <div className="responsive-grid" style={{ gap: '2rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        style={{
-                                            width: '160px',
-                                            height: '200px',
-                                            margin: '0 auto',
-                                            borderRadius: '24px',
-                                            border: '2px dashed rgba(53, 110, 216, 0.3)',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.3s ease',
-                                            overflow: 'hidden',
-                                            background: 'rgba(53, 110, 216, 0.05)',
-                                            position: 'relative'
-                                        }}
-                                        className="photo-upload-container"
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    onSave(form, fotoFile, isEditMode);
+                }}>
+                    <div className="modal-body">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+                            {/* Campo de subida de foto */}
+                            <div className="form-group" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem' }}>
+                                <label className="form-label" style={{ marginBottom: '0.5rem' }}>Foto del Deportista</label>
+                                <div
+                                    style={{
+                                        width: '120px',
+                                        height: '120px',
+                                        borderRadius: '50%',
+                                        background: fotoPreview ? `url(${fotoPreview}) center/cover` : 'rgba(255,255,255,0.05)',
+                                        border: '2px dashed rgba(255,255,255,0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        marginBottom: '1rem',
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                    }}
+                                    onClick={() => document.getElementById('foto-upload').click()}
+                                >
+                                    {!fotoPreview && <Camera size={40} color="#94a3b8" />}
+                                    <input
+                                        type="file"
+                                        id="foto-upload"
+                                        style={{ display: 'none' }}
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
+                                </div>
+                                {fotoPreview && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setFotoFile(null); setFotoPreview(null); }}
+                                        className="pro-btn btn-secondary"
+                                        style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
                                     >
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handlePhotoChange}
-                                            accept="image/*"
-                                            style={{ display: 'none' }}
-                                        />
-                                        {fotoPreview ? (
-                                            <img
-                                                src={resolveImgUrl(fotoPreview) || fotoPreview}
-                                                alt="Preview"
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
-                                            />
-                                        ) : (
-                                            <>
-                                                <Camera size={40} style={{ color: 'var(--primary)', marginBottom: '10px' }} />
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Cargar Foto</span>
-                                            </>
-                                        )}
-                                    </div>
-                                    <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mín. 400x500px • JPG/PNG</p>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Cédula de Identidad</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input
-                                            type="text"
-                                            className="pro-input"
-                                            name="cedula"
-                                            maxLength={10}
-                                            value={formData.cedula}
-                                            onChange={handleChange}
-                                            onBlur={verificarCedula}
-                                            disabled={isEditMode}
-                                            required
-                                            placeholder="Ingrese número de documento"
-                                            style={{ fontSize: '1.2rem', fontWeight: 700 }}
-                                        />
-                                        {verificando && <div className="spinner" style={{ position: 'absolute', right: '12px', top: '12px', width: '24px', height: '24px' }} />}
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Nombres Completos</label>
-                                    <input
-                                        type="text"
-                                        className="pro-input"
-                                        value={formData.nombres}
-                                        onChange={(e) => setFormData({ ...formData, nombres: e.target.value.toUpperCase() })}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Apellidos Completos</label>
-                                    <input
-                                        type="text"
-                                        className="pro-input"
-                                        value={formData.apellidos}
-                                        onChange={(e) => setFormData({ ...formData, apellidos: e.target.value.toUpperCase() })}
-                                        required
-                                    />
-                                </div>
+                                        Quitar Foto
+                                    </button>
+                                )}
                             </div>
+                            {/* Fin Campo de subida de foto */}
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                                    <div className="form-group">
-                                        <label className="form-label">Fecha de Nacimiento</label>
-                                        <input
-                                            type="date"
-                                            className="pro-input"
-                                            value={formData.fecha_nacimiento}
-                                            onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
-                                            max={maxFechaNacimiento}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Sexo</label>
-                                        <select
-                                            key={`sexo-${sexoValue}-${isOpen ? 'open' : 'closed'}`}
-                                            className="pro-input"
-                                            value={sexoValue}
-                                            onChange={(e) => setFormData({ ...formData, sexo: e.target.value })}
-                                            required
-                                        >
-                                            <option value="">Seleccione...</option>
-                                            <option value="M">Masculino</option>
-                                            <option value="F">Femenino</option>
-                                        </select>
-                                    </div>
-                                </div>
+                            <div className="form-group">
+                                <label className="form-label">Identificación (Cédula)</label>
+                                <input className="pro-input" required value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })} disabled={isEditMode} placeholder="0000000000" />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Correo Electrónico</label>
+                                <input type="email" className="pro-input" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="ejemplo@ueb.edu.ec" />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Nombres Completos</label>
+                                <input className="pro-input" required value={form.nombres} onChange={e => setForm({ ...form, nombres: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Apellidos Completos</label>
+                                <input className="pro-input" required value={form.apellidos} onChange={e => setForm({ ...form, apellidos: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Teléfono Móvil</label>
+                                <input className="pro-input" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="0900000000" />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Fecha de Nacimiento</label>
+                                <input type="date" className="pro-input" required value={form.fecha_nacimiento} onChange={e => setForm({ ...form, fecha_nacimiento: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Equipo de Destino</label>
+                                <select className="pro-input" value={form.equipo_id} onChange={e => setForm({ ...form, equipo_id: e.target.value })}>
+                                    <option value="">Ninguno / Independiente</option>
+                                    {equipos.map(eq => <option key={eq.id} value={eq.id}>{eq.nombre}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Posición Predilecta</label>
+                                <select
+                                    className="pro-input"
+                                    value={form.posicion}
+                                    onChange={e => setForm({ ...form, posicion: e.target.value })}
+                                >
+                                    <option value="">Seleccione posición...</option>
+                                    {(() => {
+                                        // Determinar el deporte del equipo seleccionado
+                                        let activeDeporteKey = null;
+                                        if (form.equipo_id && equipos.length > 0 && deportes && deportes.length > 0) {
+                                            const eq = equipos.find(e => e.id.toString() === form.equipo_id.toString());
+                                            if (eq && eq.deporte_id) {
+                                                const dep = deportes.find(d => d.id.toString() === eq.deporte_id.toString());
+                                                if (dep) {
+                                                    const dName = dep.nombre.toLowerCase();
+                                                    if (dName.includes('futbol') || dName.includes('fútbol')) activeDeporteKey = 'futbol';
+                                                    else if (dName.includes('basquet') || dName.includes('básquet')) activeDeporteKey = 'basquet';
+                                                    else if (dName.includes('voley') || dName.includes('vóley') || dName.includes('ecuavoley')) activeDeporteKey = 'voley';
+                                                }
+                                            }
+                                        }
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                                    <div className="form-group">
-                                        <label className="form-label" style={{ fontWeight: 800 }}>Facultad Académica</label>
-                                        <select
-                                            className="pro-input"
-                                            value={formData.facultad}
-                                            onChange={(e) => setFormData({ ...formData, facultad: e.target.value, carrera: "" })}
-                                            required
-                                        >
-                                            <option value="">Selecciones Facultad...</option>
-                                            {Object.keys(FACULTADES_CARRERAS).map(f => (
-                                                <option key={f} value={f}>{f}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label" style={{ fontWeight: 800 }}>Carrera Universitaria</label>
-                                        <select
-                                            className="pro-input"
-                                            value={formData.carrera}
-                                            onChange={(e) => setFormData({ ...formData, carrera: e.target.value })}
-                                            required
-                                            disabled={!formData.facultad}
-                                        >
-                                            <option value="">{formData.facultad ? "Seleccione Carrera..." : "Elija Facultad"}</option>
-                                            {Array.isArray(FACULTADES_CARRERAS[formData.facultad]) && FACULTADES_CARRERAS[formData.facultad].map(c => (
-                                                <option key={c} value={c}>{c}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Estado de Habilitación</label>
-                                    <select
-                                        className="pro-input"
-                                        value={formData.estado}
-                                        onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                                    >
-                                        <option value="ACTIVO">Activo - Habilitado</option>
-                                        <option value="INACTIVO">Inactivo - Sancionado</option>
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Correo Electrónico</label>
-                                    <input
-                                        type="email"
-                                        className="pro-input"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        placeholder="usuario@ejemplo.com"
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Teléfono de Contacto</label>
-                                    <input
-                                        type="tel"
-                                        className="pro-input"
-                                        value={formData.telefono}
-                                        onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                                    />
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
-                                    <div className="form-group">
-                                        <label className="form-label" style={{ fontWeight: 800 }}>Club / Unidad Operativa</label>
-                                        <select name="equipo_id" value={formData.equipo_id} onChange={handleChange} className="pro-input">
-                                            <option value="">Sin Equipo</option>
-                                            {equipos.map(eq => <option key={eq.id} value={eq.id}>{eq.nombre}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label" style={{ fontWeight: 800 }}>Número</label>
-                                        <input type="text" name="numero" maxLength={2} value={formData.numero} onChange={handleChange} className="pro-input" placeholder="00" style={{ textAlign: 'center', fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary)' }} />
-                                    </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Posición</label>
-                                    <select name="posicion" value={formData.posicion} onChange={handleChange} className="pro-input">
-                                        <option value="">Seleccione una posición...</option>
-                                        {(() => {
-                                            const equipoSeleccionado = equipos.find(eq => String(eq.id) === String(formData.equipo_id));
-                                            const deporteNombre = equipoSeleccionado?.deporte?.nombre;
-                                            const posiciones = POSICIONES_POR_DEPORTE[deporteNombre];
-
-                                            if (posiciones) {
-                                                return posiciones.map(grupo => (
-                                                    <optgroup key={grupo.grupo} label={grupo.grupo}>
-                                                        {grupo.posiciones.map(pos => (
+                                        if (activeDeporteKey) {
+                                            // Mostrar solo las del deporte detectado
+                                            return (
+                                                <optgroup label={DEPORTES_INFO.find(d => d.key === activeDeporteKey)?.label || "Posiciones"}>
+                                                    {POSICIONES_DEPORTE[activeDeporteKey].map(pos => (
+                                                        <option key={pos} value={pos}>{pos}</option>
+                                                    ))}
+                                                </optgroup>
+                                            );
+                                        } else {
+                                            // Mostrar todas si no hay equipo seleccionado o el deporte no calza
+                                            return (
+                                                <>
+                                                    <optgroup label="⚽ Fútbol">
+                                                        {POSICIONES_DEPORTE.futbol.map(pos => (
                                                             <option key={pos} value={pos}>{pos}</option>
                                                         ))}
                                                     </optgroup>
-                                                ));
-                                            }
-                                            return null;
-                                        })()}
+                                                    <optgroup label="🏀 Básquet">
+                                                        {POSICIONES_DEPORTE.basquet.map(pos => (
+                                                            <option key={pos} value={pos}>{pos}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                    <optgroup label="🏐 Vóley">
+                                                        {POSICIONES_DEPORTE.voley.map(pos => (
+                                                            <option key={pos} value={pos}>{pos}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                </>
+                                            );
+                                        }
+                                    })()}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Numero</label>
+                                <input type="number" className="pro-input" value={form.numero} onChange={e => setForm({ ...form, numero: e.target.value })} placeholder="00" />
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '20px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#3b82f6', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <GraduationCap size={18} /> Datos Académicos
+                            </h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                                <div className="form-group">
+                                    <label className="form-label">Facultad</label>
+                                    <select className="pro-input" value={form.facultad} onChange={e => setForm({ ...form, facultad: e.target.value })}>
+                                        <option value="">Seleccione Facultad...</option>
+                                        {Object.keys(FACULTADES_CARRERAS).map(f => <option key={f} value={f}>{f}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Carrera</label>
+                                    <select className="pro-input" value={form.carrera} onChange={e => setForm({ ...form, carrera: e.target.value })}>
+                                        <option value="">Seleccione Carrera...</option>
+                                        {form.facultad && FACULTADES_CARRERAS[form.facultad]?.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                             </div>
                         </div>
-                    </form>
-                </div>
+                    </div>
 
-                <div className="modal-footer">
-                    <button type="button" className="pro-btn btn-secondary" onClick={onClose}>Descartar</button>
-                    <button type="submit" form="jugador-form" disabled={isSubmitting} className="pro-btn btn-primary" style={{ minWidth: '180px' }}>
-                        {isSubmitting ? <div className="spinner" /> : <><Save size={18} /> {isEditMode ? "Guardar Cambios" : "Validar y Registrar"}</>}
-                    </button>
-                </div>
+                    <div className="modal-footer">
+                        <button type="button" className="pro-btn btn-secondary" onClick={onClose}>Cancelar</button>
+                        <button type="submit" className="pro-btn btn-primary" disabled={loading}>
+                            {loading ? <div className="spinner-sm" /> : <Save size={18} />} Finalizar Registro
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>,
         document.body
     );
 };
 
-
-/* ============================================================
-   COMPONENTE PRINCIPAL
-============================================================ */
+// ================= MAIN COMPONENT =====================
 const JugadoresPersonas = () => {
-    const navigate = useNavigate();
-    const { success, error } = useNotification();
-    const [jugadores, setJugadores] = useState([]);
+    const { addNotification } = useNotification();
+    const [players, setPlayers] = useState([]);
     const [equipos, setEquipos] = useState([]);
+    const [deportes, setDeportes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [viewMode, setViewMode] = useState("list");
+    const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState('grid');
+    const [deporteFilter, setDeporteFilter] = useState('');
 
-    // Estados Modales
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isCarnetOpen, setIsCarnetOpen] = useState(false);
-    const [currentJugador, setCurrentJugador] = useState(null);
-    const [pitchTeamId, setPitchTeamId] = useState("");
+    const [editingPlayer, setEditingPlayer] = useState(null);
+    const [carnetPlayer, setCarnetPlayer] = useState(null);
 
-    const loadData = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [jData, eData] = await Promise.all([
+            const [pResp, eResp, dResp] = await Promise.all([
                 api.get('/jugadores'),
-                api.get('/equipos')
+                api.get('/equipos'),
+                api.get('/deportes')
             ]);
-            setJugadores(Array.isArray(jData.data) ? jData.data : []);
-            setEquipos(Array.isArray(eData.data?.data) ? eData.data.data : Array.isArray(eData.data) ? eData.data : []);
-        } catch (err) { console.error(err); }
-        finally { setLoading(false); }
+            setPlayers(Array.isArray(pResp.data) ? pResp.data : (pResp.data?.data || []));
+            setEquipos(Array.isArray(eResp.data) ? eResp.data : (eResp.data?.data || []));
+            setDeportes(Array.isArray(dResp.data) ? dResp.data : (dResp.data?.data || []));
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    useEffect(() => { loadData(); }, [loadData]);
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
-    const stats = useMemo(() => {
-        const total = jugadores.length;
-        const arqueros = jugadores.filter(j => j.posicion?.toLowerCase().includes("arquer") || j.posicion?.toLowerCase().includes("porter")).length;
-        const sinEquipo = jugadores.filter(j => !j.equipo_id).length;
-        return { total, arqueros, sinEquipo };
-    }, [jugadores]);
+    const handleSave = async (form, fotoFile, isEdit) => {
+        // Validar campos obligatorios antes de enviar
+        const mandatoryFields = {
+            cedula: 'Identificación (Cédula)',
+            nombres: 'Nombres',
+            apellidos: 'Apellidos',
+            email: 'Correo Electrónico',
+            fecha_nacimiento: 'Fecha de Nacimiento'
+        };
 
-    const filtered = jugadores.filter(j => {
-        const n = j.persona ? `${j.persona.nombres} ${j.persona.apellidos}` : "";
-        return n.toLowerCase().includes(searchTerm.toLowerCase()) || j.cedula.includes(searchTerm);
-    });
+        const missing = Object.entries(mandatoryFields)
+            .filter(([key]) => !form[key] || form[key].toString().trim() === '')
+            .map(([, label]) => label);
 
-    const handleSave = async (formData, isEdit, personaData, personaExiste, fotoFile) => {
+        if (missing.length > 0) {
+            addNotification(`Por favor complete los campos obligatorios: ${missing.join(', ')}`, 'warning');
+            return;
+        }
+
+        const confirmMsg = isEdit
+            ? '¿Desea actualizar los datos del deportista?'
+            : '¿Desea certificar el alta del nuevo deportista?';
+
+        if (!window.confirm(confirmMsg)) return;
+
+        setLoading(true);
         try {
-            // 1. Manejar la Persona (Crear o Actualizar)
-            // Siempre intentamos actualizar o crear la persona para asegurar que nombres/foto se guarden
-            const fd = new FormData();
+            const url = isEdit ? `/jugadores/${form.cedula}` : '/jugadores';
+            const method = 'post';
 
-            // Añadir campos de persona
-            fd.append('cedula', personaData.cedula || formData.cedula);
-            fd.append('nombres', formData.nombres || personaData.nombres || "");
-            fd.append('apellidos', formData.apellidos || personaData.apellidos || "");
-            if (personaData.email || formData.email) fd.append('email', (formData.email || personaData.email || ""));
-            if (personaData.telefono || formData.telefono) fd.append('telefono', (formData.telefono || personaData.telefono || ""));
-            const toDateOnly = (v) => {
-                if (!v) return "";
-                const s = String(v);
-                if (s.includes("T")) return s.split("T")[0];
-                if (s.includes(" ")) return s.split(" ")[0];
-                return s;
-            };
-            const fechaNorm = toDateOnly(formData.fecha_nacimiento || personaData.fecha_nacimiento);
-            if (fechaNorm) fd.append('fecha_nacimiento', fechaNorm);
-            const sx = String(formData.sexo || personaData.sexo || personaData.genero || "");
-            const sxCode = sx.toLowerCase().startsWith('masc') ? 'M' : sx.toLowerCase().startsWith('fem') ? 'F' : sx.toUpperCase();
-            if (sxCode) fd.append('sexo', sxCode);
-            if (sxCode) fd.append('genero', sxCode);
-
-            // Si hay foto nueva, la incluimos
-            if (fotoFile instanceof File || fotoFile instanceof Blob) {
-                fd.append('foto', fotoFile);
+            const formData = new FormData();
+            for (const key in form) {
+                if (form[key] !== null && form[key] !== undefined) {
+                    formData.append(key, form[key]);
+                }
+            }
+            if (fotoFile) {
+                formData.append('foto', fotoFile);
+            }
+            if (isEdit) {
+                formData.append('_method', 'PUT');
             }
 
-            if (personaExiste === false) {
-                // Nueva Persona: POST /personas
-                // Dejamos que Axios maneje el Content-Type automáticamente con FormData
-                await api.post('/personas', fd, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-            } else {
-                // Persona existente: PATCH /personas/{cedula}
-                // Laravel requiere _method=PUT para procesar archivos vía POST si el route es PUT
-                fd.append('_method', 'PUT');
-                await api.post(`/personas/${personaData.cedula || formData.cedula}`, fd, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-            }
+            await api[method](url, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
-            // 2. Manejar el Jugador
-            const jugadorPayload = {
-                cedula: formData.cedula,
-                equipo_id: formData.equipo_id || null,
-                posicion: formData.posicion,
-                numero: formData.numero,
-                carrera: formData.carrera,
-                facultad: formData.facultad
-            };
-
-            const jugadorResp = await api[isEdit ? 'put' : 'post'](
-                isEdit ? `/jugadores/${formData.cedula}` : '/jugadores',
-                jugadorPayload
-            );
-
-            if (jugadorResp.status === 200 || jugadorResp.status === 201) {
-                success(
-                    isEdit ? "Datos Actualizados" : "Registro Exitoso",
-                    isEdit
-                        ? "Los datos del atleta han sido actualizados correctamente."
-                        : "El jugador ha sido registrado exitosamente en el sistema."
-                );
-                setTimeout(loadData, 500); // 500ms delay to allow FS sync
-                return { ok: true };
-            }
+            addNotification('Los datos han sido guardados correctamente', 'success');
+            setIsModalOpen(false);
+            fetchData();
         } catch (err) {
-            console.error('Error in handleSave:', err);
-            const errorMsg = err.response?.data?.message || err.response?.data?.error || "Error al procesar la solicitud.";
-            error("Error al guardar", errorMsg);
-            return { ok: false, error: errorMsg };
+            addNotification(err.response?.data?.message || 'Error al procesar el registro.', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleDelete = async (cedula) => {
-        if (!window.confirm("¿Seguro que desea eliminar esta ficha de jugador?")) return;
+        if (!confirm("¿Deseas eliminar definitivamente este deportista?")) return;
+        setLoading(true);
         try {
             await api.delete(`/jugadores/${cedula}`);
-            success("Jugador Eliminado", "La ficha del jugador ha sido eliminada.");
-            loadData();
+            addNotification('Registro removido exitosamente', 'success');
+            fetchData();
         } catch (err) {
-            console.error(err);
-            alert("No se pudo eliminar el jugador. Es posible que tenga estadísticas asociadas.");
+            addNotification('Error al eliminar registro.', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleViewCarnet = (player) => {
-        setCurrentJugador(player);
-        setIsCarnetOpen(true);
-    };
+    const filteredPlayers = players.filter(p => {
+        const matchSearch =
+            p.persona?.nombres?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.persona?.apellidos?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.cedula.includes(searchTerm);
 
-    if (loading) return <LoadingScreen message="OBTENIENDO PLANTILLAS..." />;
+        const matchDeporte = !deporteFilter || (() => {
+            if (!p.equipo_id || !equipos.length || !deportes.length) return false;
+            const eq = equipos.find(e => e.id.toString() === p.equipo_id.toString());
+            if (!eq || !eq.deporte_id) return false;
+            const dep = deportes.find(d => d.id.toString() === eq.deporte_id.toString());
+            if (!dep) return false;
+
+            const dName = dep.nombre.toLowerCase();
+            if (deporteFilter === 'futbol' && (dName.includes('futbol') || dName.includes('fútbol'))) return true;
+            if (deporteFilter === 'basquet' && (dName.includes('basquet') || dName.includes('básquet'))) return true;
+            if (deporteFilter === 'voley' && (dName.includes('voley') || dName.includes('vóley') || dName.includes('ecuavoley'))) return true;
+
+            return false;
+        })();
+
+        return matchSearch && matchDeporte;
+    });
+
+    if (loading && players.length === 0) return <LoadingScreen message="Sincronizando Nómina Universitaria..." />;
 
     return (
-        <div className="admin-page-container fade-enter">
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-                <div style={{ display: "flex", gap: "1rem" }}>
-                    <div style={{ background: 'var(--bg-card)', padding: '4px', borderRadius: '12px', display: 'flex', border: '1px solid var(--border)' }}>
-                        <button
-                            onClick={() => setViewMode("list")}
-                            style={{
-                                padding: '8px 12px',
-                                border: 'none',
-                                background: viewMode === "list" ? 'var(--primary)' : 'transparent',
-                                color: '#fff',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            }}
-                        >
-                            <List size={20} />
+        <div className="rep-scope rep-screen-container rep-dashboard-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+            {/* HEADER */}
+            <header className="rep-header-main" style={{ marginBottom: '0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                    <div className="header-info">
+                        <small className="university-label" style={{ color: '#10b981', fontWeight: 800 }}>Módulo de Capital Humano</small>
+                        <h1 className="content-title" style={{ color: '#fff', fontSize: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <IdCard size={42} color="#10b981" /> Nómina Deportiva
+                        </h1>
+                        <p className="content-subtitle" style={{ color: '#94a3b8' }}>Administración de personas, deportistas habilitados y vinculación académica</p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button className="pro-btn btn-secondary" style={{ padding: '0.8rem 1.2rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <Upload size={18} /> Importar
                         </button>
-                        <button
-                            onClick={() => setViewMode("pitch")}
-                            style={{
-                                padding: '8px 12px',
-                                border: 'none',
-                                background: viewMode === "pitch" ? 'var(--primary)' : 'transparent',
-                                color: '#fff',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            }}
-                        >
-                            <Layout size={20} />
+                        <button className="pro-btn btn-primary" onClick={() => { setEditingPlayer(null); setIsModalOpen(true); }} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', padding: '0.8rem 1.5rem', borderRadius: '14px', boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)' }}>
+                            <Plus size={20} /> Nuevo Deportista
                         </button>
                     </div>
+                </div>
+            </header>
+
+            {/* SPORT FILTER BUTTONS */}
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                    onClick={() => setDeporteFilter('')}
+                    style={{
+                        padding: '9px 18px', borderRadius: '14px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                        border: `1.5px solid ${!deporteFilter ? '#fff' : 'rgba(255,255,255,0.1)'}`,
+                        background: !deporteFilter ? 'rgba(255,255,255,0.1)' : 'transparent',
+                        color: !deporteFilter ? '#fff' : '#64748b', transition: 'all 0.2s'
+                    }}
+                >
+                    🏅 Todos
+                </button>
+                {DEPORTES_INFO.map(dep => (
                     <button
-                        className="pro-btn btn-primary"
-                        onClick={() => { setCurrentJugador(null); setIsModalOpen(true); }}
-                        style={{ padding: '0.42rem 0.65rem', fontSize: '0.8rem', minHeight: '34px', width: 'auto', whiteSpace: 'nowrap' }}
+                        key={dep.key}
+                        onClick={() => setDeporteFilter(dep.key === deporteFilter ? '' : dep.key)}
+                        style={{
+                            padding: '9px 18px', borderRadius: '14px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                            border: `1.5px solid ${deporteFilter === dep.key ? dep.color : 'rgba(255,255,255,0.1)'}`,
+                            background: deporteFilter === dep.key ? dep.bg : 'transparent',
+                            color: deporteFilter === dep.key ? dep.color : '#64748b', transition: 'all 0.2s'
+                        }}
                     >
-                        <Plus size={14} /> Registrar Jugador
+                        {dep.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* SEARCH + VIEW TOGGLE */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                <div className="search-wrapper" style={{
+                    flex: '1 1 300px',
+                    maxWidth: '100%',
+                    margin: 0,
+                    position: 'relative'
+                }}>
+                    <Search size={20} className="search-icon" style={{
+                        color: '#10b981',
+                        position: 'absolute',
+                        left: '1.25rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        zIndex: 10
+                    }} />
+                    <input
+                        className="pro-input"
+                        placeholder="Buscar por cédula, nombres o apellidos..."
+                        style={{ paddingLeft: '3.5rem', height: '54px', borderRadius: '20px', width: '100%' }}
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                <div style={{
+                    display: 'flex',
+                    background: 'rgba(30, 41, 59, 0.4)',
+                    borderRadius: '20px',
+                    padding: '0.4rem',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    alignSelf: 'flex-end'
+                }}>
+                    <button className={`pro-btn ${viewMode === 'grid' ? 'btn-primary' : ''}`} onClick={() => setViewMode('grid')} style={{ padding: '10px 15px', borderRadius: '14px', color: viewMode === 'grid' ? '#fff' : '#64748b', background: viewMode === 'grid' ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent', border: 'none' }}>
+                        <Grid size={18} />
+                    </button>
+                    <button className={`pro-btn ${viewMode === 'list' ? 'btn-primary' : ''}`} onClick={() => setViewMode('list')} style={{ padding: '10px 15px', borderRadius: '14px', color: viewMode === 'list' ? '#fff' : '#64748b', background: viewMode === 'list' ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent', border: 'none' }}>
+                        <List size={18} />
                     </button>
                 </div>
             </div>
+            {/* PLAYER CONTENT */}
+            <div className="rep-content-wrapper">
+                {viewMode === 'grid' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+                        {filteredPlayers.map(player => (
+                            <div key={player.cedula} className="pro-card" style={{
+                                padding: '1.5rem',
+                                borderRadius: '28px',
+                                background: 'rgba(30, 41, 59, 0.4)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                transition: '0.4s'
+                            }}>
+                                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                    <div style={{
+                                        width: '80px', height: '80px', borderRadius: '24px', overflow: 'hidden',
+                                        background: player.persona?.foto_url ? `url(${getAssetUrl(player.persona.foto_url)}) center/cover` : 'rgba(255,255,255,0.05)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b'
+                                    }}>
+                                        {!player.persona?.foto && <User size={40} />}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <h3 style={{ margin: 0, color: '#fff', fontSize: '1.1rem', fontWeight: 800 }}>{player.persona?.nombres} {player.persona?.apellidos}</h3>
+                                        <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700 }}>CI: {player.cedula}</span>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                                            <span style={{ padding: '2px 8px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 800 }}>#{player.numero || 'TBD'}</span>
+                                            <span style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 800 }}>{player.posicion || 'General'}</span>
+                                        </div>
+                                    </div>
+                                </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
-                <StatCard title="Total Jugadores" value={stats.total} icon={Users} color="#38bdf8" />
-                <StatCard title="Portero" value={stats.arqueros} icon={ShieldCheck} color="#f59e0b" />
-                <StatCard title="Sin Equipo" value={stats.sinEquipo} icon={Activity} color="#ef4444" />
-            </div>
+                                <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.15)', borderRadius: '18px', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                        <Users size={14} /> {player.equipo?.nombre || 'Selección Libre'}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b', fontSize: '0.8rem' }}>
+                                        <GraduationCap size={14} /> {player.carrera || 'Unidad Académica'}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                        <Mail size={14} /> {player.persona?.email || 'N/A'}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b', fontSize: '0.8rem' }}>
+                                        <Calendar size={14} /> {player.persona?.fecha_nacimiento ? new Date(player.persona.fecha_nacimiento).toLocaleDateString() : 'N/A'}
+                                    </div>
+                                </div>
 
-            <div className="pro-card">
-                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Users size={20} style={{ color: 'var(--primary)' }} />
-                        <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>{viewMode === "list" ? "Directorio" : "Mapa Táctico"}</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button className="pro-btn" style={{ padding: '8px', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }} title="WhatsApp"><Phone size={14} /></button>
+                                        <button className="pro-btn" style={{ padding: '8px', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }} title="Email"><Mail size={14} /></button>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button className="pro-btn btn-secondary" style={{ padding: '10px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }} title="Ver Carnet" onClick={() => setCarnetPlayer(player)}><IdCard size={16} /></button>
+                                        <button className="pro-btn btn-secondary" style={{ padding: '10px', borderRadius: '12px' }} onClick={() => { setEditingPlayer(player); setIsModalOpen(true); }}><Edit size={16} /></button>
+                                        <button className="pro-btn btn-danger" style={{ padding: '10px', borderRadius: '12px' }} onClick={() => handleDelete(player.cedula)}><Trash2 size={16} /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-darkest)', padding: '0.5rem 1rem', borderRadius: '10px', border: '1px solid var(--border)' }}>
-                        <Search size={18} style={{ color: 'var(--text-muted)' }} />
-                        <input
-                            className="pro-input"
-                            style={{ background: 'transparent', border: 'none', padding: '0', width: '300px' }}
-                            type="text"
-                            placeholder="Buscar por nombre o cédula..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                {loading ? <SkeletonLoader.Table rows={6} columns={6} /> : (
-                    viewMode === "list" ? (
-                        <div className="table-container">
-                            <table className="modern-table">
-                                <thead>
+                ) : (
+                    <div style={{
+                        background: 'rgba(30, 41, 59, 0.4)',
+                        borderRadius: '32px',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ overflowX: 'auto', width: '100%' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                                <thead style={{ background: 'rgba(0,0,0,0.2)' }}>
                                     <tr>
-                                        <th>FOTO</th>
-                                        <th>JUGADOR</th>
-                                        <th>CÉDULA</th>
-                                        <th>EQUIPO</th>
-                                        <th>CARRERA / FACULTAD</th>
-                                        <th>POSICIÓN / NÚMERO</th>
-                                        <th>ACCIONES</th>
+                                        <th style={{ padding: '1.5rem', textAlign: 'left', color: '#94a3b8', fontWeight: 800 }}>Deportista</th>
+                                        <th style={{ padding: '1.5rem', textAlign: 'left', color: '#94a3b8', fontWeight: 800 }}>Identidad / CI</th>
+                                        <th style={{ padding: '1.5rem', textAlign: 'left', color: '#94a3b8', fontWeight: 800 }}>Numero</th>
+                                        <th style={{ padding: '1.5rem', textAlign: 'left', color: '#94a3b8', fontWeight: 800 }}>Equipo / Facultad</th>
+                                        <th style={{ padding: '1.5rem', textAlign: 'right', color: '#94a3b8', fontWeight: 800 }}>Control</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filtered.map(j => (
-                                        <tr key={j.cedula}>
-                                            <td>
-                                                <div style={{ width: '45px', height: '45px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-main)' }}>
-                                                    <PlayerImage src={j.persona?.foto_url || j.persona?.foto} iconSize={20} />
+                                    {filteredPlayers.map(p => (
+                                        <tr key={p.cedula} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.3s' }} className="table-row-hover">
+                                            <td style={{ padding: '1rem 1.5rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                    <div style={{
+                                                        width: '56px',
+                                                        height: '56px',
+                                                        borderRadius: '16px',
+                                                        overflow: 'hidden',
+                                                        background: 'rgba(255,255,255,0.05)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        border: '1px solid rgba(255,255,255,0.1)'
+                                                    }}>
+                                                        {p.persona?.foto_url || p.persona?.foto ? (
+                                                            <img
+                                                                src={getAssetUrl(p.persona.foto_url || p.persona.foto)}
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                alt={`${p.persona?.nombres}`}
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    e.target.parentElement.innerHTML = '<div style="color: #64748b"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <User size={24} color="#64748b" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 800, color: '#fff', fontSize: '1rem' }}>{p.persona?.nombres} {p.persona?.apellidos}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Posición: {p.posicion || 'N/A'}</div>
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td style={{ fontWeight: 700, color: '#fff' }}>
-                                                {j.persona?.nombres} {j.persona?.apellidos}
+                                            <td style={{ padding: '1.5rem' }}>
+                                                <div style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 700 }}>{p.cedula}</div>
                                             </td>
-                                            <td style={{ color: 'var(--text-muted)' }}>{j.cedula}</td>
-                                            <td>
-                                                <span className={`status-pill ${j.equipo?.nombre ? "info" : "warning"}`}>
-                                                    {j.equipo?.nombre || "Sin Equipo"}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div style={{ fontSize: '0.85rem' }}>
-                                                    <div style={{ color: '#fff' }}>{j.carrera || "-"}</div>
-                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{j.facultad || "-"}</div>
+                                            <td style={{ padding: '1.5rem' }}>
+                                                <div style={{
+                                                    background: 'rgba(59, 130, 246, 0.1)',
+                                                    color: '#3b82f6',
+                                                    padding: '4px 12px',
+                                                    borderRadius: '8px',
+                                                    display: 'inline-block',
+                                                    fontWeight: 800,
+                                                    fontSize: '0.9rem'
+                                                }}>
+                                                    #{p.numero || '--'}
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontWeight: 600 }}>{j.posicion || "-"}</span>
-                                                    {j.numero && (
-                                                        <span style={{ background: 'var(--primary)', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 900 }}>
-                                                            #{j.numero}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                            <td style={{ padding: '1.5rem' }}>
+                                                <div style={{ color: '#10b981', fontWeight: 800 }}>{p.equipo?.nombre || 'Independiente'}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{p.carrera || p.facultad || 'General'}</div>
                                             </td>
-                                            <td>
-                                                <div style={{ display: "flex", gap: "8px" }}>
-                                                    <button className="icon-btn" onClick={() => handleViewCarnet(j)} title="Ver Carnet"><IdCard size={18} /></button>
-                                                    <button className="icon-btn" style={{ color: "var(--primary)" }} onClick={() => { setCurrentJugador(j); setIsModalOpen(true); }}><Edit size={18} /></button>
-                                                    <button className="icon-btn" style={{ color: "var(--danger)" }} onClick={() => handleDelete(j.cedula)}><Trash2 size={18} /></button>
+                                            <td style={{ padding: '1.5rem', textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                    <button className="pro-btn btn-secondary" style={{ padding: '10px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: 'none' }} title="Ver Carnet" onClick={() => setCarnetPlayer(p)}><IdCard size={18} /></button>
+                                                    <button className="pro-btn btn-secondary" style={{ padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent' }} onClick={() => { setEditingPlayer(p); setIsModalOpen(true); }}><Edit size={18} /></button>
+                                                    <button className="pro-btn btn-danger" style={{ padding: '10px', borderRadius: '12px', border: 'none' }} onClick={() => handleDelete(p.cedula)}><Trash2 size={18} /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -938,29 +714,26 @@ const JugadoresPersonas = () => {
                                 </tbody>
                             </table>
                         </div>
-                    ) : (
-                        <div style={{ padding: '2rem' }}>
-                            <VirtualPitch players={filtered.filter(p => !pitchTeamId ? true : String(p.equipo_id) === String(pitchTeamId))} />
-                        </div>
-                    )
+                    </div>
                 )}
             </div>
 
-            {/* MODAL FORMULARIO */}
-            <JugadorModal
+            <PlayerModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
+                initialData={editingPlayer}
                 equipos={equipos}
-                initialData={currentJugador}
+                deportes={deportes}
                 onSave={handleSave}
+                loading={loading}
             />
 
-            {/* MODAL CARNET (QR + PDF) */}
             <CarnetModal
-                isOpen={isCarnetOpen}
-                data={currentJugador}
-                onClose={() => setIsCarnetOpen(false)}
+                isOpen={!!carnetPlayer}
+                onClose={() => setCarnetPlayer(null)}
+                data={carnetPlayer}
             />
+
         </div>
     );
 };

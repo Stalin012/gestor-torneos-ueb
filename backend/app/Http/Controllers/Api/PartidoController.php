@@ -55,8 +55,9 @@ class PartidoController extends Controller
     public function index()
     {
         $partidos = Partido::with([
-            'torneo',
-            'arbitro',
+            'torneo.deporte',
+            'torneo.categoria',
+            'arbitro.persona',
             'equipo_local' => function($query) {
                 $query->withCount('jugadores');
             },
@@ -64,6 +65,7 @@ class PartidoController extends Controller
                 $query->withCount('jugadores');
             }
         ])
+
             ->orderBy('fecha', 'desc')
             ->orderBy('hora')
             ->get()

@@ -5,19 +5,21 @@ import { getAssetUrl } from "../utils/helpers";
 import { API_BASE } from "../api";
 import "../css/unified-all.css";
 
-const CarnetModal = ({ isOpen, onClose, data }) => {
+const CarnetModal = ({ isOpen, onClose, data, endpointPrefix = "jugadores" }) => {
   const [generating, setGenerating] = useState(false);
 
   if (!isOpen || !data) return null;
 
   // Normalización de datos para soportar diferentes fuentes (Admin vs Perfil Usuario)
+  const isUser = endpointPrefix === 'usuarios';
+
   const normalized = {
     cedula: data.cedula || "",
     nombres: data.nombre_completo || (data.persona ? `${data.persona.nombres} ${data.persona.apellidos}` : ""),
-    equipo: data.nombre_equipo || data.equipo_nombre || data.equipo?.nombre || "Sin Equipo",
-    torneo: data.torneo_nombre || data.equipo?.torneo?.nombre || "Sin Torneo",
-    posicion: data.posicion || "N/A",
-    numero: data.numero || "—",
+    equipo: isUser ? (data.estado ? 'ACCESO LISTO' : 'RESTRINGIDO') : (data.nombre_equipo || data.equipo_nombre || data.equipo?.nombre || "Sin Equipo"),
+    torneo: isUser ? (data.email || 'SIN EMAIL') : (data.torneo_nombre || data.equipo?.torneo?.nombre || "Sin Torneo"),
+    posicion: isUser ? (data.rol ? data.rol.toUpperCase() : 'USUARIO') : (data.posicion || "N/A"),
+    numero: isUser ? (data.rol ? data.rol.substring(0, 3).toUpperCase() : 'USR') : (data.numero || "—"),
     facultad: data.facultad || data.persona?.facultad || "",
     carrera: data.carrera || data.persona?.carrera || "",
     foto: data.foto || (data.persona?.foto_url || data.persona?.foto) || null
@@ -29,7 +31,7 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
     // Pequeño delay para mostrar el spinner y dar feedback visual
     setTimeout(() => {
       try {
-        const url = `${API_BASE}/jugadores/${normalized.cedula}/carnet-pdf`;
+        const url = `${API_BASE}/${endpointPrefix}/${normalized.cedula}/carnet-pdf`;
         console.log("Abriendo URL:", url);
         window.open(url, '_blank');
       } catch (e) {
@@ -43,16 +45,8 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
 
   const fotoUrl = getAssetUrl(normalized.foto);
 
-  // Generamos un string completo para el QR
-  const qrValue = JSON.stringify({
-    id: normalized.cedula,
-    player: normalized.nombres,
-    team: normalized.equipo,
-    pos: normalized.posicion,
-    num: normalized.numero,
-    valid: new Date().getFullYear(),
-    domain: window.location.origin
-  });
+  // URL absoluta al frontend oficial para evitar escaneos JSON accidentales a la API
+  const qrValue = `https://www.deportesueb.com/carnet/${normalized.cedula}`;
 
   return (
     <div className="modal-overlay backdrop-blur-strong fade-in" onClick={(e) => e.stopPropagation()}>
@@ -96,7 +90,7 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
             {/* Top Bar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', zIndex: 1 }}>
               <div>
-                <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Certificación Deportiva</div>
+                <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>{isUser ? 'Credencial Oficial' : 'Certificación Deportiva'}</div>
                 <div style={{ fontSize: '14px', fontWeight: 900, color: '#fff' }}>GESTOR <span style={{ color: '#3b82f6' }}>UEB</span></div>
               </div>
               <div style={{
@@ -130,14 +124,14 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
                   justifyContent: 'center'
                 }}>
                   {fotoUrl ? (
-                    <img src={fotoUrl} alt="Atleta" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={fotoUrl} alt="Deportista" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <User size={40} color="rgba(255,255,255,0.1)" />
                   )}
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>#{normalized.numero}</div>
-                  <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginTop: '2px' }}>Número</div>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>{isUser ? '' : '#'}{normalized.numero}</div>
+                  <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginTop: '2px' }}>{isUser ? 'NIVEL' : 'NÚMERO'}</div>
                 </div>
               </div>
 
@@ -162,28 +156,28 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
                 {/* Data Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                   <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
-                    <div style={{ fontSize: '7px', color: '#a78bfa', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>Equipo</div>
+                    <div style={{ fontSize: '7px', color: '#a78bfa', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>{isUser ? 'Estado' : 'Equipo'}</div>
                     <div style={{ fontSize: '8.5px', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.equipo}</div>
                   </div>
                   <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
-                    <div style={{ fontSize: '7px', color: '#10b981', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>Posición</div>
+                    <div style={{ fontSize: '7px', color: '#10b981', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>{isUser ? 'Rol del Sistema' : 'Posición'}</div>
                     <div style={{ fontSize: '8.5px', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.posicion}</div>
                   </div>
                   <div style={{ gridColumn: 'span 2', background: 'rgba(59, 130, 246, 0.08)', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.15)' }}>
-                    <div style={{ fontSize: '7px', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>Torneo</div>
+                    <div style={{ fontSize: '7px', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>{isUser ? 'Correo Institucional' : 'Torneo'}</div>
                     <div style={{ fontSize: '8.5px', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{normalized.torneo}</div>
                   </div>
                   {(normalized.carrera || normalized.facultad) && (
                     <div style={{ gridColumn: 'span 2', background: 'rgba(255, 255, 255, 0.03)', padding: '6px 8px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                       {normalized.carrera && (
                         <div style={{ marginBottom: normalized.facultad ? '3px' : '0' }}>
-                          <span style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', display: 'block', marginBottom: '1px' }}>Carrera</span>
+                          <span style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', display: 'block', marginBottom: '1px' }}>{isUser ? 'Cargo' : 'Carrera'}</span>
                           <span style={{ fontSize: '8px', color: '#e2e8f0', fontWeight: 600, display: 'block', lineHeight: '1.3' }}>{normalized.carrera}</span>
                         </div>
                       )}
                       {normalized.facultad && (
                         <div>
-                          <span style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', display: 'block', marginBottom: '1px' }}>Facultad</span>
+                          <span style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', display: 'block', marginBottom: '1px' }}>{isUser ? 'Unidad / Departamento' : 'Facultad'}</span>
                           <span style={{ fontSize: '7.5px', color: '#cbd5e1', fontWeight: 500, display: 'block', lineHeight: '1.3' }}>{normalized.facultad}</span>
                         </div>
                       )}
@@ -217,7 +211,7 @@ const CarnetModal = ({ isOpen, onClose, data }) => {
               color: 'rgba(255,255,255,0.02)',
               transform: 'rotate(-90deg)',
               pointerEvents: 'none'
-            }}>ATHLETE</div>
+            }}>{isUser ? 'OFICIAL' : 'DEPORTISTA'}</div>
 
           </div>
         </div>

@@ -17,11 +17,50 @@ import {
   Edit,
   Shield,
   CloudUpload,
-  IdCard
+  IdCard,
+  Calendar
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import api from "../../api";
 import "../../css/unified-all.css";
+
+import "../../css/unified-all.css";
+
+const POSICIONES_DEPORTE = {
+  futbol: [
+    'Arquero',
+    'Lateral Derecho',
+    'Defensa Central 1',
+    'Defensa Central 2',
+    'Lateral Izquierdo',
+    'Volante de Marca',
+    'Volante Mixto',
+    'Volante Creativo',
+    'Extremo Derecho',
+    'Extremo Izquierdo',
+    'Centrodelantero'
+  ],
+  basquet: [
+    'Base (Armador)',
+    'Escolta',
+    'Alero',
+    'Ala-Pívot',
+    'Pívot'
+  ],
+  voley: [
+    'Armador',
+    'Rematador',
+    'Central',
+    'Líbero',
+    'Zaguero'
+  ]
+};
+
+const DEPORTES_INFO = [
+  { key: 'futbol', label: '⚽ Fútbol' },
+  { key: 'basquet', label: '🏀 Básquet' },
+  { key: 'voley', label: '🏐 Vóley' }
+];
 
 export default function NominaRepresentante() {
   const [loading, setLoading] = useState(true);
@@ -41,7 +80,7 @@ export default function NominaRepresentante() {
   // ---- Modal Agregar ----
   const [showModal, setShowModal] = useState(false);
   const [savingJugador, setSavingJugador] = useState(false);
-  const [formJugador, setFormJugador] = useState({ equipo_id: "", cedula: "", numero: "", posicion: "" });
+  const [formJugador, setFormJugador] = useState({ equipo_id: "", cedula: "", numero: "", posicion: "", nombres: "", apellidos: "" });
   const [isEditing, setIsEditing] = useState(false);
   const [currentJugador, setCurrentJugador] = useState(null);
 
@@ -177,10 +216,12 @@ export default function NominaRepresentante() {
         equipo_id: player.equipo_id,
         cedula: player.cedula,
         numero: player.numero || "",
-        posicion: player.posicion || ""
+        posicion: player.posicion || "",
+        nombres: player.persona?.nombres || "",
+        apellidos: player.persona?.apellidos || ""
       });
     } else {
-      setFormJugador({ equipo_id: equipoId || "", cedula: "", numero: "", posicion: "" });
+      setFormJugador({ equipo_id: equipoId || "", cedula: "", numero: "", posicion: "", nombres: "", apellidos: "" });
     }
     setShowModal(true);
   };
@@ -192,7 +233,16 @@ export default function NominaRepresentante() {
     setError("");
 
     try {
-      await api.post('/representante/equipo/jugadores', formJugador);
+      const payload = {
+        ...formJugador,
+        create_persona: !isEditing,
+        persona: {
+          nombres: formJugador.nombres,
+          apellidos: formJugador.apellidos
+        }
+      };
+
+      await api.post('/representante/equipo/jugadores', payload);
       setSuccess(isEditing ? "Ficha del jugador actualizada." : "Jugador agregado a la nómina.");
 
       setShowModal(false);
@@ -234,7 +284,14 @@ export default function NominaRepresentante() {
   };
 
   const handleImportFile = async (file) => {
-    if (!file || !equipoId) return;
+    if (!file) return;
+
+    if (!equipoId) {
+      setError("Debes seleccionar un equipo específico en el filtro superior antes de subir la nómina.");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+
     setImporting(true);
     setError("");
     setSuccess("");
@@ -247,13 +304,19 @@ export default function NominaRepresentante() {
       const { data } = await api.post('/representante/equipo/jugadores/import', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setImportResult(data);
-      setShowImportSummary(true);
-      setSuccess("Importación procesada.");
+
+      if (data.errors && data.errors.length > 0) {
+        setImportResult(data);
+        setShowImportSummary(true);
+        setError(`Importación completada con ${data.errors.length} errores.`);
+      } else {
+        setSuccess(`Éxito: Se importaron/actualizaron ${data.inserted + data.updated} deportistas.`);
+      }
       loadNomina();
     } catch (err) {
       console.error(err);
-      setError("Error en la importación del archivo.");
+      const msg = err.response?.data?.message || "Error en la importación del archivo.";
+      setError(msg);
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -429,7 +492,7 @@ export default function NominaRepresentante() {
         <div className="header-info">
           <small className="university-label" style={{ fontWeight: '700', letterSpacing: '0.5px', color: 'var(--accent-teal)' }}>Gestión de Talento</small>
           <h1 className="content-title" style={{ color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>Nómina de Jugadores</h1>
-          <p className="content-subtitle" style={{ color: '#cbd5e1' }}>Administración centralizada de atletas y cuerpos técnicos</p>
+          <p className="content-subtitle" style={{ color: '#cbd5e1' }}>Administración centralizada de deportistas y cuerpos técnicos</p>
         </div>
         <div className="header-actions" style={{ width: 'auto', display: 'inline-flex', flex: '0 0 auto' }}>
           <button
@@ -458,11 +521,11 @@ export default function NominaRepresentante() {
       <div className="mb-8" style={{ marginBottom: '0.9rem', display: 'flex', flexWrap: 'nowrap', gap: '0.6rem', justifyContent: 'center', overflowX: 'auto' }}>
         <div className="stat-card rep-card-premium stat-card-primary-ocean-border" style={{ ...glassCardStyle, padding: '0.58rem 0.75rem', height: '86px', minHeight: '86px', aspectRatio: 'auto', flex: '0 0 154px', width: '154px' }}>
           <div className="stat-card-header">
-            <h3 style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '0.79rem', lineHeight: 1.1 }}>Total Atletas</h3>
+            <h3 style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '0.79rem', lineHeight: 1.1 }}>Total Deportistas</h3>
             <Users size={14} color="var(--primary-ocean)" />
           </div>
           <p className="stat-value" style={{ color: '#fff', fontWeight: '900', fontSize: '1.34rem', lineHeight: 1.05, margin: '0.1rem 0' }}>{kpis.totalJugadores}</p>
-          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500', fontSize: '0.68rem', margin: 0, lineHeight: 1.15 }}>Registrados</p>
+          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500', fontSize: '0.68rem', margin: 0, lineHeight: 1.15 }}>Histórico general</p>
         </div>
 
         <div className="stat-card rep-card-premium stat-card-accent-teal-border" style={{ ...glassCardStyle, padding: '0.58rem 0.75rem', height: '86px', minHeight: '86px', aspectRatio: 'auto', flex: '0 0 154px', width: '154px' }}>
@@ -471,7 +534,7 @@ export default function NominaRepresentante() {
             <Shield size={14} color="var(--accent-teal)" />
           </div>
           <p className="stat-value" style={{ color: '#fff', fontWeight: '900', fontSize: '1.34rem', lineHeight: 1.05, margin: '0.1rem 0' }}>{kpis.equiposCount}</p>
-          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500', fontSize: '0.68rem', margin: 0, lineHeight: 1.15 }}>Con nomina</p>
+          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500', fontSize: '0.68rem', margin: 0, lineHeight: 1.15 }}>Torneo actual</p>
         </div>
 
         <div className="stat-card rep-card-premium" style={{ ...glassCardStyle, borderTop: '4px solid #f59e0b', padding: '0.58rem 0.75rem', height: '86px', minHeight: '86px', aspectRatio: 'auto', flex: '0 0 154px', width: '154px' }}>
@@ -480,8 +543,12 @@ export default function NominaRepresentante() {
             <FileText size={14} color="#f59e0b" />
           </div>
           <p className="stat-value" style={{ color: '#fff', fontWeight: '900', fontSize: '1.34rem', lineHeight: 1.05, margin: '0.1rem 0' }}>98%</p>
+          <p className="stat-desc" style={{ color: '#94a3b8', fontWeight: '500', fontSize: '0.62rem', margin: 0, lineHeight: 1.1 }}>De deportistas registrados</p>
           <div className="perf-bar-bg mt-3" style={{ height: '3px', background: 'rgba(255,255,255,0.1)', marginTop: '0.15rem' }}>
             <div className="perf-bar-fill" style={{ width: `98%`, background: '#f59e0b', borderRadius: '4px' }}></div>
+          </div>
+          <div style={{ marginTop: '0.4rem', color: '#fcd34d', fontSize: '0.55rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <AlertCircle size={10} /> Tienes jugadores con documentación pendiente.
           </div>
         </div>
       </div>
@@ -507,19 +574,19 @@ export default function NominaRepresentante() {
                   <div className="search-box" style={{ ...inputStyle, padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '200px' }}>
                     <Search size={18} color="#94a3b8" />
                     <input
-                      placeholder="Buscar jugador..."
+                      placeholder="Buscar por nombre o identificación..."
                       value={q}
                       onChange={e => setQ(e.target.value)}
-                      style={{ border: 'none', background: 'transparent', fontSize: '0.95rem', outline: 'none', width: '100%', color: '#fff' }}
+                      style={{ border: 'none', background: 'transparent', fontSize: '0.9rem', outline: 'none', width: '100%', color: '#fff' }}
                     />
                   </div>
                   <select
                     value={equipoId}
                     onChange={e => setEquipoId(e.target.value)}
                     className="pro-input"
-                    style={{ ...inputStyle, padding: '0.5rem 1rem', fontSize: '0.95rem', fontWeight: '500', width: 'auto', minWidth: '180px' }}
+                    style={{ ...inputStyle, padding: '0.5rem 1rem', fontSize: '0.9rem', fontWeight: '500', width: 'auto', minWidth: '180px' }}
                   >
-                    <option value="" style={{ color: '#333' }}>Todos los Equipos</option>
+                    <option value="" style={{ color: '#333' }}>Filtrar por Equipo</option>
                     {equipos.map(eq => <option key={eq.id} value={eq.id} style={{ color: '#333' }}>{eq.nombre}</option>)}
                   </select>
                 </div>
@@ -549,8 +616,15 @@ export default function NominaRepresentante() {
                               {r.persona?.nombres?.charAt(0)}
                             </div>
                             <div>
-                              <div style={{ fontWeight: '800', color: '#fff', fontSize: '0.95rem' }}>{r.persona?.nombres} {r.persona?.apellidos}</div>
-                              <small style={{ color: '#94a3b8', fontWeight: '500' }}>{r.torneo_nombre || 'Torneo 2024'}</small>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ fontWeight: '800', color: '#fff', fontSize: '0.95rem', marginBottom: '2px' }}>{r.persona?.nombres} {r.persona?.apellidos}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Calendar size={10} color="#94a3b8" />
+                                  <span style={{ color: '#94a3b8', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                                    {r.torneo_nombre || 'Torneo 2024'}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -567,14 +641,14 @@ export default function NominaRepresentante() {
                           </span>
                         </td>
                         <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                            <button onClick={() => handleDownloadCarnet(r.cedula)} title="Descargar Carnet" style={{ padding: '0.6rem', borderRadius: '8px', color: '#a78bfa', border: 'none', background: 'rgba(139, 92, 246, 0.1)', cursor: 'pointer', transition: 'all 0.2s' }} className="hover:bg-purple-500/20 hover:text-purple-300">
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                            <button onClick={() => handleDownloadCarnet(r.cedula)} title="Descargar Carnet" style={{ padding: '0.65rem', borderRadius: '10px', color: '#a78bfa', border: 'none', background: 'rgba(139, 92, 246, 0.1)', cursor: 'pointer', transition: 'all 0.2s' }} className="hover:bg-purple-500/20 hover:text-purple-300">
                               <IdCard size={18} />
                             </button>
-                            <button onClick={() => handleModalOpen(true, r)} title="Editar" style={{ padding: '0.6rem', borderRadius: '8px', color: '#94a3b8', border: 'none', background: 'rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'all 0.2s' }} className="hover:bg-white/10 hover:text-white">
+                            <button onClick={() => handleModalOpen(true, r)} title="Editar" style={{ padding: '0.65rem', borderRadius: '10px', color: '#94a3b8', border: 'none', background: 'rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'all 0.2s' }} className="hover:bg-white/10 hover:text-white">
                               <Edit size={18} />
                             </button>
-                            <button onClick={() => handleRemoveJugador(r.cedula)} title="Eliminar" style={{ padding: '0.6rem', borderRadius: '8px', color: '#fca5a5', border: 'none', background: 'rgba(239, 68, 68, 0.1)', cursor: 'pointer', transition: 'all 0.2s' }} className="hover:bg-red-500/20">
+                            <button onClick={() => handleRemoveJugador(r.cedula)} title="Eliminar" style={{ padding: '0.65rem', borderRadius: '10px', color: '#fca5a5', border: 'none', background: 'rgba(239, 68, 68, 0.1)', cursor: 'pointer', transition: 'all 0.2s' }} className="hover:bg-red-500/20">
                               <Trash2 size={18} />
                             </button>
                           </div>
@@ -616,7 +690,7 @@ export default function NominaRepresentante() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', color: '#cbd5e1', fontWeight: '700', fontSize: '0.95rem' }}>
                   <FileSpreadsheet size={18} /> Importar CSV
                 </div>
-                <input type="file" ref={fileRef} accept=".csv" className="hidden" style={{ display: 'none' }} onChange={e => handleImportFile(e.target.files[0])} />
+                <input type="file" ref={fileRef} accept=".csv, .xlsx, .xls" className="hidden" style={{ display: 'none' }} onChange={e => handleImportFile(e.target.files[0])} />
                 <button onClick={() => fileRef.current?.click()} className="btn-primary" style={{ width: '100%', fontSize: '0.9rem', padding: '0.75rem', marginBottom: '0.75rem', fontWeight: '600' }}>
                   {importing ? <Loader2 className="animate-spin" size={18} /> : "Subir Archivo"}
                 </button>
@@ -662,6 +736,20 @@ export default function NominaRepresentante() {
                   <input className="pro-input" value={formJugador.cedula} onChange={e => setFormJugador({ ...formJugador, cedula: e.target.value })} style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }} placeholder="ID Nacional" required disabled={isEditing} />
                 </div>
               </div>
+
+              {!isEditing && (
+                <div className="flex-mobile-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem', color: '#cbd5e1', fontWeight: '700' }}>Nombres</label>
+                    <input className="pro-input" value={formJugador.nombres} onChange={e => setFormJugador({ ...formJugador, nombres: e.target.value })} style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }} placeholder="Ej. Juan Carlos" required={!isEditing} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem', color: '#cbd5e1', fontWeight: '700' }}>Apellidos</label>
+                    <input className="pro-input" value={formJugador.apellidos} onChange={e => setFormJugador({ ...formJugador, apellidos: e.target.value })} style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }} placeholder="Ej. Pérez Gómez" required={!isEditing} />
+                  </div>
+                </div>
+              )}
+
               <div className="flex-mobile-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem', color: '#cbd5e1', fontWeight: '700' }}>Numero</label>
@@ -669,7 +757,51 @@ export default function NominaRepresentante() {
                 </div>
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.95rem', color: '#cbd5e1', fontWeight: '700' }}>Posición</label>
-                  <input className="pro-input" value={formJugador.posicion} onChange={e => setFormJugador({ ...formJugador, posicion: e.target.value })} style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }} placeholder="Ej. Defensa" />
+                  <select
+                    className="pro-input"
+                    value={formJugador.posicion}
+                    onChange={e => setFormJugador({ ...formJugador, posicion: e.target.value })}
+                    style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontWeight: '500' }}
+                    required
+                  >
+                    <option value="">Seleccione posición...</option>
+                    {(() => {
+                      let activeDeporteKey = null;
+                      if (formJugador.equipo_id && equipos.length > 0) {
+                        const eq = equipos.find(e => e.id.toString() === formJugador.equipo_id.toString());
+                        if (eq && eq.deporte) {
+                          const dName = eq.deporte.nombre.toLowerCase();
+                          if (dName.includes('futbol') || dName.includes('fútbol')) activeDeporteKey = 'futbol';
+                          else if (dName.includes('basquet') || dName.includes('básquet')) activeDeporteKey = 'basquet';
+                          else if (dName.includes('voley') || dName.includes('vóley') || dName.includes('ecuavoley')) activeDeporteKey = 'voley';
+                        }
+                      }
+
+                      if (activeDeporteKey) {
+                        return (
+                          <optgroup label={DEPORTES_INFO.find(d => d.key === activeDeporteKey)?.label || "Posiciones"}>
+                            {POSICIONES_DEPORTE[activeDeporteKey].map(pos => (
+                              <option key={pos} value={pos} style={{ background: '#1e293b', color: '#fff' }}>{pos}</option>
+                            ))}
+                          </optgroup>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <optgroup label="⚽ Fútbol">
+                              {POSICIONES_DEPORTE.futbol.map(pos => <option key={pos} value={pos} style={{ background: '#1e293b', color: '#fff' }}>{pos}</option>)}
+                            </optgroup>
+                            <optgroup label="🏀 Básquet">
+                              {POSICIONES_DEPORTE.basquet.map(pos => <option key={pos} value={pos} style={{ background: '#1e293b', color: '#fff' }}>{pos}</option>)}
+                            </optgroup>
+                            <optgroup label="🏐 Vóley">
+                              {POSICIONES_DEPORTE.voley.map(pos => <option key={pos} value={pos} style={{ background: '#1e293b', color: '#fff' }}>{pos}</option>)}
+                            </optgroup>
+                          </>
+                        );
+                      }
+                    })()}
+                  </select>
                 </div>
               </div>
               <div style={{ marginBottom: '2.5rem' }} />
@@ -696,13 +828,17 @@ export default function NominaRepresentante() {
             <ul style={{ listStyle: 'none', padding: 0, color: '#cbd5e1', fontSize: '1rem' }}>
               <li style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><CheckCircle size={22} color="#10B981" /> <strong>{importResult.inserted || 0}</strong> registros creados.</li>
               <li style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><TrendingUp size={22} color="#F59E0B" /> <strong>{importResult.updated || 0}</strong> registros actualizados.</li>
-              <li style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><AlertCircle size={22} color="#EF4444" /> <strong>{importResult.failed || 0}</strong> errores.</li>
+              <li style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><AlertCircle size={22} color="#EF4444" /> <strong>{importResult.errors?.length || 0}</strong> errores en filas.</li>
             </ul>
 
             {importResult.errors && importResult.errors.length > 0 && (
               <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)', maxHeight: '150px', overflowY: 'auto' }}>
-                <p style={{ color: '#fca5a5', fontWeight: 'bold', fontSize: '0.95rem', marginBottom: '0.5rem' }}>Detalles:</p>
-                {importResult.errors.map((e, i) => <div key={i} style={{ fontSize: '0.85rem', color: '#fca5a5', marginBottom: '4px' }}>• {e}</div>)}
+                <p style={{ color: '#fca5a5', fontWeight: 'bold', fontSize: '0.95rem', marginBottom: '0.5rem' }}>Detalles de errores:</p>
+                {importResult.errors.map((e, i) => (
+                  <div key={i} style={{ fontSize: '0.85rem', color: '#fca5a5', marginBottom: '6px', borderBottom: '1px solid rgba(239, 68, 68, 0.1)', paddingBottom: '4px' }}>
+                    <strong>Fila {e.linea} (ID: {e.cedula}):</strong> {e.error}
+                  </div>
+                ))}
               </div>
             )}
 

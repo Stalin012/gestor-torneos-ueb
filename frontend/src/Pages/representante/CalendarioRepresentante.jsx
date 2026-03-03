@@ -16,13 +16,14 @@ import {
   AlertTriangle,
   RefreshCw,
   X,
+  CheckCircle2
 } from "lucide-react";
 import "../../css/unified-all.css";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+import { apiFetch } from "../../services/api";
 
 const logoutAndRedirect = () => {
-  localStorage.clear();
+  sessionStorage.clear();
   window.location.href = "/login";
 };
 
@@ -31,22 +32,18 @@ const CalendarioRepresentante = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [success, setSuccess] = useState("");
 
-  const fetchPartidos = useCallback(async () => {
+  const fetchPartidos = useCallback(async (showFeedback = false) => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/representante/partidos`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 401) {
-        logoutAndRedirect();
-        return;
-      }
-      if (!res.ok) throw new Error("No se pudieron cargar los partidos.");
-      const data = await res.json();
+      const data = await apiFetch("/representante/partidos");
       setPartidos(data || []);
+      if (showFeedback) {
+        setSuccess("Calendario actualizado correctamente.");
+        setTimeout(() => setSuccess(""), 4000);
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -85,6 +82,24 @@ const CalendarioRepresentante = () => {
 
   return (
     <div className="rep-scope rep-screen-container rep-dashboard-fade">
+      {success && (
+        <div className="fade-in" style={{
+          background: 'rgba(34, 197, 94, 0.15)',
+          border: '1px solid rgba(34, 197, 94, 0.3)',
+          color: '#86efac',
+          padding: '1rem 1.5rem',
+          borderRadius: '12px',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          fontWeight: '600',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+        }}>
+          <CheckCircle2 size={20} /> {success}
+        </div>
+      )}
+
       <header className="rep-header-main" style={{ marginBottom: "2.5rem" }}>
         <div className="header-info">
           <small className="university-label">Agenda Deportiva UEB</small>
@@ -92,8 +107,19 @@ const CalendarioRepresentante = () => {
           <p className="content-subtitle">Cronograma detallado de participación</p>
         </div>
         <div className="header-actions">
-          <button onClick={fetchPartidos} className="btn-primary" style={{ boxShadow: "0 8px 20px rgba(53, 110, 216, 0.3)" }}>
-            <RefreshCw size={18} /> Sincronizar
+          <button
+            onClick={() => fetchPartidos(true)}
+            className="btn-primary"
+            style={{
+              boxShadow: "0 8px 20px rgba(53, 110, 216, 0.3)",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            disabled={loading}
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+            Sincronizar
           </button>
         </div>
       </header>
@@ -105,7 +131,39 @@ const CalendarioRepresentante = () => {
         </div>
       )}
 
-      <div className="rep-card-light calendar-container-premium" style={{ padding: "2.5rem", borderRadius: "30px", border: "1px solid var(--border-light)", background: "rgba(var(--background-dark-rgb), 0.2)", backdropFilter: "blur(10px)" }}>
+      <div className="rep-card-light calendar-container-premium" style={{
+        padding: "2.5rem",
+        borderRadius: "30px",
+        border: "1px solid var(--border-light)",
+        background: "rgba(var(--background-dark-rgb), 0.2)",
+        backdropFilter: "blur(10px)",
+        position: 'relative'
+      }}>
+        {partidos.length === 0 && !loading && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 5,
+            textAlign: 'center',
+            background: 'rgba(15, 23, 42, 0.9)',
+            padding: '2rem',
+            borderRadius: '20px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(5px)',
+            width: '80%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
+          }}>
+            <CalendarIcon size={48} color="var(--primary-ocean)" style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+            <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Sin Encuentros</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              No tienes encuentros programados en este periodo. Selecciona otra vista o sincroniza la agenda.
+            </p>
+          </div>
+        )}
+
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
@@ -145,7 +203,7 @@ const CalendarioRepresentante = () => {
         <>
           <div className="modal-overlay backdrop-blur-md" style={{ background: "rgba(var(--background-dark-rgb), 0.4)", position: 'fixed', inset: 0, zIndex: 100 }} onClick={() => setSelectedEvent(null)} />
           <div className="modal-content scale-in" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 101, maxWidth: "550px", width: '90%', background: "var(--card-bg, #fff)", borderRadius: "25px", padding: 0, overflow: "hidden", boxShadow: "0 20px 50px rgba(0,0,0,0.3)" }}>
-            
+
             <div className="modal-header-premium" style={{ background: "linear-gradient(135deg, #19293a, var(--primary-ocean))", padding: "2rem", color: "white", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ color: "#fff", fontSize: "1.4rem", fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Trophy size={24} color="#ffd700" /> Detalle
@@ -167,13 +225,13 @@ const CalendarioRepresentante = () => {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                <DetailItem icon={<Clock color="var(--primary-ocean)"/>} label="Fecha y Hora" value={`${selectedEvent.fecha} • ${selectedEvent.hora || "--:--"}`} />
-                <DetailItem icon={<MapPin color="#d97706"/>} label="Sede" value={selectedEvent.sede || "Por confirmar"} />
-                <DetailItem icon={<Trophy color="#1a7f64"/>} label="Torneo" value={selectedEvent.torneo?.nombre} />
-                <DetailItem 
-                    icon={<Users color="var(--secondary-purple)"/>} 
-                    label="Estado" 
-                    value={<span style={{ color: selectedEvent.estado === 'Finalizado' ? 'var(--accent-teal)' : 'var(--primary-ocean)' }}>{selectedEvent.estado}</span>} 
+                <DetailItem icon={<Clock color="var(--primary-ocean)" />} label="Fecha y Hora" value={`${selectedEvent.fecha} • ${selectedEvent.hora || "--:--"}`} />
+                <DetailItem icon={<MapPin color="#d97706" />} label="Sede" value={selectedEvent.sede || "Por confirmar"} />
+                <DetailItem icon={<Trophy color="#1a7f64" />} label="Torneo" value={selectedEvent.torneo?.nombre} />
+                <DetailItem
+                  icon={<Users color="var(--secondary-purple)" />}
+                  label="Estado"
+                  value={<span style={{ color: selectedEvent.estado === 'Finalizado' ? 'var(--accent-teal)' : 'var(--primary-ocean)' }}>{selectedEvent.estado}</span>}
                 />
               </div>
 
@@ -185,7 +243,8 @@ const CalendarioRepresentante = () => {
         </>
       )}
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .fc {
           font-family: inherit;
           --fc-border-color: var(--border);

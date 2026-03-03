@@ -81,74 +81,83 @@ const KPI = ({ title, value, desc, icon: Icon, color = "#3b82f6", gradient }) =>
   </div>
 );
 
-const MatchRow = ({ match }) => (
-  <div style={{
-    background: 'rgba(15, 23, 42, 0.6)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '12px',
-    padding: '1rem',
-    marginBottom: '0.75rem',
-    transition: 'all 0.3s ease',
-    cursor: 'pointer'
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.8)';
-    e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-    e.currentTarget.style.transform = 'translateY(-2px)';
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.6)';
-    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-    e.currentTarget.style.transform = 'translateY(0)';
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-      <Clock size={14} color="#94a3b8" />
-      <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 500 }}>
-        {formatDate(match.fecha)} • {match.hora || '--:--'}
-      </span>
-      <div style={{ marginLeft: 'auto' }}>
-        <span style={{
-          padding: '0.25rem 0.75rem',
-          borderRadius: '20px',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          background: match.estado === 'Finalizado' ? '#10b98120' : '#f59e0b20',
-          color: match.estado === 'Finalizado' ? '#10b981' : '#f59e0b',
-          border: `1px solid ${match.estado === 'Finalizado' ? '#10b981' : '#f59e0b'}40`
-        }}>
-          {match.estado}
+const MatchRow = ({ match }) => {
+  const isHoraPendiente = !match.hora || match.hora === '--:--';
+  const isSedePendiente = !match.ubicacion || match.ubicacion === 'Por definir';
+
+  return (
+    <div style={{
+      background: 'rgba(15, 23, 42, 0.6)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '12px',
+      padding: '1rem',
+      marginBottom: '0.75rem',
+      transition: 'all 0.3s ease',
+      cursor: 'pointer'
+    }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.8)';
+        e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.6)';
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+        e.currentTarget.style.transform = 'translateY(0)';
+      }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <Clock size={14} color="#94a3b8" />
+        <span style={{ fontSize: '0.85rem', color: isHoraPendiente ? '#f59e0b' : '#cbd5e1', fontWeight: 500 }}>
+          {formatDate(match.fecha)} • {match.hora || '--:--'}
+          {isHoraPendiente && <span style={{ marginLeft: '6px', fontSize: '0.7rem', opacity: 0.8 }}>(Horario por definir)</span>}
+        </span>
+        <div style={{ marginLeft: 'auto' }}>
+          <span style={{
+            padding: '0.25rem 0.75rem',
+            borderRadius: '20px',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            background: match.estado === 'Finalizado' ? '#10b98120' : '#f59e0b20',
+            color: match.estado === 'Finalizado' ? '#10b981' : '#f59e0b',
+            border: `1px solid ${match.estado === 'Finalizado' ? '#10b981' : '#f59e0b'}40`
+          }}>
+            {match.estado}
+          </span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+        <div style={{ flex: 1, textAlign: 'left' }}>
+          <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>
+            {match.equipo_local?.nombre || 'Local'}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 1rem' }}>
+          {match.estado === 'Finalizado' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>{match.marcador_local}</span>
+              <span style={{ color: '#94a3b8' }}>-</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>{match.marcador_visitante}</span>
+            </div>
+          ) : (
+            <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#3b82f6' }}>VS</span>
+          )}
+        </div>
+        <div style={{ flex: 1, textAlign: 'right' }}>
+          <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>
+            {match.equipo_visitante?.nombre || 'Visitante'}
+          </span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <MapPin size={12} color={isSedePendiente ? '#f59e0b' : '#94a3b8'} />
+        <span style={{ fontSize: '0.8rem', color: isSedePendiente ? '#f59e0b' : '#94a3b8' }}>
+          {match.ubicacion || 'Por definir'}
+          {isSedePendiente && <span style={{ marginLeft: '6px', fontSize: '0.75rem', opacity: 0.8 }}>(Sede preliminar)</span>}
         </span>
       </div>
     </div>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-      <div style={{ flex: 1, textAlign: 'left' }}>
-        <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>
-          {match.equipo_local?.nombre || 'Local'}
-        </span>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 1rem' }}>
-        {match.estado === 'Finalizado' ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>{match.marcador_local}</span>
-            <span style={{ color: '#94a3b8' }}>-</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>{match.marcador_visitante}</span>
-          </div>
-        ) : (
-          <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#3b82f6' }}>VS</span>
-        )}
-      </div>
-      <div style={{ flex: 1, textAlign: 'right' }}>
-        <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>
-          {match.equipo_visitante?.nombre || 'Visitante'}
-        </span>
-      </div>
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      <MapPin size={12} color="#94a3b8" />
-      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{match.ubicacion || 'Por definir'}</span>
-    </div>
-  </div>
-);
+  );
+};
 
 /* =========================
    MAIN COMPONENT
@@ -170,10 +179,11 @@ const DashboardRepresentante = () => {
     jugadores: 0,
     torneos: 0,
     partidos: 0,
+    partidosJugados: 0
   });
 
   const user = useMemo(() => {
-    const u = localStorage.getItem("user");
+    const u = sessionStorage.getItem("user");
     return u ? JSON.parse(u) : {};
   }, []);
 
@@ -181,8 +191,8 @@ const DashboardRepresentante = () => {
      Seguridad básica
   ========================= */
   const ensureAuth = useCallback(() => {
-    if (!localStorage.getItem("token")) {
-      localStorage.clear();
+    if (!sessionStorage.getItem("token")) {
+      sessionStorage.clear();
       navigate("/login", { replace: true });
       return false;
     }
@@ -238,6 +248,8 @@ const DashboardRepresentante = () => {
       setProximosPartidos(proximos);
       setResultadosRecientes(recientes);
 
+      const finalizadosCount = misPartidos.filter(p => p.estado === 'Finalizado').length;
+
       setKpis({
         equipos: equiposJson.length || 0,
         jugadores: (equiposJson || []).reduce(
@@ -246,6 +258,7 @@ const DashboardRepresentante = () => {
         ),
         torneos: (torneosJson || []).filter((t) => t.estado === "Activo").length,
         partidos: proximos.length,
+        partidosJugados: finalizadosCount
       });
     } catch (e) {
       console.error(e);
@@ -323,9 +336,9 @@ const DashboardRepresentante = () => {
                     <Shield size={24} color="white" />
                   </div>
                   <div>
-                    <small style={{ 
-                      fontWeight: 700, 
-                      letterSpacing: '0.5px', 
+                    <small style={{
+                      fontWeight: 700,
+                      letterSpacing: '0.5px',
                       color: '#3b82f6',
                       textTransform: 'uppercase',
                       fontSize: '0.75rem'
@@ -387,35 +400,35 @@ const DashboardRepresentante = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '1.5rem'
           }}>
-            <KPI 
-              title="Mis Equipos" 
-              value={kpis.equipos} 
-              desc="Equipos registrados" 
-              icon={Shield} 
+            <KPI
+              title="Mis Equipos"
+              value={kpis.equipos}
+              desc="Activos en el sistema"
+              icon={Shield}
               color="#3b82f6"
               gradient="#8b5cf6"
             />
-            <KPI 
-              title="Jugadores" 
-              value={kpis.jugadores} 
-              desc="Nómina total activa" 
-              icon={Users} 
+            <KPI
+              title="Jugadores"
+              value={kpis.jugadores}
+              desc="Nómina total activa"
+              icon={Users}
               color="#10b981"
               gradient="#059669"
             />
-            <KPI 
-              title="Torneos" 
-              value={kpis.torneos} 
-              desc="Competencias activas" 
-              icon={Trophy} 
+            <KPI
+              title="Torneos"
+              value={kpis.torneos}
+              desc="Competencias activas"
+              icon={Trophy}
               color="#f59e0b"
               gradient="#d97706"
             />
-            <KPI 
-              title="Próximos" 
-              value={kpis.partidos} 
-              desc="Partidos pendientes" 
-              icon={Calendar} 
+            <KPI
+              title="Próximos"
+              value={kpis.partidos}
+              desc="Partidos pendientes"
+              icon={Calendar}
               color="#8b5cf6"
               gradient="#7c3aed"
             />
@@ -435,15 +448,15 @@ const DashboardRepresentante = () => {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{
-                  fontSize: '1.5rem',
+                  fontSize: '1.2rem',
                   fontWeight: 800,
-                  color: '#fff',
+                  color: '#94a3b8',
                   margin: 0,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.75rem'
                 }}>
-                  <Clock size={24} color="#3b82f6" /> Próximos Partidos
+                  <Clock size={20} color="#3b82f6" /> PRÓXIMOS PARTIDOS
                 </h2>
                 <button
                   onClick={() => navigate("/representante/partidos")}
@@ -522,15 +535,15 @@ const DashboardRepresentante = () => {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{
-                  fontSize: '1.5rem',
+                  fontSize: '1.2rem',
                   fontWeight: 800,
-                  color: '#fff',
+                  color: '#94a3b8',
                   margin: 0,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.75rem'
                 }}>
-                  <History size={24} color="#10b981" /> Resultados Recientes
+                  <History size={20} color="#10b981" /> RESULTADOS RECIENTES
                 </h2>
                 <button
                   onClick={() => navigate("/representante/partidos")}
@@ -597,16 +610,23 @@ const DashboardRepresentante = () => {
               padding: '2rem'
             }}>
               <h2 style={{
-                fontSize: '1.5rem',
+                fontSize: '1.2rem',
                 fontWeight: 800,
                 color: '#fff',
-                margin: '0 0 1.5rem 0',
+                opacity: 0.9,
+                margin: '0 0 0.5rem 0',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem'
               }}>
-                <TrendingUp size={24} color="#f59e0b" /> Rendimiento General
+                <TrendingUp size={22} color="#f59e0b" /> Rendimiento Histórico
               </h2>
+              <p style={{ margin: '0 0 1rem 0', fontSize: '0.8rem', color: '#94a3b8' }}>Estadísticas globales de todos tus torneos jugados.</p>
+              {kpis.equipos > 0 && kpis.partidosJugados === 0 && (
+                <div style={{ padding: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '10px', color: '#fcd34d', fontSize: '0.7rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertTriangle size={14} /> Tus equipos aún no disputan partidos registrados en el sistema.
+                </div>
+              )}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
@@ -617,13 +637,13 @@ const DashboardRepresentante = () => {
               }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>
-                    {equipos.filter(e => e.activo).length}
+                    {kpis.equipos}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>Equipos Activos</div>
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>Equipos Registrados</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#3b82f6' }}>
-                    {resultadosRecientes.length}
+                    {kpis.partidosJugados}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>Partidos Jugados</div>
                 </div>
@@ -639,15 +659,16 @@ const DashboardRepresentante = () => {
               padding: '2rem'
             }}>
               <h2 style={{
-                fontSize: '1.5rem',
+                fontSize: '1.2rem',
                 fontWeight: 800,
                 color: '#fff',
-                margin: '0 0 1.5rem 0',
+                opacity: 0.9,
+                margin: '0 0 1.25rem 0',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem'
               }}>
-                <ClipboardList size={24} color="#8b5cf6" /> Inscripciones
+                <ClipboardList size={22} color="#8b5cf6" /> Inscripciones
               </h2>
               {inscripciones.length > 0 ? (
                 <div style={{ marginBottom: '1.5rem' }}>
@@ -670,17 +691,24 @@ const DashboardRepresentante = () => {
                           {i.equipo?.nombre}
                         </div>
                       </div>
-                      <span style={{
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '20px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        background: i.estado === 'Aprobada' ? '#10b98120' : i.estado === 'Pendiente' ? '#f59e0b20' : '#ef444420',
-                        color: i.estado === 'Aprobada' ? '#10b981' : i.estado === 'Pendiente' ? '#f59e0b' : '#ef4444',
-                        border: `1px solid ${i.estado === 'Aprobada' ? '#10b981' : i.estado === 'Pendiente' ? '#f59e0b' : '#ef4444'}40`
-                      }}>
-                        {i.estado}
-                      </span>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '20px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          background: i.status === 'Aprobada' ? '#10b98120' : i.status === 'Pendiente' ? '#f59e0b20' : '#ef444420',
+                          color: i.status === 'Aprobada' ? '#10b981' : i.status === 'Pendiente' ? '#f59e0b' : '#ef4444',
+                          border: `1px solid ${i.status === 'Aprobada' ? '#10b981' : i.status === 'Pendiente' ? '#f59e0b' : '#ef4444'}40`
+                        }}>
+                          {i.status || 'Pendiente'}
+                        </span>
+                        {(!i.status || i.status === 'Pendiente') && (
+                          <div style={{ fontSize: '0.65rem', color: '#f59e0b', marginTop: '4px', maxWidth: '100px', lineHeight: 1.1 }}>
+                            Esperando aprobación del administrador
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -713,12 +741,18 @@ const DashboardRepresentante = () => {
               </button>
             </div>
 
-            {/* Acciones Rápidas */}
+            {/* Acciones Rápidas con separador */}
             <div style={{
+              marginTop: '1rem',
+              paddingTop: '1.5rem',
+              borderTop: '1px solid rgba(255,255,255,0.05)',
               display: 'grid',
               gridTemplateColumns: '1fr',
               gap: '1rem'
             }}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>
+                Accesos Directos
+              </h3>
               <button
                 onClick={() => navigate("/representante/jugadores")}
                 style={{

@@ -27,8 +27,13 @@ class ArbitroController extends Controller
                 })
                 ->paginate($request->per_page ?? 20);
             return response()->json($arbitros);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error al obtener árbitros.'], 500);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error al obtener árbitros.',
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ], 500);
         }
     }
 
@@ -42,19 +47,23 @@ class ArbitroController extends Controller
             return response()->json(['message' => 'Solo un administrador puede registrar árbitros.'], 403);
         }
 
-        $request->validate([
-            'cedula'      => 'required|string|size:10|unique:arbitros,cedula',
-            'nombres'     => 'required|string|max:100',
-            'apellidos'   => 'required|string|max:100',
-            'experiencia' => 'required|integer|min:0',
-            'especialidad'=> 'nullable|string|max:100',
-            'estado'      => 'nullable|string|max:50',
-        ]);
+        try {
+            $validated = $request->validate([
+                'cedula'      => 'required|string|size:10|unique:arbitros,cedula',
+                'nombres'     => 'required|string|max:100',
+                'apellidos'   => 'required|string|max:100',
+                'experiencia' => 'required|integer|min:0',
+                'especialidad'=> 'nullable|string|max:100',
+                'estado'      => 'nullable|string|max:50',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        }
 
         try {
             DB::beginTransaction();
 
-            $persona = Persona::firstWhere('cedula', $request->cedula);
+            $persona = Persona::firstWhere('cedula', $validated['cedula']);
 
             if (!$persona) {
                 $persona = Persona::create($request->only('cedula', 'nombres', 'apellidos'));
@@ -63,10 +72,10 @@ class ArbitroController extends Controller
             }
 
             $arbitro = Arbitro::create([
-                'cedula'       => $request->cedula,
-                'experiencia'  => $request->experiencia,
-                'especialidad' => $request->especialidad,
-                'estado'       => $request->estado ?? 'Certificado',
+                'cedula'       => $validated['cedula'],
+                'experiencia'  => $validated['experiencia'],
+                'especialidad' => $validated['especialidad'],
+                'estado'       => $validated['estado'] ?? 'Certificado',
             ]);
 
             $this->logAudit(
@@ -123,13 +132,17 @@ class ArbitroController extends Controller
             return response()->json(['message' => 'Árbitro no encontrado.'], 404);
         }
 
-        $request->validate([
-            'nombres'      => 'required|string|max:100',
-            'apellidos'    => 'required|string|max:100',
-            'experiencia'  => 'required|integer|min:0',
-            'especialidad' => 'nullable|string|max:100',
-            'estado'       => 'nullable|string|max:50',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nombres'      => 'required|string|max:100',
+                'apellidos'    => 'required|string|max:100',
+                'experiencia'  => 'required|integer|min:0',
+                'especialidad' => 'nullable|string|max:100',
+                'estado'       => 'nullable|string|max:50',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        }
 
         try {
             DB::beginTransaction();

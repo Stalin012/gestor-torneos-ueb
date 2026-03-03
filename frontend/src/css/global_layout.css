@@ -16,15 +16,17 @@
 
 /* SIDEBAR */
 .global-sidebar {
-  flex-basis: 270px;
-  background-color: var(--background-dark);
+  flex-basis: 280px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
   color: var(--text-white);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease, transform 0.3s ease, flex-basis 0.3s ease, visibility 0.3s ease, opacity 0.3s ease;
-  flex-shrink: 1;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
   overflow: hidden;
-  z-index: 50;
+  z-index: 100;
 }
 
 .global-sidebar.collapsed {
@@ -52,11 +54,12 @@
 }
 
 .sidebar-header {
-  height: 70px;
+  height: 80px;
   display: flex;
   align-items: center;
-  padding: 0 1.5rem;
-  border-bottom: 1px solid rgba(var(--text-white-rgb), 0.1);
+  padding: 0 2rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .brand-logo {
@@ -77,24 +80,28 @@
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  color: var(--text-white);
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  transition: all 0.2s;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  border: 1px solid transparent;
 }
 
 .nav-link:hover {
-  background-color: var(--background-dark);
-  color: var(--text-white);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  transform: translateX(5px);
 }
 
 .nav-link.active {
-  background-color: var(--primary);
-  color: var(--text-white);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+  color: var(--primary);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-footer {
@@ -115,14 +122,16 @@
 
 /* NAVBAR / HEADER */
 .global-header {
-  height: 70px;
-  background-color: var(--background-dark);
-  box-shadow: var(--shadow-md);
+  height: 80px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
-  z-index: 10;
+  padding: 0 2.5rem;
+  z-index: 90;
+  transition: all 0.3s ease;
 }
 
 .header-title {
@@ -197,50 +206,55 @@
   }
 
   .global-sidebar {
-    position: absolute;
-    height: 100%;
+    position: fixed;
+    height: 100vh;
     left: 0;
     top: 0;
-
     transform: translateX(-100%);
-    /* Force full width on mobile when open */
-    box-shadow: 4px 0 15px rgba(var(--text-color-rgb), 0.3);
+    width: 280px;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
   }
 
+  .global-sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+    opacity: 1;
+  }
 
-
-  /* When sidebar is collapsed on desktop, it might be 'collapsed' class,
-     but on mobile we toggle 'open' class usually.
-     Wait, UnifiedLayout uses isOpen state.
-     If isOpen is true, we want it shown.
-     If isOpen is false, we want it hidden (translateX -100%).
-  */
-
-
-
-  /* We need a backdrop when sidebar is open on mobile */
-  .sidebar-backdrop {
+  /* Backdrop for mobile sidebar */
+  .sidebar-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(var(--text-color-rgb), 0.5);
-    z-index: 40;
-    display: none;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
   }
 
-  .sidebar-backdrop.visible {
-    display: block;
+  .sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
   }
 
   .global-header {
-    padding: 0 1rem;
+    padding: 0 1.25rem;
+    height: 70px;
   }
 
   .page-content {
-    padding: 1rem;
+    padding: 1.25rem;
+    padding-top: 1rem;
   }
 
   .header-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

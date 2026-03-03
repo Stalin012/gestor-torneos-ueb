@@ -78,6 +78,9 @@ export default function PartidosRepresentante() {
         <div className="rep-scope rep-screen-container rep-dashboard-fade">
             <header className="rep-header-main" style={{ marginBottom: '2.5rem' }}>
                 <div className="header-info">
+                    <small className="university-label" style={{ fontWeight: '700', letterSpacing: '0.5px', color: 'var(--accent-teal)' }}>Calendario de Juego</small>
+                    <h1 className="content-title" style={{ color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)', margin: '0 0 0.5rem 0' }}>Gestión de Partidos</h1>
+                    <p className="content-subtitle" style={{ color: '#cbd5e1' }}>Encuentros programados y resultados de tus equipos</p>
                 </div>
                 <div className="header-actions">
                     <button onClick={fetchPartidos} className="btn-secondary" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -85,6 +88,23 @@ export default function PartidosRepresentante() {
                     </button>
                 </div>
             </header>
+
+            {partidos.length === 0 && !loading && (
+                <div className="fade-in" style={{
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    color: '#93c5fd',
+                    padding: '1.25rem 2rem',
+                    borderRadius: '16px',
+                    marginBottom: '2rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    fontWeight: '600'
+                }}>
+                    <Calendar size={24} /> No tienes encuentros programados actualmente.
+                </div>
+            )}
 
             {error && (
                 <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
@@ -110,98 +130,89 @@ export default function PartidosRepresentante() {
                 </div>
             </div>
 
-            <div className="matches-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '2.5rem' }}>
+            <div className="matches-results-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {filtered.length > 0 ? (
                     filtered.map((p, idx) => (
                         <div key={idx} className="rep-card-premium match-card-premium" style={{
                             ...glassCardStyle,
                             borderLeft: p.estado === 'Finalizado' ? '6px solid #10B981' : '6px solid #3B82F6',
-                            padding: '2rem',
-                            position: 'relative',
-                            overflow: 'hidden'
+                            padding: '1.5rem 2rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: '1.5rem',
+                            transition: 'all 0.3s ease'
                         }}>
-                            <div className="match-card-header" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span className="match-tournament" style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                                    <Trophy size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} />
-                                    {p.torneo?.nombre || p.torneo}
-                                </span>
-                                <span className="badge-pill" style={{
-                                    background: p.estado === 'Finalizado' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                                    color: p.estado === 'Finalizado' ? '#34d399' : '#60a5fa',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '20px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 800,
-                                    border: '1px solid currentColor'
-                                }}>
-                                    {p.estado === 'Finalizado' ? <CheckCircle2 size={14} /> : <Clock size={14} />}
-                                    {p.estado}
-                                </span>
-                            </div>
-
-                            <div className="match-card-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                                <div className="match-team local" style={{ flex: 1, textAlign: 'center' }}>
-                                    <div className="team-icon" style={{
-                                        width: '64px',
-                                        height: '64px',
-                                        background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                                        color: '#fff',
-                                        margin: '0 auto 12px',
-                                        borderRadius: '18px',
-                                        boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontWeight: 900,
-                                        fontSize: '1.4rem'
-                                    }}>{p.equipo_local?.nombre?.[0]}</div>
-                                    <span className="team-name" style={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem' }}>{p.equipo_local?.nombre || 'Local'}</span>
-                                </div>
-
-                                <div className="match-score" style={{ flex: 0.6, textAlign: 'center' }}>
-                                    {p.estado === 'Finalizado' ? (
-                                        <div className="score-display" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', fontSize: '2.2rem', fontWeight: 900, color: '#fff' }}>
-                                            <span>{p.goles_local || 0}</span>
-                                            <span style={{ color: '#64748b', fontSize: '1.2rem' }}>:</span>
-                                            <span>{p.goles_visitante || 0}</span>
+                            {/* Lado Izquierdo: Equipos y Torneo */}
+                            <div style={{ flex: '1 1 400px', display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                <div style={{ minWidth: '140px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-teal)', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+                                        <Trophy size={14} />
+                                        {p.torneo?.nombre || p.torneo}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ width: '40px', height: '40px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '1px solid rgba(59, 130, 246, 0.3)' }}>{p.equipo_local?.nombre?.[0]}</div>
+                                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '4px' }}>Local</div>
                                         </div>
-                                    ) : (
-                                        <div className="vs-label" style={{ color: '#60a5fa', fontSize: '1.4rem', fontWeight: 900, opacity: 0.5, fontStyle: 'italic' }}>VS</div>
-                                    )}
+                                        <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem' }}>V S</div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ width: '40px', height: '40px', background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '1px solid rgba(236, 72, 153, 0.3)' }}>{p.equipo_visitante?.nombre?.[0]}</div>
+                                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '4px' }}>Visitante</div>
+                                        </div>
+                                    </div>
                                 </div>
-
-                                <div className="match-team visitante" style={{ flex: 1, textAlign: 'center' }}>
-                                    <div className="team-icon" style={{
-                                        width: '64px',
-                                        height: '64px',
-                                        background: 'linear-gradient(135deg, #ec4899, #db2777)',
-                                        color: '#fff',
-                                        margin: '0 auto 12px',
-                                        borderRadius: '18px',
-                                        boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontWeight: 900,
-                                        fontSize: '1.4rem'
-                                    }}>{p.equipo_visitante?.nombre?.[0]}</div>
-                                    <span className="team-name" style={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem' }}>{p.equipo_visitante?.nombre || 'Visitante'}</span>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', marginBottom: '4px' }}>
+                                        {p.equipo_local?.nombre} vs {p.equipo_visitante?.nombre}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                        <MapPin size={14} /> {p.sede || 'Sede por confirmar'}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="match-card-footer" style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between' }}>
-                                <div className="match-info-box" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cbd5e1', fontWeight: 600, fontSize: '0.85rem' }}>
-                                    <Calendar size={16} color="#60a5fa" />
-                                    <span>{p.fecha}</span>
-                                </div>
-                                <div className="match-info-box" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cbd5e1', fontWeight: 600, fontSize: '0.85rem' }}>
-                                    <MapPin size={16} color="#fbbf24" />
-                                    <span>{p.sede || 'Por definir'}</span>
+                            {/* Lado Derecho: Estado, Marcador y Fecha */}
+                            <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: '2.5rem', minWidth: '300px', justifyContent: 'flex-end' }}>
+                                {p.estado === 'Finalizado' && (
+                                    <div style={{ textAlign: 'center', padding: '0.5rem 1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff', letterSpacing: '4px' }}>
+                                            {p.goles_local || 0} - {p.goles_visitante || 0}
+                                        </div>
+                                        <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 800, textTransform: 'uppercase' }}>Resultado Final</div>
+                                    </div>
+                                )}
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '0.35rem 0.85rem',
+                                        borderRadius: '20px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        marginBottom: '0.75rem',
+                                        background: p.estado === 'Finalizado' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                                        color: p.estado === 'Finalizado' ? '#10b981' : '#60a5fa',
+                                        border: `1px solid ${p.estado === 'Finalizado' ? '#10b981' : '#3B82F6'}40`
+                                    }}>
+                                        {p.estado === 'Finalizado' ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                                        {p.estado}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', fontWeight: 800, fontSize: '0.9rem', justifyContent: 'flex-end' }}>
+                                            <Calendar size={14} /> {p.fecha}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: (p.hora && p.hora !== '--:--') ? '#94a3b8' : '#f59e0b', fontSize: '0.8rem', justifyContent: 'flex-end' }}>
+                                            <Clock size={14} /> {p.hora || '--:--'}
+                                        </div>
+                                        {(!p.hora || p.hora === '--:--') && (
+                                            <div style={{ fontSize: '0.65rem', color: '#f59e0b', fontWeight: 700, fontStyle: 'italic', marginTop: '2px' }}>
+                                                Este encuentro aún no tiene horario confirmado
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

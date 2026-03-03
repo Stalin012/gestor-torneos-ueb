@@ -20,9 +20,9 @@ class NoticiaController extends Controller
             'detalle'        => $detalle,
         ]);
     }
+
     /**
      * Display a listing of the resource.
-     * Muestra una lista de todas las noticias.
      */
     public function index()
     {
@@ -32,22 +32,30 @@ class NoticiaController extends Controller
 
     /**
      * Store a newly created resource in storage.
-     * Crea una nueva noticia. (Solo para Admin)
      */
     public function store(Request $request)
     {
-        // Asumiendo que solo administradores pueden publicar noticias
         if ($request->user()->rol !== 'admin') {
             return response()->json(['message' => 'Acceso denegado. Solo Administradores pueden publicar.'], 403);
         }
 
         $request->validate([
-            'titulo' => 'required|string|max:255',
+            'titulo'    => 'required|string|max:255',
             'contenido' => 'required|string',
-            'imagen' => 'nullable|string|url', // Asume que se guarda la URL de la imagen
+            'imagen'    => 'nullable',
         ]);
 
-        $noticia = Noticia::create($request->all());
+        $data = $request->only(['titulo', 'contenido']);
+
+        if ($request->hasFile('imagen')) {
+            // Guardar ruta relativa: "noticias/nombre.jpg"
+            // El frontend la convierte a URL usando /api/files/ (sin symlink)
+            $data['imagen'] = $request->file('imagen')->store('noticias', 'public');
+        } elseif ($request->imagen) {
+            $data['imagen'] = $request->imagen;
+        }
+
+        $noticia = Noticia::create($data);
 
         $this->logAudit(
             $request->user() ? $request->user()->cedula : 'SISTEMA',
@@ -65,7 +73,6 @@ class NoticiaController extends Controller
 
     /**
      * Display the specified resource.
-     * Muestra una noticia específica.
      */
     public function show($id)
     {
@@ -80,7 +87,6 @@ class NoticiaController extends Controller
 
     /**
      * Update the specified resource in storage.
-     * Actualiza una noticia existente. (Solo para Admin)
      */
     public function update(Request $request, $id)
     {
@@ -92,14 +98,23 @@ class NoticiaController extends Controller
         if (!$noticia) {
             return response()->json(['message' => 'Noticia no encontrada.'], 404);
         }
-        
+
         $request->validate([
-            'titulo' => 'required|string|max:255',
+            'titulo'    => 'required|string|max:255',
             'contenido' => 'required|string',
-            'imagen' => 'nullable|string|url',
+            'imagen'    => 'nullable',
         ]);
 
-        $noticia->update($request->all());
+        $data = $request->only(['titulo', 'contenido']);
+
+        if ($request->hasFile('imagen')) {
+            // Guardar ruta relativa: "noticias/nombre.jpg"
+            $data['imagen'] = $request->file('imagen')->store('noticias', 'public');
+        } elseif ($request->imagen) {
+            $data['imagen'] = $request->imagen;
+        }
+
+        $noticia->update($data);
 
         $this->logAudit(
             $request->user() ? $request->user()->cedula : 'SISTEMA',
@@ -117,14 +132,13 @@ class NoticiaController extends Controller
 
     /**
      * Remove the specified resource from storage.
-     * Elimina una noticia. (Solo para Admin)
      */
     public function destroy(Request $request, $id)
     {
         if ($request->user()->rol !== 'admin') {
             return response()->json(['message' => 'Acceso denegado.'], 403);
         }
-        
+
         $noticia = Noticia::find($id);
 
         if (!$noticia) {
@@ -132,7 +146,7 @@ class NoticiaController extends Controller
         }
 
         $noticia->delete();
-        
+
         $this->logAudit(
             $request->user() ? $request->user()->cedula : 'SISTEMA',
             'ELIMINAR',
@@ -140,7 +154,7 @@ class NoticiaController extends Controller
             (string)$id,
             'Noticia eliminada: ' . $noticia->titulo
         );
-        
+
         return response()->json(['message' => 'Noticia eliminada exitosamente.']);
     }
 }

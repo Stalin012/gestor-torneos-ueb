@@ -13,6 +13,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import "../../css/unified-all.css";
 import api from "../../api";
+import { getAssetUrl } from "../../utils/helpers";
 
 const RefereeDashboard = () => {
     const navigate = useNavigate();
@@ -133,7 +134,23 @@ const RefereeDashboard = () => {
                             Gestiona tus partidos asignados y registra resultados.
                         </p>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                        <div style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            border: '3px solid rgba(16, 185, 129, 0.3)',
+                            overflow: 'hidden',
+                            background: '#1e293b'
+                        }}>
+                            {user.persona?.foto_url ? (
+                                <img src={getAssetUrl(user.persona.foto_url)} alt="Perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                                    <User size={30} />
+                                </div>
+                            )}
+                        </div>
                         <button
                             onClick={() => navigate('/referee/partidos')}
                             className="btn-primary"

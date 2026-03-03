@@ -44,7 +44,8 @@ class CarnetController extends Controller
             );
         }
 
-        $urlValidacion = url("/validar-carnet/{$jugador->qr_token}");
+        $frontendUrl = 'https://www.deportesueb.com';
+        $urlValidacion = $frontendUrl . "/carnet/" . $jugador->cedula;
 
         // 🔥 QR EN SVG (IGUAL QUE ADMIN)
         $qrSvg = QrCode::format('svg')

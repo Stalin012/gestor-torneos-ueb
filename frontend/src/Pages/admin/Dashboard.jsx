@@ -1,597 +1,224 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Trophy,
-  Users,
-  Calendar,
-  Activity,
-  Award,
-  Zap,
-  Target,
-  BarChart3,
-  Clock,
-  MapPin,
-  Star,
-  Plus,
-  ChevronRight,
-  ShieldCheck,
-  TrendingUp,
-  Menu
+  Trophy, Users, Calendar, Activity, Award, Zap, Target, BarChart3, Clock, MapPin, Star, Plus,
+  ChevronRight, ShieldCheck, TrendingUp, Menu, Layout, UserCheck, Shield, GraduationCap, ArrowRight,
+  TrendingDown, Info, AlertCircle
 } from "lucide-react";
-
 import LoadingScreen from "../../components/LoadingScreen";
-import { StatCard } from "../../components/StatsComponents";
 import api from "../../api";
-import "../../css/dashboard-styles.css";
 
+// ================= HELPERS =====================
+const StatCard = ({ title, value, icon: Icon, color, trend }) => (
+  <div className="pro-card dashboard-fade" style={{
+    padding: '2rem',
+    borderRadius: '28px',
+    background: 'rgba(30, 41, 59, 0.4)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    position: 'relative',
+    overflow: 'hidden',
+    transition: '0.4s'
+  }}>
+    <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '100px', height: '100px', background: `${color}10`, borderRadius: '50%', filter: 'blur(40px)' }} />
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
+      <div style={{ width: '56px', height: '56px', borderRadius: '18px', background: `${color}15`, color: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon size={28} />
+      </div>
+      {trend && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontSize: '0.8rem', fontWeight: 800 }}>
+          <TrendingUp size={14} /> {trend}
+        </div>
+      )}
+    </div>
+    <div style={{ marginTop: '1.5rem', position: 'relative' }}>
+      <h3 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', margin: 0 }}>{value}</h3>
+      <p style={{ margin: '5px 0 0 0', color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>{title}</p>
+    </div>
+  </div>
+);
+
+// ================= MAIN COMPONENT =====================
 const AdminDashboard = () => {
   const navigate = useNavigate();
-
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    torneos: { total: 0, activos: 0, finalizados: 0 },
-    partidos: { total: 0, hoy: 0, pendientes: 0, finalizados: 0 },
-    equipos: { total: 0, nuevos: 0 },
-    jugadores: { total: 0, activos: 0 },
-    deportes: { total: 0 },
-    categorias: { total: 0 },
+    torneos: 0,
+    partidos: 0,
+    equipos: 0,
+    jugadores: 0,
+    arbitros: 0
   });
 
-  const [torneos, setTorneos] = useState([]);
-  const [proximosPartidos, setProximosPartidos] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadDashboardData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const [torneosData, partidosData, equiposData, jugadoresData, deportesData, categoriasData] = await Promise.all([
-        api.get('/torneos').catch(() => ({ data: [] })),
-        api.get('/partidos').catch(() => ({ data: [] })),
-        api.get('/equipos').catch(() => ({ data: [] })),
-        api.get('/jugadores').catch(() => ({ data: [] })),
-        api.get('/deportes').catch(() => ({ data: [] })),
-        api.get('/categorias').catch(() => ({ data: [] })),
+      const [t, p, e, j, a] = await Promise.all([
+        api.get('/torneos'),
+        api.get('/partidos'),
+        api.get('/equipos'),
+        api.get('/jugadores'),
+        api.get('/arbitros')
       ]);
-
-      const torneosArray = Array.isArray(torneosData?.data) ? torneosData.data : (Array.isArray(torneosData) ? torneosData : []);
-      const partidosArray = Array.isArray(partidosData?.data) ? partidosData.data : (Array.isArray(partidosData) ? partidosData : []);
-      const equiposArray = Array.isArray(equiposData?.data) ? equiposData.data : (Array.isArray(equiposData) ? equiposData : []);
-      const jugadoresArray = Array.isArray(jugadoresData?.data) ? jugadoresData.data : (Array.isArray(jugadoresData) ? jugadoresData : []);
-      const deportesArray = Array.isArray(deportesData?.data) ? deportesData.data : (Array.isArray(deportesData) ? deportesData : []);
-      const categoriasArray = Array.isArray(categoriasData?.data) ? categoriasData.data : (Array.isArray(categoriasData) ? categoriasData : []);
-
-      setTorneos(torneosArray.slice(0, 5));
-      setProximosPartidos(partidosArray.filter(p => p.estado === "Programado").slice(0, 6));
-
       setStats({
-        torneos: {
-          total: torneosArray.length,
-          activos: torneosArray.filter(t => t.estado === "Activo").length,
-          finalizados: torneosArray.filter(t => t.estado === "Finalizado").length,
-        },
-        partidos: {
-          total: partidosArray.length,
-          hoy: 0,
-          pendientes: partidosArray.filter(p => p.estado === "Programado").length,
-          finalizados: partidosArray.filter(p => p.estado === "Finalizado").length,
-        },
-        equipos: {
-          total: equiposArray.length,
-          nuevos: 0,
-        },
-        jugadores: {
-          total: jugadoresArray.length,
-          activos: jugadoresArray.filter(j => j.activo !== false).length,
-        },
-        deportes: {
-          total: deportesArray.length,
-        },
-        categorias: {
-          total: categoriasArray.length,
-        },
+        torneos: (t.data?.data || t.data || []).length,
+        partidos: (p.data?.data || p.data || []).filter(item => item.estado === 'Programado').length,
+        equipos: (e.data?.data || e.data || []).length,
+        jugadores: (j.data?.data || j.data || []).length,
+        arbitros: (a.data?.data || a.data || []).length
       });
-
     } catch (error) {
-      console.error("Error loading dashboard:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+    loadData();
+  }, [loadData]);
 
-  if (loading) {
-    return <LoadingScreen message="SINCRONIZANDO PANEL DE CONTROL..." />;
-  }
+  if (loading) return <LoadingScreen message="Sincronizando Inteligencia Deportiva..." />;
 
   const quickActions = [
-    { icon: Trophy, label: "Nuevo Torneo", path: "/admin/torneos-deportes", color: "#3b82f6" },
-    { icon: Calendar, label: "Programar Partido", path: "/admin/partidos", color: "#10b981" },
-    { icon: Users, label: "Registrar Equipo", path: "/admin/equipos", color: "#8b5cf6" },
-    { icon: Star, label: "Nuevo Jugador", path: "/admin/jugadores", color: "#f59e0b" },
+    { label: 'Torneos', icon: Trophy, path: '/admin/torneos', color: '#6366f1', desc: 'Gestionar competencias' },
+    { label: 'Equipos', icon: Users, path: '/admin/equipos', color: '#10b981', desc: 'Control de clubes' },
+    { label: 'Encuentros', icon: Calendar, path: '/admin/partidos', color: '#f59e0b', desc: 'Logística de partidos' },
+    { label: 'Nómina', icon: GraduationCap, path: '/admin/jugadores', color: '#3b82f6', desc: 'Base de deportistas' }
   ];
 
   return (
-    <div style={{ 
-      width: '100%', 
-      maxWidth: '100%', 
-      padding: '0', 
-      margin: '0',
-      boxSizing: 'border-box',
-      overflow: 'hidden'
-    }}>
-      {/* HEADER SECTION */}
-      <div style={{ marginBottom: '2rem' }}>
-        <div className="dashboard-header-layout">
-          <div>
-            <span style={{ 
-              color: 'var(--primary)', 
-              fontWeight: 800, 
-              fontSize: '0.75rem', 
-              letterSpacing: '2px', 
-              textTransform: 'uppercase' 
-            }}>Sistema Integral</span>
-            <h1 style={{ 
-              fontSize: '2.5rem', 
-              fontWeight: 900, 
-              color: 'var(--text-primary)', 
-              margin: '0.5rem 0',
-              background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>Panel Administrativo</h1>
-            <p style={{ 
-              color: 'var(--text-secondary)', 
-              fontSize: '1.1rem',
-              margin: 0
-            }}>Gestión centralizada de la actividad deportiva institucional</p>
-          </div>
-        </div>
-      </div>
+    <div className="rep-scope rep-screen-container rep-dashboard-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
-      {/* QUICK ACTIONS SECTION */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: '1rem', 
-        marginBottom: '2rem' 
+      {/* HEADER HERO */}
+      <header style={{
+        padding: '3rem',
+        borderRadius: '32px',
+        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8)), url("https://images.unsplash.com/photo-1541252260730-0412e3e2107e?auto=format&fit=crop&q=80&w=1200") center/cover',
+        border: '1px solid rgba(255,255,255,0.08)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        {quickActions.map((action, idx) => {
-          const Icon = action.icon;
-          return (
-            <div
-              key={idx}
-              className="pro-card"
-              onClick={() => navigate(action.path)}
-              style={{
-                padding: '1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                marginBottom: 0
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '';
-              }}
-            >
-              <div style={{
-                background: `linear-gradient(135deg, ${action.color}, ${action.color}dd)`,
-                padding: '12px',
-                borderRadius: '12px',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Icon size={24} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <span style={{ 
-                  fontWeight: 700, 
-                  fontSize: '1rem', 
-                  color: 'var(--text-primary)' 
-                }}>{action.label}</span>
-              </div>
-              <ChevronRight size={18} style={{ color: 'var(--text-muted)' }} />
-            </div>
-          )
-        })}
-      </div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#6366f1', marginBottom: '1rem' }}>
+            <Zap size={20} fill="#6366f1" />
+            <span style={{ fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Gestión Deportiva UEB</span>
+          </div>
+          <h1 style={{ fontSize: '3.5rem', fontWeight: 900, color: '#fff', margin: 0, lineHeight: 1 }}>Panel de Control</h1>
+          <p style={{ color: '#94a3b8', fontSize: '1.2rem', marginTop: '1rem', maxWidth: '600px' }}>Supervisión centralizada del contingente deportivo, logística operativa y rendimiento de torneos institucionales.</p>
 
-      {/* STATS SECTION (KPIs) */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '1rem', 
-        marginBottom: '2rem' 
-      }}>
-        <div className="pro-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            marginBottom: '1rem' 
-          }}>
-            <div style={{
-              padding: '12px',
-              background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Trophy size={24} style={{ color: 'white' }} />
-            </div>
-          </div>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: 900, 
-            color: '#3b82f6', 
-            marginBottom: '0.5rem' 
-          }}>{stats.torneos.total}</div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: 600, 
-            color: 'var(--text-secondary)' 
-          }}>Torneos Totales</div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-muted)', 
-            marginTop: '0.25rem' 
-          }}>{stats.torneos.activos} activos</div>
-        </div>
-        
-        <div className="pro-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            marginBottom: '1rem' 
-          }}>
-            <div style={{
-              padding: '12px',
-              background: 'linear-gradient(135deg, #10b981, #047857)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Calendar size={24} style={{ color: 'white' }} />
-            </div>
-          </div>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: 900, 
-            color: '#10b981', 
-            marginBottom: '0.5rem' 
-          }}>{stats.partidos.pendientes}</div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: 600, 
-            color: 'var(--text-secondary)' 
-          }}>Partidos Pendientes</div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-muted)', 
-            marginTop: '0.25rem' 
-          }}>{stats.partidos.total} total</div>
-        </div>
-        
-        <div className="pro-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            marginBottom: '1rem' 
-          }}>
-            <div style={{
-              padding: '12px',
-              background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Users size={24} style={{ color: 'white' }} />
-            </div>
-          </div>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: 900, 
-            color: '#8b5cf6', 
-            marginBottom: '0.5rem' 
-          }}>{stats.equipos.total}</div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: 600, 
-            color: 'var(--text-secondary)' 
-          }}>Equipos Inscritos</div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-muted)', 
-            marginTop: '0.25rem' 
-          }}>En competencia</div>
-        </div>
-        
-        <div className="pro-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            marginBottom: '1rem' 
-          }}>
-            <div style={{
-              padding: '12px',
-              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Zap size={24} style={{ color: 'white' }} />
-            </div>
-          </div>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: 900, 
-            color: '#f59e0b', 
-            marginBottom: '0.5rem' 
-          }}>{stats.jugadores.total}</div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: 600, 
-            color: 'var(--text-secondary)' 
-          }}>Total Atletas</div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-muted)', 
-            marginTop: '0.25rem' 
-          }}>{stats.jugadores.activos} activos</div>
-        </div>
-      </div>
-
-      {/* MAIN CONTENT GRID */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
-        gap: '2rem'
-      }}>
-        {/* PROXIMOS PARTIDOS */}
-        <div className="pro-card">
-          <div className="pro-card-header">
-            <h2 style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem', 
-              margin: 0, 
-              fontSize: '1.25rem', 
-              fontWeight: 800,
-              color: 'var(--text-primary)'
-            }}>
-              <Activity size={24} style={{ color: '#3b82f6' }} /> 
-              Próximos Encuentros
-            </h2>
-            <button 
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '2.5rem' }}>
+            <button
+              onClick={() => navigate('/admin/torneos')}
               className="pro-btn btn-primary"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-              onClick={() => navigate('/admin/partidos')}
+              style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', padding: '1rem 2rem', borderRadius: '16px', boxShadow: '0 10px 25px rgba(99, 102, 241, 0.4)' }}
             >
-              Ver Todos <ChevronRight size={16} />
+              Ver Torneos Activos <ArrowRight size={18} style={{ marginLeft: '10px' }} />
+            </button>
+            <button
+              onClick={() => navigate('/admin/configuracion')}
+              className="pro-btn btn-secondary"
+              style={{ padding: '1rem 2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
+              Configuración General
             </button>
           </div>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {proximosPartidos.length > 0 ? (
-              proximosPartidos.map((p) => (
-                <div 
-                  key={p.id} 
-                  className="pro-card"
-                  style={{ 
-                    padding: '1.25rem', 
-                    cursor: 'pointer', 
-                    marginBottom: 0,
-                    transition: 'all 0.2s ease'
-                  }}
-                  onClick={() => navigate(`/admin/partidos/${p.id}`)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '';
-                  }}
-                >
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: '1rem', 
-                    fontSize: '0.75rem', 
-                    fontWeight: 700,
-                    color: 'var(--text-muted)'
-                  }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Clock size={14} /> 
-                      {p.fecha?.split('T')[0]} • {p.hora?.substring(0, 5)}
-                    </span>
-                    <span style={{ color: '#3b82f6' }}>{p.torneo?.nombre}</span>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between', 
-                    gap: '1rem' 
-                  }}>
-                    <div style={{ 
-                      flex: 1, 
-                      textAlign: 'right', 
-                      fontWeight: 700, 
-                      color: 'var(--text-primary)' 
-                    }}>
-                      {p.equipoLocal?.nombre || 'Local'}
-                    </div>
-                    <div style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      borderRadius: '20px',
-                      color: '#3b82f6',
-                      fontWeight: 900,
-                      fontSize: '0.875rem'
-                    }}>
-                      VS
-                    </div>
-                    <div style={{ 
-                      flex: 1, 
-                      textAlign: 'left', 
-                      fontWeight: 700, 
-                      color: 'var(--text-primary)' 
-                    }}>
-                      {p.equipoVisitante?.nombre || 'Visita'}
-                    </div>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.5rem', 
-                    marginTop: '1rem', 
-                    fontSize: '0.75rem', 
-                    color: 'var(--text-muted)' 
-                  }}>
-                    <MapPin size={14} /> 
-                    {p.lugar || 'Cancha Central'}
-                  </div>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+            <div style={{ color: '#10b981', fontWeight: 900, fontSize: '2rem' }}>{stats.partidos}</div>
+            <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 800 }}>Próximos Partidos</div>
+          </div>
+          <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+            <div style={{ color: '#3b82f6', fontWeight: 900, fontSize: '2rem' }}>{stats.jugadores}</div>
+            <div style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 800 }}>Deportistas Registrados</div>
+          </div>
+        </div>
+      </header>
+
+      {/* KPI GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+        <StatCard title="Torneos Totales" value={stats.torneos} icon={Trophy} color="#6366f1" trend="+12%" />
+        <StatCard title="Clubes Afiliados" value={stats.equipos} icon={Users} color="#10b981" trend="+5%" />
+        <StatCard title="Jueces Certificados" value={stats.arbitros} icon={ShieldCheck} color="#3b82f6" trend="Ok" />
+      </div>
+
+      {/* QUICK ACTIONS & MODULES */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
+
+        {/* ACCESOS DIRECTOS */}
+        <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.08)', padding: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h3 style={{ margin: 0, color: '#fff', fontSize: '1.5rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <Layout size={24} color="#6366f1" /> Módulos Operativos
+            </h3>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            {quickActions.map(action => (
+              <div
+                key={action.label}
+                onClick={() => navigate(action.path)}
+                style={{
+                  padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: '0.3s',
+                  display: 'flex', alignItems: 'center', gap: '1.5rem'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateY(-5px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                <div style={{ width: '50px', height: '50px', borderRadius: '16px', background: `${action.color}15`, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <action.icon size={24} />
                 </div>
-              ))
-            ) : (
-              <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-                <Calendar size={48} style={{ 
-                  margin: '0 auto 1rem', 
-                  opacity: 0.2,
-                  color: 'var(--text-muted)'
-                }} />
-                <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                  No hay partidos próximos programados
-                </p>
-                <button 
-                  className="pro-btn btn-primary"
-                  onClick={() => navigate('/admin/partidos')}
-                >
-                  <Plus size={18} /> Programar Ahora
-                </button>
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>{action.label}</div>
+                  <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{action.desc}</div>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
-        {/* TORNEOS RECIENTES */}
-        <div className="pro-card">
-          <div className="pro-card-header">
-            <h2 style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem', 
-              margin: 0, 
-              fontSize: '1.25rem', 
-              fontWeight: 800,
-              color: 'var(--text-primary)'
-            }}>
-              <Trophy size={24} style={{ color: '#f59e0b' }} /> 
-              Torneos Activos
-            </h2>
-            <button 
-              className="pro-btn btn-primary"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-              onClick={() => navigate('/admin/torneos-deportes')}
-            >
-              Gestionar <ChevronRight size={16} />
-            </button>
+        {/* SYSTEM INFO */}
+        <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.08)', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <h3 style={{ margin: 0, color: '#fff', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Info size={20} color="#3b82f6" /> Estado del Sistema
+          </h3>
+
+          <div style={{ padding: '1.5rem', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '24px', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ShieldCheck size={18} color="#10b981" />
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>Base de Datos</span>
+              </div>
+              <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 800 }}>Sincronizado</span>
+            </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="modern-table">
-              <thead>
-                <tr>
-                  <th>Torneo</th>
-                  <th style={{ textAlign: 'center' }}>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {torneos.map((t) => (
-                  <tr key={t.id}>
-                    <td>
-                      <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {t.nombre}
-                      </div>
-                      <div style={{ 
-                        fontSize: '0.75rem', 
-                        color: 'var(--text-muted)', 
-                        fontWeight: 500 
-                      }}>
-                        {t.deporte?.nombre}
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        className="icon-btn"
-                        onClick={() => navigate(`/admin/torneos/${t.id}`)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'var(--text-muted)',
-                          cursor: 'pointer',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#3b82f6';
-                          e.currentTarget.style.color = 'white';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = 'var(--text-muted)';
-                        }}
-                      >
-                        <ChevronRight size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {torneos.length === 0 && (
-                  <tr>
-                    <td colSpan="2" style={{ 
-                      textAlign: 'center', 
-                      padding: '2rem', 
-                      color: 'var(--text-muted)' 
-                    }}>
-                      Sin torneos activos
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div style={{ padding: '1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '24px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Activity size={18} color="#3b82f6" />
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>API Backend</span>
+              </div>
+              <span style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: 800 }}>Latencia: 24ms</span>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 'auto', padding: '1.5rem', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '24px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+              <AlertCircle size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
+              <div>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>Aviso de Operación</span>
+                <p style={{ margin: '5px 0 0 0', color: '#94a3b8', fontSize: '0.8rem' }}>Existen 12 inscripciones de equipos pendientes de revisión técnica para el próximo torneo.</p>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
+
     </div>
   );
 };

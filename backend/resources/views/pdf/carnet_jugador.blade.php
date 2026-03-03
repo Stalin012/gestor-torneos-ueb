@@ -152,7 +152,7 @@
         .name-big {
             font-weight: 900;
             line-height: 1.05;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
             color: #ffffff;
             text-transform: uppercase;
             max-height: 11mm; /* SUFICIENTE PARA 3 LÍNEAS PEQUEÑAS */
@@ -160,7 +160,7 @@
         }
 
         .info-item {
-            margin-bottom: 0.7mm;
+            margin-bottom: 0.4mm;
             overflow: visible;
         }
 
@@ -173,7 +173,7 @@
         }
 
         .info-val {
-            font-size: 2.1mm;
+            font-size: 1.8mm;
             font-weight: 700;
             color: #f1f5f9;
             word-wrap: break-word;
@@ -206,7 +206,7 @@
         }
 
         .dorsal-num {
-            font-size: 5mm;
+            font-size: 4.5mm;
             font-weight: 900;
             color: #3b82f6;
             line-height: 1;
@@ -285,7 +285,11 @@
                         if (filter_var($jugador->persona->foto, FILTER_VALIDATE_URL)) {
                             $foto = $jugador->persona->foto;
                         } else {
-                            $path = public_path('storage/' . $jugador->persona->foto);
+                            // Usar ruta directa real de storage/app/public para que domPDF la lea sin importar symlinks
+                            $rawPath = ltrim($jugador->persona->foto, '/');
+                            $rawPath = str_replace('storage/', '', $rawPath);
+                            $path = storage_path('app/public/' . $rawPath);
+                            
                             if (file_exists($path)) {
                                 $foto = $path;
                             }
@@ -306,10 +310,10 @@
         @php
             $nombreCompleto = ($jugador->persona->nombres ?? '') . ' ' . ($jugador->persona->apellidos ?? '');
             $len = strlen($nombreCompleto);
-            $fontSize = '4.2mm';
-            if($len > 25) $fontSize = '2.8mm';
-            elseif($len > 20) $fontSize = '3.3mm';
-            elseif($len > 15) $fontSize = '3.8mm';
+            $fontSize = '3.8mm';
+            if($len > 25) $fontSize = '2.4mm';
+            elseif($len > 20) $fontSize = '2.8mm';
+            elseif($len > 15) $fontSize = '3.4mm';
         @endphp
 
         <!-- INFORMACIÓN (Protegida) -->
@@ -330,6 +334,13 @@
                 <div class="info-val yellow">{{ strtoupper($jugador->equipo->nombre ?? 'ESTADO LIBRE') }}</div>
             </div>
 
+            @if(isset($jugador->equipo) && isset($jugador->equipo->torneo))
+            <div class="info-item">
+                <div class="info-label">Torneo Oficial</div>
+                <div class="info-val yellow" style="color: #cbd5e1;">{{ strtoupper($jugador->equipo->torneo->nombre) }}</div>
+            </div>
+            @endif
+
             @if(isset($jugador->posicion) && $jugador->posicion)
             <div class="info-item">
                 <div class="info-label">Posición</div>
@@ -340,14 +351,14 @@
             @if(isset($jugador->carrera) && $jugador->carrera)
             <div class="info-item">
                 <div class="info-label">Carrera de Formación</div>
-                <div class="info-val" style="font-size: 1.8mm; line-height: 1.25;">{{ strtoupper($jugador->carrera) }}</div>
+                <div class="info-val" style="line-height: 1.15;">{{ strtoupper($jugador->carrera) }}</div>
             </div>
             @endif
 
             @if(isset($jugador->facultad) && $jugador->facultad)
             <div class="info-item">
                 <div class="info-label">Facultad / Unidad</div>
-                <div class="info-val" style="font-size: 1.6mm; line-height: 1.25;">{{ strtoupper($jugador->facultad) }}</div>
+                <div class="info-val" style="line-height: 1.15;">{{ strtoupper($jugador->facultad) }}</div>
             </div>
             @endif
         </div>

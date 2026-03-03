@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Lock, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import Logo from "../components/Logo";
-import { apiPublic, apiSanctum } from "../api";
+import { apiPublic, apiSanctum, getCsrfCookie } from "../api";
 import "../css/Login.css";
 
 const Login = () => {
@@ -20,18 +20,23 @@ const Login = () => {
     setLoading(true);
     setError(null);
     try {
-      // Añadir la solicitud para obtener la cookie CSRF de Sanctum
-      await apiSanctum.get('/sanctum/csrf-cookie');
+      // Obtener la cookie CSRF de Sanctum
+      await getCsrfCookie();
 
       const { data } = await apiPublic.post('/login', formData);
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Guardar en sessionStorage (aislado por pestaña)
+      // Esto permite tener diferentes usuarios en distintas pestañas sin conflictos
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("user", JSON.stringify(data.user));
+
+      // Notificar a otros componentes que el usuario ha cambiado
+      window.dispatchEvent(new Event('user-updated'));
 
       const role = data.user?.rol?.toLowerCase() || "user";
-      
+
       if (role === 'admin') navigate("/admin/dashboard");
-      else if (role === 'representante') navigate("/representante");
+      else if (role === 'representante') navigate("/representante/dashboard");
       else if (role === 'arbitro' || role === 'árbitro') navigate("/referee/dashboard");
       else navigate("/user/profile");
 

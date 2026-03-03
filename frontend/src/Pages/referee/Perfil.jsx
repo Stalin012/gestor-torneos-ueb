@@ -43,7 +43,7 @@ const Perfil = () => {
 
     const loadPerfilData = async () => {
         try {
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const storedUser = JSON.parse(sessionStorage.getItem('user') || '{}');
 
             // Try to get fresh user data
             let userData = storedUser;
@@ -52,7 +52,7 @@ const Perfil = () => {
                 userData = data;
                 setUser(data);
                 // Update local storage to keep it in sync
-                localStorage.setItem('user', JSON.stringify(data));
+                sessionStorage.setItem('user', JSON.stringify(data));
             } catch (e) {
                 console.warn("Could not fetch fresh user data, using stored", e);
                 setUser(storedUser);
@@ -98,7 +98,7 @@ const Perfil = () => {
         try {
             await api.put('/arbitro/perfil', form);
             const userRes = await api.get('/user');
-            localStorage.setItem('user', JSON.stringify(userRes.data));
+            sessionStorage.setItem('user', JSON.stringify(userRes.data));
             window.dispatchEvent(new Event('user-updated'));
             setMessage({ type: "success", text: "Perfil actualizado correctamente." });
         } catch (e) {
@@ -116,7 +116,7 @@ const Perfil = () => {
         }
         setSaving(true);
         try {
-            await api.put('/arbitro/password', passwords);
+            await api.put('/arbitro/perfil/password', passwords);
             setMessage({ type: "success", text: "Contraseña actualizada." });
             setPasswords({ password_actual: "", password_nueva: "", password_confirmacion: "" });
         } catch (e) {

@@ -8,30 +8,32 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may configure your settings for cross-origin resource sharing
-    | or "CORS". This determines which domains are allowed to access your
-    | application's resources from a different domain. You may enable
-    | CORS for all origins and all HTTP methods.
+    | or "CORS". This determines which cross-origin requests may execute
+    | code across web domains. You are free to adjust these settings.
+    |
+    | Please check the documentation for more information:
+    | https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'representante/*', 'arbitro/*', 'admin/*'],
+    'paths' => ['*'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['*'], // Permite todos los métodos HTTP (GET, POST, PUT, DELETE, OPTIONS, etc.)
 
-    'allowed_origins' => [
-        'https://gx2lf4t9.brs.devtunnels.ms:5173',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://192.168.100.24:5173',
+    'allowed_origins' => [],
+
+
+    'allowed_origins_patterns' => [
+        '/^https?:\/\/(.*)deportesueb\.com$/',
     ],
 
-    'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => ['*'], // Permite todas las cabeceras HTTP
 
     'exposed_headers' => [],
 
     'max_age' => 0,
 
-    'supports_credentials' => true,
+    'supports_credentials' => true, // MUY IMPORTANTE: Permite el envío de cookies y cabeceras de autorización con solicitudes CORS. Necesario para Laravel Sanctum.
+
 ];

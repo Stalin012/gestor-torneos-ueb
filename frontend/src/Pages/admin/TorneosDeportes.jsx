@@ -96,7 +96,7 @@ const CreateTorneoModal = ({
       setFormData({
         nombre: initialData.nombre || "",
         deporte_id: toId(initialData.deporte_id || initialData.deporte?.id || ""),
-        categoria_id: toId(initialData.categoria_id || initialData.categoria_relacion?.id || ""),
+        categoria_id: toId(initialData.categoria_id || initialData.categoria?.id || ""),
         fecha_inicio: getDisplayDate(initialData.fecha_inicio),
         fecha_fin: getDisplayDate(initialData.fecha_fin),
         ubicacion: initialData.ubicacion || "",
@@ -297,6 +297,8 @@ const CreateDeporteModal = ({ isOpen, onClose, onSaved, initialData }) => {
   const isEditMode = !!initialData;
   const [formData, setFormData] = useState({ nombre: "", descripcion: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusType, setStatusType] = useState("");
+  const [statusText, setStatusText] = useState("");
   const { addNotification } = useNotification();
   const contentRef = useRef(null);
 
@@ -347,18 +349,31 @@ const CreateDeporteModal = ({ isOpen, onClose, onSaved, initialData }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (!formData.nombre?.trim()) {
+      addNotification("El nombre de la disciplina es obligatorio", "error");
+      return;
+    }
+
     setIsSubmitting(true);
+    setStatusType("info");
+    setStatusText("Guardando disciplina...");
     try {
       await api[isEditMode ? 'put' : 'post'](
         isEditMode ? `/deportes/${initialData.id}` : "/deportes",
         formData
       );
       addNotification(`Disciplina ${isEditMode ? 'actualizada' : 'creada'} con éxito`, "success");
+      setStatusType("success");
+      setStatusText(`Disciplina ${isEditMode ? 'guardada' : 'registrada'} con éxito`);
       onSaved();
-      onClose();
+      setTimeout(() => {
+        onClose();
+      }, 600);
     } catch (err) {
-      addNotification(err.response?.data?.message || "Error al guardar disciplina", "error");
+      const msg = err.response?.data?.message || "Error al guardar disciplina";
+      addNotification(msg, "error");
+      setStatusType("danger");
+      setStatusText(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -393,6 +408,11 @@ const CreateDeporteModal = ({ isOpen, onClose, onSaved, initialData }) => {
                 {isEditMode ? 'Configurar Disciplina' : 'Nueva Disciplina'}
               </h2>
               <p className="modal-subtitle">Gestión de ramas deportivas oficiales</p>
+              {statusText && (
+                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
+                  {statusText}
+                </span>
+              )}
             </div>
           </div>
           <button onClick={onClose} className="btn-icon-close" type="button">
@@ -571,7 +591,13 @@ const CreateCategoriaModal = ({ isOpen, onClose, onSaved, initialData, deportes,
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (!formData.nombre?.trim() || !formData.deporte_id) {
+      addNotification("Por favor complete los campos obligatorios", "error");
+      setStatusType("danger");
+      setStatusText("Campos incompletos");
+      return;
+    }
+
     setIsSubmitting(true);
     setStatusType("info");
     setStatusText("Guardando categoría…");
@@ -655,7 +681,7 @@ const CreateCategoriaModal = ({ isOpen, onClose, onSaved, initialData, deportes,
 
             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
               <label className="form-label" style={{ fontWeight: 800 }}>Descripción de Alcance</label>
-              <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} className="pro-input" placeholder="Ej: Atletas mayores de 18 años..." rows={3} />
+              <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} className="pro-input" placeholder="Ej: Deportistas mayores de 18 años..." rows={3} />
             </div>
 
             <div className="modal-footer">
@@ -1014,7 +1040,7 @@ const TorneosDeportes = () => {
                             <td>
                               <span className="status-badge badge-success" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>{t.deporte?.nombre || '-'}</span>
                             </td>
-                            <td style={{ color: '#a1b0c1' }}>{t.categoria_relacion?.nombre || '-'}</td>
+                            <td style={{ color: '#a1b0c1' }}>{t.categoria?.nombre || '-'}</td>
                             <td style={{ fontSize: '0.9rem', color: '#a1b0c1' }}>
                               {formatDateDisplay(t.fecha_inicio)} → {formatDateDisplay(t.fecha_fin)}
                             </td>
@@ -1054,7 +1080,7 @@ const TorneosDeportes = () => {
                           </div>
                           <h3 className="tournament-title">{t.nombre}</h3>
                           <div className="card-details">
-                            <div className="detail-item"><Box size={14} /> {t.categoria_relacion?.nombre || 'General'}</div>
+                            <div className="detail-item"><Box size={14} /> {t.categoria?.nombre || 'General'}</div>
                             <div className="detail-item"><Calendar size={14} /> {formatDateDisplay(t.fecha_inicio)}</div>
                             <div className="detail-item"><MapPin size={14} /> {t.ubicacion || 'TBD'}</div>
                           </div>

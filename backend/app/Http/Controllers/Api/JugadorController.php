@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Jugador;
 use App\Models\Estadistica;
 use App\Models\Auditoria;
+use App\Models\Persona; // Importar el modelo Persona
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Storage; // Importar Storage
 
 class JugadorController extends Controller
 {
@@ -27,7 +29,7 @@ class JugadorController extends Controller
 
     public function index(Request $request)
     {
-        $query = Jugador::with(['persona', 'equipo']);
+        $query = Jugador::with(['persona', 'equipo.torneo']);
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -46,15 +48,55 @@ class JugadorController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'cedula'    => 'required|string|size:10|exists:personas,cedula|unique:jugadores,cedula',
-            'equipo_id' => 'nullable|exists:equipos,id',
-            'carrera'   => 'nullable|string|max:150',
-            'facultad'  => 'nullable|string|max:150',
-            'posicion'  => 'nullable|string|max:100',
-            'numero'    => 'nullable|integer|min:0|max:99',
+            'cedula'           => 'required|string|size:10|unique:jugadores,cedula',
+            'nombres'          => 'required|string|max:100',
+            'apellidos'        => 'required|string|max:100',
+            'email'            => 'nullable|email|max:150',
+            'telefono'         => 'nullable|string|max:20',
+            'fecha_nacimiento' => 'nullable|date',
+            'sexo'             => 'nullable|string|in:M,F',
+            'equipo_id'        => 'nullable|exists:equipos,id',
+            'carrera'          => 'nullable|string|max:150',
+            'facultad'         => 'nullable|string|max:150',
+            'posicion'         => 'nullable|string|max:100',
+            'numero'           => 'nullable|integer|min:0|max:99',
+            'foto'             => 'nullable|image|max:2048',
         ]);
 
-        $jugador = Jugador::create($validated);
+        // Registrar o actualizar Persona
+        $persona = Persona::updateOrCreate(
+            ['cedula' => $validated['cedula']],
+            [
+                'nombres'          => $validated['nombres'],
+                'apellidos'        => $validated['apellidos'],
+                'email'            => $validated['email'] ?? null,
+                'telefono'         => $validated['telefono'] ?? null,
+                'fecha_nacimiento' => $validated['fecha_nacimiento'] ?? null,
+                'sexo'             => $validated['sexo'] ?? 'M',
+            ]
+        );
+
+        // Manejar la subida de la foto
+        if ($request->hasFile('foto')) {
+            $file = $request->file('foto');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $validated['cedula'] . '_' . time() . '.' . $extension;
+            
+            // Guardar en public/fotos con nombre personalizado
+            $fotoPath = $file->storeAs('fotos', $filename, 'public');
+            $persona->foto = $fotoPath;
+            $persona->save();
+        }
+
+        $jugador = Jugador::create([
+            'cedula'    => $validated['cedula'],
+            'equipo_id' => $validated['equipo_id'] ?? null,
+            'carrera'   => $validated['carrera'] ?? null,
+            'facultad'  => $validated['facultad'] ?? null,
+            'posicion'  => $validated['posicion'] ?? null,
+            'numero'    => $validated['numero'] ?? null,
+        ]);
+
         $jugador->load(['persona', 'equipo']);
 
         $this->logAudit(
@@ -62,7 +104,7 @@ class JugadorController extends Controller
             'CREAR',
             'Jugador',
             $jugador->cedula,
-            'Jugador creado: ' . $jugador->persona->nombre_completo
+            'Jugador creado: ' . $persona->nombres . ' ' . $persona->apellidos
         );
 
         return response()->json([
@@ -73,8 +115,7 @@ class JugadorController extends Controller
 
     public function show($cedula)
     {
-        \Log::info("Intentando buscar jugador con cédula: {$cedula}");
-        $jugador = Jugador::with(['persona', 'equipo'])->find($cedula);
+        $jugador = Jugador::with(['persona', 'equipo.torneo'])->find($cedula);
 
         if (!$jugador) {
             return response()->json(['message' => 'Jugador no encontrado'], 404);
@@ -92,17 +133,52 @@ class JugadorController extends Controller
         }
 
         $validated = $request->validate([
-            'carrera'   => 'nullable|string|max:150',
-            'facultad'  => 'nullable|string|max:150',
-            'equipo_id' => 'sometimes|nullable|exists:equipos,id',
-            'posicion'  => 'sometimes|nullable|string|max:100',
-            'numero'    => 'sometimes|nullable|integer|min:0|max:99',
-            'victorias' => 'sometimes|integer|min:0',
-            'derrotas'  => 'sometimes|integer|min:0',
-            'empates'   => 'sometimes|integer|min:0',
+            'nombres'          => 'sometimes|required|string|max:100',
+            'apellidos'        => 'sometimes|required|string|max:100',
+            'email'            => 'nullable|email|max:150',
+            'telefono'         => 'nullable|string|max:20',
+            'fecha_nacimiento' => 'nullable|date',
+            'sexo'             => 'sometimes|nullable|string|in:M,F',
+            'carrera'          => 'nullable|string|max:150',
+            'facultad'         => 'nullable|string|max:150',
+            'equipo_id'        => 'sometimes|nullable|exists:equipos,id',
+            'posicion'         => 'sometimes|nullable|string|max:100',
+            'numero'           => 'sometimes|nullable|integer|min:0|max:99',
+            'victorias'        => 'sometimes|integer|min:0',
+            'derrotas'         => 'sometimes|integer|min:0',
+            'empates'          => 'sometimes|integer|min:0',
+            'foto'             => 'nullable|image|max:2048',
         ]);
 
-        $jugador->update($validated);
+        // Actualizar Persona asociada
+        $persona = $jugador->persona;
+        if ($persona) {
+            $persona->update(array_intersect_key($validated, array_flip([
+                'nombres', 'apellidos', 'email', 'telefono', 'fecha_nacimiento', 'sexo'
+            ])));
+
+            // Manejar la subida de la foto
+            if ($request->hasFile('foto')) {
+                // Eliminar foto antigua si existe en el disco
+                if ($persona->foto && Storage::disk('public')->exists($persona->foto)) {
+                    Storage::disk('public')->delete($persona->foto);
+                }
+                
+                $file = $request->file('foto');
+                $extension = $file->getClientOriginalExtension();
+                $filename = $persona->cedula . '_' . time() . '.' . $extension;
+                
+                // Guardar nueva foto con nombre personalizado
+                $fotoPath = $file->storeAs('fotos', $filename, 'public');
+                $persona->foto = $fotoPath;
+                $persona->save();
+            }
+        }
+
+        $jugador->update(array_intersect_key($validated, array_flip([
+            'carrera', 'facultad', 'equipo_id', 'posicion', 'numero', 'victorias', 'derrotas', 'empates'
+        ])));
+
         $jugador->load(['persona', 'equipo']);
 
         $this->logAudit(
@@ -110,7 +186,7 @@ class JugadorController extends Controller
             'ACTUALIZAR',
             'Jugador',
             $jugador->cedula,
-            'Jugador actualizado: ' . $jugador->persona->nombre_completo
+            'Jugador actualizado: ' . $persona?->nombres . ' ' . $persona?->apellidos
         );
 
         return response()->json([
@@ -147,7 +223,14 @@ class JugadorController extends Controller
         $jugador = Jugador::with('persona')->find($cedula);
 
         if (!$jugador) {
-            return response()->json(['message' => 'Jugador no encontrado'], 404);
+            $persona = \App\Models\Persona::find($cedula);
+            if (!$persona) {
+                return response()->json(['message' => 'Jugador no encontrado'], 404);
+            }
+            return response()->json([
+                'jugador'       => ['cedula' => $persona->cedula, 'persona' => $persona],
+                'estadisticas'  => [],
+            ]);
         }
 
         $estadisticas = Estadistica::where('jugador_cedula', $cedula)->get();
@@ -182,25 +265,9 @@ class JugadorController extends Controller
             ? trim(($persona->nombres ?? '') . ' ' . ($persona->apellidos ?? ''))
             : 'Sin nombre';
 
-        // Datos completos para el QR en formato texto simple (mejor compatibilidad)
-        $qrText = "=== CARNET DEPORTIVO UEB ===\n"
-            . "Cedula: {$jugador->cedula}\n"
-            . "Nombre: {$nombreCompleto}\n"
-            . "Equipo: " . ($equipo?->nombre ?? 'Sin equipo') . "\n"
-            . "Torneo: " . ($equipo?->torneo?->nombre ?? 'Sin torneo') . "\n"
-            . "Posicion: " . ($jugador->posicion ?? 'N/A') . "\n"
-            . "Numero: #" . ($jugador->numero ?? '-') . "\n";
-        
-        if ($jugador->carrera) {
-            $qrText .= "Carrera: {$jugador->carrera}\n";
-        }
-        if ($jugador->facultad) {
-            $qrText .= "Facultad: {$jugador->facultad}\n";
-        }
-        
-        $qrText .= "Temporada: " . date('Y') . "\n"
-            . "Token: {$jugador->qr_token}\n"
-            . "Emision: " . date('d/m/Y');
+        $frontendUrl = 'https://www.deportesueb.com';
+        $qrText = $frontendUrl . "/carnet/" . $jugador->cedula;
+        // $qrText = "=== CARNET DEPORTIVO UEB ===\n" ...
 
         $qrSvgRaw = (string) QrCode::format('svg')
             ->size(300)
@@ -221,6 +288,7 @@ class JugadorController extends Controller
             'qr_svg'           => $qrSvgRaw, // Raw para React
             'qr_base64'        => base64_encode($qrSvgRaw), // Para PDF
             'qr_text'          => $qrText,
+            'url_validacion'   => $qrText,
             'foto'             => $persona?->foto_url ?? $persona?->foto,
             'edad'             => $persona?->edad_calculada ?? 'N/A',
             'institucion'      => 'Gestor UEB - Deporte oficial',

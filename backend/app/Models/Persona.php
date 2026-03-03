@@ -51,7 +51,7 @@ class Persona extends Model
      */
     public function usuario()
     {
-        return $this->hasOne(User::class, 'cedula', 'cedula');
+        return $this->belongsTo(User::class, 'cedula', 'cedula');
     }
 
     /**
@@ -77,26 +77,17 @@ class Persona extends Model
             return null;
         }
 
+        // Si ya es una URL completa, devolverla tal cual
         if (filter_var($this->foto, FILTER_VALIDATE_URL)) {
             return $this->foto;
         }
 
-        // Si es una ruta local, asegurar que apunte a la API correcta
-        $baseUrl = config('app.url');
-        
-        // Normalizar la ruta: si ya tiene 'fotos/', no duplicar 'storage/'
-        $path = $this->foto;
-        if (!str_starts_with($path, 'fotos/') && !str_starts_with($path, 'perfiles/') && !str_starts_with($path, 'storage/')) {
-            $path = 'fotos/' . $path;
-        }
-        
-        // Return relative path so frontend can prepend API_BASE
-        // Si la ruta ya incluye 'storage/', no duplicar
-        if (str_starts_with($path, 'storage/')) {
-            return $path;
-        }
-        
-        return 'storage/' . $path;
+        // Usar la ruta /api/files/ que sirve archivos directamente desde storage
+        // Esto evita problemas con el symlink public/storage en servidores compartidos
+        $path = ltrim($this->foto, '/');
+        $baseUrl = rtrim(config('app.url'), '/');
+
+        return "{$baseUrl}/api/files/{$path}";
     }
 
     public function getEdadCalculadaAttribute()

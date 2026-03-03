@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    Settings, Globe, Lock, Save, Clock, User, Camera, ShieldCheck, Mail, Hash
+    Settings, Globe, Lock, Save, Clock, User, Camera, ShieldCheck, Mail, Hash,
+    Bell, Database, HardDrive, Cpu, Fingerprint, Activity, Layers, Palette
 } from 'lucide-react';
+import '../../css/config-styles.css';
 import api, { API_BASE } from '../../api';
 import { getAssetUrl } from '../../utils/helpers';
 
@@ -50,22 +52,16 @@ const ProfileTab = ({ user, onPhotoUpdate }) => {
             const formData = new FormData();
             formData.append('foto', file);
 
-            const resp = await api.post('/jugador/perfil/foto', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+            const resp = await api.post('/personas/' + user.cedula, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                params: { _method: 'PUT' }
             });
 
-            if (resp.status !== 200) {
-                alert(resp.data.message || 'Error al subir la foto.');
-                return;
-            }
-
-            onPhotoUpdate(resp.data.foto_url);
+            onPhotoUpdate(resp.data.data?.foto_url || resp.data.foto_url);
             alert('Foto de perfil actualizada correctamente.');
         } catch (err) {
             console.error(err);
-            alert(err.response?.data?.message || 'Error de conexión al subir la foto.');
+            alert(err.response?.data?.message || 'Error al subir la foto.');
         } finally {
             setUploading(false);
         }
@@ -75,102 +71,111 @@ const ProfileTab = ({ user, onPhotoUpdate }) => {
 
     return (
         <div className="fade-enter config-tab-content-wrapper">
-            <div className="tab-header-gradient" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1e4ed8 100%)' }}>
-                <h3>
-                    <User size={28} /> Mi Perfil de Usuario
-                </h3>
-                <p>
-                    Gestiona tu información personal y credenciales de acceso
-                </p>
+            <div className="tab-header-gradient profile-header" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)' }}>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <h3>
+                        <Fingerprint size={32} /> Identidad Digital
+                    </h3>
+                    <p>
+                        Información personal y seguridad de tu cuenta de acceso
+                    </p>
+                </div>
             </div>
 
-            <div className="config-grid-container">
+            <div className="config-grid-container" style={{ gridTemplateColumns: '1fr 1.5fr' }}>
                 <div className="config-card">
                     <div className="config-card-header">
-                        <h4>Foto de Perfil</h4>
-                        <p>Esta imagen será visible en el encabezado y reportes</p>
+                        <h4>Imagen de Perfil</h4>
+                        <p>Identificador visual institucional</p>
                     </div>
-                    <div className="config-card-content">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                            <div style={{ position: 'relative' }}>
-                                <div style={{
-                                    width: '120px',
-                                    height: '120px',
-                                    borderRadius: '50%',
-                                    overflow: 'hidden',
-                                    border: '4px solid var(--primary)',
-                                    background: 'var(--bg-darkest)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: '0 8px 20px rgba(0,0,0,0.3)'
-                                }}>
-                                    {uploading ? (
-                                        <div className="spinner" style={{ width: '30px', height: '30px' }} />
-                                    ) : fotoUrl ? (
-                                        <img src={fotoUrl} alt="Perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <User size={60} color="var(--text-muted)" />
-                                    )}
-                                </div>
-                                <label className="photo-upload-badge" style={{
-                                    position: 'absolute',
-                                    bottom: '5px',
-                                    right: '5px',
-                                    background: 'var(--primary)',
-                                    color: 'white',
-                                    width: '32px',
-                                    height: '32px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    border: '2px solid var(--bg-darkest)',
-                                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
-                                }}>
-                                    <Camera size={16} />
-                                    <input type="file" hidden accept="image/*" onChange={handleFileChange} disabled={uploading} />
-                                </label>
+                    <div className="config-card-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                            <div style={{
+                                width: '160px',
+                                height: '160px',
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                border: '5px solid rgba(99, 102, 241, 0.2)',
+                                background: '#0f172a',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 15px 35px rgba(0,0,0,0.4)'
+                            }}>
+                                {uploading ? (
+                                    <div className="spinner" style={{ width: '40px', height: '40px' }} />
+                                ) : fotoUrl ? (
+                                    <img src={fotoUrl} alt="Perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    <User size={80} color="#475569" />
+                                )}
                             </div>
-                            <div>
-                                <h4 style={{ margin: '0 0 5px 0', fontSize: '1.2rem' }}>{user.persona?.nombres} {user.persona?.apellidos}</h4>
-                                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Rol: <span style={{ textTransform: 'uppercase', fontWeight: 700, color: 'var(--primary)' }}>{user.rol}</span></p>
-                            </div>
+                            <label className="photo-upload-badge" style={{
+                                position: 'absolute',
+                                bottom: '10px',
+                                right: '10px',
+                                background: '#6366f1',
+                                color: 'white',
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                border: '3px solid #1e293b',
+                                boxShadow: '0 8px 15px rgba(0,0,0,0.4)',
+                                transition: 'all 0.2s'
+                            }}>
+                                <Camera size={20} />
+                                <input type="file" hidden accept="image/*" onChange={handleFileChange} disabled={uploading} />
+                            </label>
                         </div>
+                        <h4 style={{ margin: '0 0 5px 0', fontSize: '1.4rem', fontWeight: 800 }}>{user.persona?.nombres} {user.persona?.apellidos}</h4>
+                        <span className="modal-badge info" style={{ padding: '4px 12px', fontSize: '0.75rem', fontWeight: 800 }}>ADMINISTRADOR</span>
                     </div>
                 </div>
 
                 <div className="config-card">
                     <div className="config-card-header">
-                        <h4>Información Personal</h4>
-                        <p>Datos vinculados a tu cuenta</p>
+                        <h4>Credenciales de Acceso</h4>
+                        <p>Datos fundamentales protegidos por el sistema</p>
                     </div>
                     <div className="config-card-content">
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gap: '1.5rem' }}>
                             <div className="form-group">
-                                <label className="form-label"><Hash size={14} /> Cédula de Identidad</label>
-                                <input className="pro-input" value={user.cedula || ''} readOnly style={{ opacity: 0.7 }} />
+                                <label className="form-label">Identificación (Cédula)</label>
+                                <div style={{ position: 'relative' }}>
+                                    <Hash size={18} style={{ position: 'absolute', top: '14px', left: '16px', color: '#64748b' }} />
+                                    <input className="pro-input" value={user.cedula || ''} readOnly style={{ paddingLeft: '3rem', opacity: 0.8, cursor: 'not-allowed' }} />
+                                </div>
                             </div>
                             <div className="form-group">
-                                <label className="form-label"><Mail size={14} /> Correo Electrónico</label>
-                                <input className="pro-input" value={user.email || ''} readOnly style={{ opacity: 0.7 }} />
+                                <label className="form-label">Correo Institucional</label>
+                                <div style={{ position: 'relative' }}>
+                                    <Mail size={18} style={{ position: 'absolute', top: '14px', left: '16px', color: '#64748b' }} />
+                                    <input className="pro-input" value={user.email || ''} readOnly style={{ paddingLeft: '3rem', opacity: 0.8, cursor: 'not-allowed' }} />
+                                </div>
                             </div>
                         </div>
+
                         <div style={{
-                            padding: '1rem',
-                            background: 'rgba(53, 110, 216, 0.05)',
-                            borderRadius: '8px',
-                            border: '1px solid rgba(53, 110, 216, 0.1)',
+                            padding: '1.25rem',
+                            background: 'rgba(99, 102, 241, 0.05)',
+                            borderRadius: '16px',
+                            border: '1px solid rgba(99, 102, 241, 0.1)',
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
+                            alignItems: 'flex-start',
+                            gap: '12px',
                             marginTop: '0.5rem'
                         }}>
-                            <ShieldCheck size={18} color="var(--primary)" />
-                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                Los datos de identidad están protegidos. Para cambiarlos, contacte con el departamento técnico.
-                            </p>
+                            <ShieldCheck size={24} color="#6366f1" style={{ marginTop: '2px' }} />
+                            <div>
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600 }}>Protección de Datos</p>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                                    Su información de identidad está vinculada a registros académicos oficiales. Para modificaciones, debe realizar una solicitud formal.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -192,13 +197,15 @@ const GeneralSettingsTab = ({ config, onUpdate, onLogoUpload }) => {
 
     return (
         <div className="fade-enter config-tab-content-wrapper">
-            <div className="tab-header-gradient">
-                <h3>
-                    <Globe size={28} /> Información Básica del Sistema
-                </h3>
-                <p>
-                    Configuración general y datos principales de la plataforma
-                </p>
+            <div className="tab-header-gradient" style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)' }}>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <h3>
+                        <Layers size={32} /> Parámetros Globales
+                    </h3>
+                    <p>
+                        Control maestro de la identidad y comportamiento del sistema
+                    </p>
+                </div>
             </div>
 
             <div className="config-grid-container">
@@ -346,13 +353,15 @@ const OperationalSettingsTab = ({ config, onUpdate }) => {
 
     return (
         <div className="fade-enter config-tab-content-wrapper">
-            <div className="tab-header-gradient">
-                <h3>
-                    <Clock size={28} /> Reglas Operacionales
-                </h3>
-                <p>
-                    Configuración de límites, procesos y automatizaciones del sistema
-                </p>
+            <div className="tab-header-gradient" style={{ background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)' }}>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <h3>
+                        <Activity size={32} /> Monitor Operacional
+                    </h3>
+                    <p>
+                        Gestión de capacidades, límites y automatización de procesos
+                    </p>
+                </div>
             </div>
 
             <div className="config-grid-container">
@@ -465,13 +474,15 @@ const SecurityTab = ({ config, onUpdate }) => {
 
     return (
         <div className="fade-enter config-tab-content-wrapper">
-            <div className="tab-header-gradient">
-                <h3>
-                    <Lock size={28} /> Seguridad y Acceso
-                </h3>
-                <p>
-                    Configuración de autenticación, autorización y protección de datos
-                </p>
+            <div className="tab-header-gradient" style={{ background: 'linear-gradient(135deg, #ef4444 0%, #991b1b 100%)' }}>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <h3>
+                        <ShieldCheck size={32} /> Fortaleza de Seguridad
+                    </h3>
+                    <p>
+                        Políticas de blindaje, acceso y blindaje de integridad de datos
+                    </p>
+                </div>
             </div>
 
             <div className="config-grid-container">
@@ -714,7 +725,7 @@ const ConfiguracionGeneral = () => {
 
     return (
         <div className="config-container">
-            <div className="config-grid-container" style={{ width: '100%', gridTemplateColumns: 'minmax(280px, 1fr) 3fr' }}>
+            <div className="config-grid-container main-config-layout">
                 {/* SIDEBAR TABS */}
                 <div className="config-sidebar">
                     <div style={{ marginBottom: '2rem' }}>
@@ -768,8 +779,7 @@ const ConfiguracionGeneral = () => {
 
                         <button
                             onClick={() => setActiveTab('perfil')}
-                            className={`config-tab-button ${activeTab === 'perfil' ? 'active' : ''}`}
-                            style={{ background: activeTab === 'perfil' ? 'linear-gradient(135deg, #3b82f6 0%, #1e4ed8 100%)' : '' }}
+                            className={`config-tab-button account-tab ${activeTab === 'perfil' ? 'active' : ''}`}
                         >
                             <User size={20} />
                             <div>

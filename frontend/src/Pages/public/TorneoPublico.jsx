@@ -8,7 +8,7 @@ import {
 import TorneoBracket from "../../components/TorneoBracket";
 import "../../css/home.css";
 
-const API_BASE = import.meta.env?.VITE_API_URL || "http://127.0.0.1:8000/api";
+import { apiFetch } from "../../services/api";
 
 const TEMAS_TORNEO = {
     futbol: {
@@ -71,15 +71,11 @@ const TorneoPublico = () => {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem("token"); // Optional
-            const headers = { "Content-Type": "application/json", Accept: "application/json" };
-            if (token) headers["Authorization"] = `Bearer ${token}`;
-
             const [torneoResp, equiposResp, partidosResp, goleadoresResp] = await Promise.all([
-                fetch(`${API_BASE}/torneos/${id}`, { headers }),
-                fetch(`${API_BASE}/equipos?torneo_id=${id}`, { headers }),
-                fetch(`${API_BASE}/partidos?torneo_id=${id}`, { headers }),
-                fetch(`${API_BASE}/estadisticas/torneo/${id}`, { headers }),
+                apiFetch(`/torneos/${id}`),
+                apiFetch(`/equipos?torneo_id=${id}`),
+                apiFetch(`/partidos?torneo_id=${id}`),
+                apiFetch(`/estadisticas/torneo/${id}`),
             ]);
 
             const torneoData = await torneoResp.json();

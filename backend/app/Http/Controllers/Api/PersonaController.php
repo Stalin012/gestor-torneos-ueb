@@ -171,7 +171,7 @@ class PersonaController extends Controller
                 'estatura'         => 'sometimes|nullable|numeric|min:0|max:3',
                 'telefono'         => 'sometimes|nullable|string|max:20',
                 'email'            => 'sometimes|nullable|email|max:255|unique:personas,email,' . $persona->cedula . ',cedula',
-                'foto'             => $request->hasFile('foto') ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048' : 'nullable',
+                'foto'             => $request->hasFile('foto') ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048' : 'nullable',
             ]);
 
             if ($validator->fails()) {
@@ -191,37 +191,24 @@ class PersonaController extends Controller
             }
 
             if ($request->hasFile('foto')) {
-                Log::info('Se detectó archivo de foto en la solicitud de actualización.');
-                // Eliminar foto anterior si existe
+                Log::info('Se detectó archivo de foto en la solicitud de actualización del perfil.');
+                
+                // 1. Eliminar foto anterior si existe
                 if (!empty($persona->foto) && Storage::disk('public')->exists($persona->foto)) {
                     Storage::disk('public')->delete($persona->foto);
                     Log::info('Foto anterior eliminada: ' . $persona->foto);
                 }
 
-                // Generar nombre de archivo descriptivo
-                $nombres = $data['nombres'] ?? $persona->nombres ?? '';
-                $apellidos = $data['apellidos'] ?? $persona->apellidos ?? '';
-                $originalName = $request->file('foto')->getClientOriginalName();
+                // 2. Generar nombre único y guardar en 'perfiles'
                 $extension = $request->file('foto')->getClientOriginalExtension();
-                $baseName = Str::slug("{$nombres} {$apellidos}");
-                $fileName = "{$baseName}-" . time() . ".{$extension}";
-
-                $path = $request->file('foto')->storeAs('fotos', $fileName, 'public');
+                $fileName = 'perfil_' . $persona->cedula . '_' . time() . '.' . $extension;
+                $path = $request->file('foto')->storeAs('perfiles', $fileName, 'public');
+                
                 $data['foto'] = $path;
                 Log::info('Nueva foto guardada en: ' . $path);
-                
-                // Sincronizar storage (alternativa al enlace simbólico en Windows)
-                Artisan::call('storage:sync');
-                Log::info('Storage sincronizado automáticamente');
-            } elseif ($request->has('foto')) {
-                // Si viene como string (URL), lo guardamos tal cual
-                Log::info('Campo foto presente como string (URL) o nulo.');
+            } elseif ($request->has('foto') && is_string($request->input('foto'))) {
                 $data['foto'] = $request->input('foto');
             } else {
-                Log::info('No se detectó archivo de foto ni campo foto en la solicitud de actualización.');
-                // Si no se envía 'foto' en el request, y no hay un archivo,
-                // y la persona ya tenía una foto, mantenemos la existente.
-                // Si se envía 'foto' como null, se borrará la foto.
                 if (!isset($data['foto']) && $persona->foto) {
                     $data['foto'] = $persona->foto;
                 }

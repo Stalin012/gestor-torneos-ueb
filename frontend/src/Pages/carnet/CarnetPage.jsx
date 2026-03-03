@@ -4,8 +4,8 @@ import { ArrowLeft, Loader2, AlertTriangle, Shield, Download, CheckCircle, QrCod
 import { QRCodeSVG } from "qrcode.react";
 import "../../css/home.css";
 
-const API_BASE = import.meta.env?.VITE_API_URL || "http://127.0.0.1:8000/api";
-const PDF_BASE = import.meta.env?.VITE_API_URL?.replace('/api', '') || "http://127.0.0.1:8000";
+import { apiFetch, API_BASE } from "../../services/api";
+
 
 const CarnetPage = () => {
   const { cedula } = useParams();
@@ -21,18 +21,22 @@ const CarnetPage = () => {
     const fetchCarnet = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_BASE}/jugadores/${cedula}/info`, {
-          headers: { "Accept": "application/json" },
-        });
-
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.message || "No se pudo obtener los datos del carnet.");
+        // Intentar primero como jugador
+        try {
+          const json = await apiFetch(`/jugadores/${cedula}/info`);
+          setJugador(json.data);
+        } catch (errJugador) {
+          // Si falla, probar como usuario (admin, representante, etc)
+          const jsonUser = await apiFetch(`/usuarios/${cedula}/info`);
+          setJugador({
+            ...jsonUser.data,
+            // Ajustar nombres de campos si difieren (UsuarioController vs JugadorController)
+            nombre_equipo: jsonUser.data.rol ? jsonUser.data.rol.toUpperCase() : 'SISTEMA',
+            posicion: jsonUser.data.estado === 'ACTIVO' ? 'VERIFICADO' : 'INACTIVO'
+          });
         }
-        const json = await res.json();
-        setJugador(json.data);
       } catch (err) {
-        setErrorMsg(err.message);
+        setErrorMsg("No se encontró información para esta credencial.");
       } finally {
         setLoading(false);
       }
@@ -43,7 +47,9 @@ const CarnetPage = () => {
   const handleDescargarPdf = async () => {
     try {
       setGenerating(true);
-      window.open(`${API_BASE}/jugadores/${jugador.cedula}/carnet-pdf`, '_blank');
+      // Determine if it is a user or a player
+      const endpoint = jugador.rol ? 'usuarios' : 'jugadores';
+      window.open(`${API_BASE}/${endpoint}/${jugador.cedula}/carnet-pdf`, '_blank');
       setTimeout(() => setGenerating(false), 2000);
     } catch (error) {
       console.error("Error al generar PDF:", error);
@@ -147,7 +153,7 @@ const CarnetPage = () => {
   );
 
   const fotoUrl = jugador.foto
-    ? `${PDF_BASE}/storage/${jugador.foto}`
+    ? `${API_BASE.replace('/api', '')}/storage/${jugador.foto}`
     : "https://ui-avatars.com/api/?name=" + encodeURIComponent(jugador.nombre_completo) + "&background=3b82f6&color=fff&size=256";
 
   return (

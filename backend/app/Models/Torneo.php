@@ -26,18 +26,30 @@ class Torneo extends Model
         'nombre',
         'deporte_id',
         'categoria_id',
+        'categorias_incluidas',
         'fecha_inicio',
         'fecha_fin',
+        'fecha_inicio_inscripciones',
+        'fecha_fin_inscripciones',
         'ubicacion',
-        'creado_por',     // usuario que creó el torneo
-        'estado',         // Activo/Inactivo/Finalizado
+        'ciudad_campus',
+        'limite_equipos',
+        'limite_jugadores_equipo',
+        'creado_por',
+        'responsable_nombre',
+        'contacto',
+        'estado',
         'descripcion',
+        'notas_internas',
     ];
 
-    // Cast de fechas
+    // Cast de fechas y arreglos JSON
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin'    => 'date',
+        'fecha_inicio'               => 'date',
+        'fecha_fin'                  => 'date',
+        'fecha_inicio_inscripciones' => 'date',
+        'fecha_fin_inscripciones'    => 'date',
+        'categorias_incluidas'       => 'array',
     ];
 
     // ---------------------------------------------------------------

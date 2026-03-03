@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\LoginController; // Asegúrate de que este namespace sea correcto
 
 // Sanctum routes
 Route::middleware(['web'])->group(function () {
@@ -25,3 +26,8 @@ Route::get('/', function () {
 // Ruta para validar carnet mediante QR
 Route::get('/carnet/validar/{token}', [App\Http\Controllers\Api\CarnetController::class, 'validar'])
     ->name('carnet.validar');
+
+// AÑADE ESTAS LÍNEAS PARA EL LOGIN Y LOGOUT
+Route::post('/login', [LoginController::class, 'login'])->name('login');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout'); // Si tienes un método de logout
+

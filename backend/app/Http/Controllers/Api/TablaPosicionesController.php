@@ -42,6 +42,7 @@ class TablaPosicionesController extends Controller
             $tabla[$equipo->id] = [
                 'equipo_id'        => $equipo->id,
                 'nombre'           => $equipo->nombre,
+                'logo'             => $equipo->logo_url, // Añadir logo_url aquí
                 'jugados'          => 0,
                 'ganados'          => 0,
                 'empatados'        => 0,

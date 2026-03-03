@@ -7,124 +7,127 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-// Páginas Públicas
-import Home from "./Pages/Home";
-import Login from "./Pages/Login";
-import Register from "./Pages/Register";
-import DisciplinaPage from "./Pages/public/DisciplinaPage";
-import TorneoPublico from "./Pages/public/TorneoPublico";
-import NoticiaDetalle from "./Pages/public/NoticiaDetalle";
-
-// Layouts
+import { Suspense, lazy } from 'react';
+import LoadingScreen from './components/LoadingScreen';
 import UnifiedLayout from "./layouts/UnifiedLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 
-// Módulos Admin
-import AdminDashboard from "./Pages/admin/Dashboard";
-import TorneosDeportes from "./Pages/admin/TorneosDeportes";
-import TorneoDetalle from "./Pages/admin/TorneoDetalle";
-import PartidosFixtures from "./Pages/admin/PartidosFixtures";
-import EquiposInscripciones from "./Pages/admin/EquiposInscripciones";
-import JugadoresPersonas from "./Pages/admin/JugadoresPersonas";
-import Arbitros from "./Pages/admin/Arbitros";
-import UsuariosSistema from "./Pages/admin/UsuariosSistema";
-import GaleriaMedia from "./Pages/admin/GaleriaMedia";
-import Auditoria from "./Pages/admin/Auditoria";
-import Noticias from "./Pages/admin/Noticias";
-import ConfiguracionGeneral from "./Pages/admin/ConfiguracionGeneral";
-import Estadisticas from "./Pages/admin/Estadisticas";
-import PerfilAdmin from "./Pages/admin/Perfil";
+// Páginas Públicas (Lazy)
+const Home = lazy(() => import("./Pages/Home"));
+const Login = lazy(() => import("./Pages/Login"));
+const Register = lazy(() => import("./Pages/Register"));
+const DisciplinaPage = lazy(() => import("./Pages/public/DisciplinaPage"));
+const TorneoPublico = lazy(() => import("./Pages/public/TorneoPublico"));
+const NoticiaDetalle = lazy(() => import("./Pages/public/NoticiaDetalle"));
+const GaleriaPublica = lazy(() => import("./Pages/public/GaleriaPublica"));
 
-// Módulos Representante
-import DashboardRepresentante from "./Pages/representante/DashboardRepresentante";
-import CalendarioRepresentante from "./Pages/representante/CalendarioRepresentante";
-import NominaRepresentante from "./Pages/representante/NominaRepresentante";
+// Módulos Admin (Lazy)
+const AdminDashboard = lazy(() => import("./Pages/admin/Dashboard"));
+const TorneosDeportes = lazy(() => import("./Pages/admin/TorneosDeportes"));
+const TorneoDetalle = lazy(() => import("./Pages/admin/TorneoDetalle"));
+const PartidosFixtures = lazy(() => import("./Pages/admin/PartidosFixtures"));
+const EquiposInscripciones = lazy(() => import("./Pages/admin/EquiposInscripciones"));
+const JugadoresPersonas = lazy(() => import("./Pages/admin/JugadoresPersonas"));
+const Arbitros = lazy(() => import("./Pages/admin/Arbitros"));
+const UsuariosSistema = lazy(() => import("./Pages/admin/UsuariosSistema"));
+const GaleriaMedia = lazy(() => import("./Pages/admin/GaleriaMedia"));
+const Auditoria = lazy(() => import("./Pages/admin/Auditoria"));
+const Noticias = lazy(() => import("./Pages/admin/Noticias"));
+const ConfiguracionGeneral = lazy(() => import("./Pages/admin/ConfiguracionGeneral"));
+const Estadisticas = lazy(() => import("./Pages/admin/Estadisticas"));
+const PerfilAdmin = lazy(() => import("./Pages/admin/Perfil"));
 
-import EquipoRepresentante from "./Pages/representante/EquipoRepresentante";
-import InscripcionesRepresentante from "./Pages/representante/InscripcionesRepresentante";
-import PartidosRepresentante from "./Pages/representante/PartidosRepresentante";
-import PerfilRepresentante from "./Pages/representante/PerfilRepresentante";
-import EstadisticasRepresentante from "./Pages/representante/EstadisticasRepresentante";
+// Módulos Representante (Lazy)
+const DashboardRepresentante = lazy(() => import("./Pages/representante/DashboardRepresentante"));
+const CalendarioRepresentante = lazy(() => import("./Pages/representante/CalendarioRepresentante"));
+const NominaRepresentante = lazy(() => import("./Pages/representante/NominaRepresentante"));
+const EquipoRepresentante = lazy(() => import("./Pages/representante/EquipoRepresentante"));
+const InscripcionesRepresentante = lazy(() => import("./Pages/representante/InscripcionesRepresentante"));
+const PartidosRepresentante = lazy(() => import("./Pages/representante/PartidosRepresentante"));
+const PerfilRepresentante = lazy(() => import("./Pages/representante/PerfilRepresentante"));
+const EstadisticasRepresentante = lazy(() => import("./Pages/representante/EstadisticasRepresentante"));
 
+// Módulos Árbitro (Lazy)
+const RefereeDashboard = lazy(() => import("./Pages/referee/Dashboard"));
+const PartidosAsignados = lazy(() => import("./Pages/referee/PartidosAsignados"));
+const RefereePerfil = lazy(() => import("./Pages/referee/Perfil"));
 
-// Módulos Árbitro
-import RefereeDashboard from "./Pages/referee/Dashboard";
-import PartidosAsignados from "./Pages/referee/PartidosAsignados";
-import RefereePerfil from "./Pages/referee/Perfil";
-
-// Otros
-import CarnetPage from "./Pages/carnet/CarnetPage";
-import UserProfile from "./Pages/user/Profile";
-import EquiposInscritos from "./Pages/user/EquiposInscritos";
-import NotFound from "./Pages/NotFound";
+// Otros (Lazy)
+const CarnetPage = lazy(() => import("./Pages/carnet/CarnetPage"));
+const UserProfile = lazy(() => import("./Pages/user/Profile"));
+const EquiposInscritos = lazy(() => import("./Pages/user/EquiposInscritos"));
+const NotFound = lazy(() => import("./Pages/NotFound"));
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* --- RUTAS PÚBLICAS --- */}
-        <Route path="/" element={<ErrorBoundary><Home /></ErrorBoundary>} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/carnet/:cedula" element={<CarnetPage />} />
-        <Route path="/disciplinas/:deporte" element={<DisciplinaPage />} />
-        <Route path="/torneos/:id" element={<TorneoPublico />} />
-        <Route path="/noticias/:id" element={<NoticiaDetalle />} />
+      <Suspense fallback={<LoadingScreen message="Cargando interfaz..." />}>
+        <Routes>
+          {/* --- RUTAS PÚBLICAS --- */}
+          <Route path="/" element={<ErrorBoundary><Home /></ErrorBoundary>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/carnet/:cedula" element={<CarnetPage />} />
+          <Route path="/disciplinas/:deporte" element={<DisciplinaPage />} />
+          <Route path="/torneos/:id" element={<TorneoPublico />} />
+          <Route path="/noticias/:id" element={<NoticiaDetalle />} />
+          <Route path="/galeria" element={<GaleriaPublica />} />
 
-        {/* --- RUTAS ADMINISTRADOR --- */}
-        <Route path="/admin" element={<UnifiedLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="torneos-deportes" element={<TorneosDeportes />} />
-          <Route path="torneos/:id" element={<TorneoDetalle />} />
-          <Route path="torneos" element={<TorneosDeportes />} />
-          <Route path="partidos" element={<PartidosFixtures />} />
-          <Route path="equipos/:torneoId?" element={<EquiposInscripciones />} />
-          <Route path="jugadores" element={<JugadoresPersonas />} />
-          <Route path="arbitros" element={<Arbitros />} />
-          <Route path="usuarios" element={<UsuariosSistema />} />
-          <Route path="galeria" element={<GaleriaMedia />} />
-          <Route path="auditoria" element={<Auditoria />} />
-          <Route path="noticias" element={<Noticias />} />
-          <Route path="configuracion" element={<ConfiguracionGeneral />} />
-          <Route path="estadisticas" element={<Estadisticas />} />
-          <Route path="perfil" element={<PerfilAdmin />} />
-        </Route>
+          {/* --- RUTAS ADMINISTRADOR --- */}
+          <Route path="/admin" element={<UnifiedLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="torneos-deportes" element={<TorneosDeportes />} />
+            <Route path="torneos/:id" element={<TorneoDetalle />} />
+            <Route path="torneos" element={<TorneosDeportes />} />
+            <Route path="partidos" element={<PartidosFixtures />} />
+            <Route path="equipos/:torneoId?" element={<EquiposInscripciones />} />
+            <Route path="jugadores" element={<JugadoresPersonas />} />
+            <Route path="arbitros" element={<Arbitros />} />
+            <Route path="usuarios" element={<UsuariosSistema />} />
+            <Route path="galeria" element={<GaleriaMedia />} />
+            <Route path="auditoria" element={<Auditoria />} />
+            <Route path="noticias" element={<Noticias />} />
+            <Route path="configuracion" element={<ConfiguracionGeneral />} />
+            <Route path="estadisticas" element={<Estadisticas />} />
+            <Route path="perfil" element={<PerfilAdmin />} />
+          </Route>
 
-        {/* --- RUTAS REPRESENTANTE --- */}
-        <Route path="/representante" element={<UnifiedLayout />}>
-          <Route index element={<DashboardRepresentante />} />
-          <Route path="dashboard" element={<DashboardRepresentante />} />
-          <Route path="calendario" element={<CalendarioRepresentante />} />
+          {/* --- RUTAS REPRESENTANTE --- */}
+          <Route path="/representante" element={<UnifiedLayout />}>
+            <Route index element={<DashboardRepresentante />} />
+            <Route path="dashboard" element={<DashboardRepresentante />} />
+            <Route path="calendario" element={<CalendarioRepresentante />} />
 
-          <Route path="jugadores" element={<NominaRepresentante />} />
-          <Route path="equipos" element={<EquipoRepresentante />} />
-          <Route path="inscripciones" element={<InscripcionesRepresentante />} />
-          <Route path="partidos" element={<PartidosRepresentante />} />
-          <Route path="perfil" element={<PerfilRepresentante />} />
-          <Route path="estadisticas" element={<EstadisticasRepresentante />} />
-        </Route>
+            <Route path="jugadores" element={<NominaRepresentante />} />
+            <Route path="equipos" element={<EquipoRepresentante />} />
+            <Route path="inscripciones" element={<InscripcionesRepresentante />} />
+            <Route path="partidos" element={<PartidosRepresentante />} />
+            <Route path="perfil" element={<PerfilRepresentante />} />
+            <Route path="estadisticas" element={<EstadisticasRepresentante />} />
+          </Route>
 
 
-        {/* --- RUTAS ÁRBITRO --- */}
-        <Route path="/referee" element={<UnifiedLayout />}>
-          <Route index element={<RefereeDashboard />} />
-          <Route path="dashboard" element={<RefereeDashboard />} />
-          <Route path="partidos" element={<PartidosAsignados />} />
-          <Route path="perfil" element={<RefereePerfil />} />
-        </Route>
+          {/* --- RUTAS ÁRBITRO --- */}
+          <Route path="/referee" element={<UnifiedLayout />}>
+            <Route index element={<RefereeDashboard />} />
+            <Route path="dashboard" element={<RefereeDashboard />} />
+            <Route path="partidos" element={<PartidosAsignados />} />
+            <Route path="perfil" element={<RefereePerfil />} />
+          </Route>
 
-        {/* --- RUTAS USUARIO/JUGADOR --- */}
-        <Route path="/user" element={<UnifiedLayout />}>
-          <Route index element={<UserProfile />} />
-          <Route path="profile" element={<UserProfile />} />
-          <Route path="perfil" element={<UserProfile />} />
-          <Route path="equipos" element={<EquiposInscritos />} />
-        </Route>
+          {/* --- RUTAS USUARIO/JUGADOR --- */}
+          <Route path="/user" element={<UnifiedLayout />}>
+            <Route index element={<UserProfile />} />
+            <Route path="profile" element={<UserProfile />} />
+            <Route path="perfil" element={<UserProfile />} />
+            <Route path="equipos" element={<EquiposInscritos />} />
+          </Route>
 
-        {/* --- 404 --- */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* --- 404 --- */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

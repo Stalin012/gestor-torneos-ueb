@@ -28,6 +28,7 @@ import {
     Swords
 } from "lucide-react";
 import api, { API_BASE } from "../../api";
+import { getAssetUrl } from "../../utils/helpers";
 
 import LoadingScreen from "../../components/LoadingScreen";
 import TorneoBracket from "../../components/TorneoBracket";
@@ -127,82 +128,7 @@ const getTemaDeporte = (nombreDeporte) => {
     return TEMAS_TORNEO.default;
 };
 
-/**
- * Calcula la tabla de posiciones basada en los resultados
- */
-const calcularTablaPosiciones = (equipos, partidos) => {
-    const tabla = {};
 
-    // Inicializar estadísticas para cada equipo
-    equipos.forEach((equipo) => {
-        tabla[equipo.id] = {
-            id: equipo.id,
-            nombre: equipo.nombre,
-            logo: equipo.logo,
-            pj: 0, // Partidos jugados
-            pg: 0, // Partidos ganados
-            pe: 0, // Partidos empatados
-            pp: 0, // Partidos perdidos
-            gf: 0, // Goles a favor
-            gc: 0, // Goles en contra
-            dg: 0, // Diferencia de goles
-            pts: 0, // Puntos
-        };
-    });
-
-    // Calcular estadísticas basadas en partidos finalizados
-    partidos
-        .filter((p) => p.estado === ESTADOS_PARTIDO.FINALIZADO)
-        .forEach((partido) => {
-            const localId = partido.equipo_local_id;
-            const visitanteId = partido.equipo_visitante_id;
-            const golesLocal = partido.marcador_local || 0;
-            const golesVisitante = partido.marcador_visitante || 0;
-
-            if (!tabla[localId] || !tabla[visitanteId]) return;
-
-            // Actualizar partidos jugados
-            tabla[localId].pj++;
-            tabla[visitanteId].pj++;
-
-            // Actualizar goles
-            tabla[localId].gf += golesLocal;
-            tabla[localId].gc += golesVisitante;
-            tabla[visitanteId].gf += golesVisitante;
-            tabla[visitanteId].gc += golesLocal;
-
-            // Determinar resultado
-            if (golesLocal > golesVisitante) {
-                // Victoria local
-                tabla[localId].pg++;
-                tabla[localId].pts += 3;
-                tabla[visitanteId].pp++;
-            } else if (golesLocal < golesVisitante) {
-                // Victoria visitante
-                tabla[visitanteId].pg++;
-                tabla[visitanteId].pts += 3;
-                tabla[localId].pp++;
-            } else {
-                // Empate
-                tabla[localId].pe++;
-                tabla[visitanteId].pe++;
-                tabla[localId].pts += 1;
-                tabla[visitanteId].pts += 1;
-            }
-        });
-
-    // Calcular diferencia de goles
-    Object.values(tabla).forEach((equipo) => {
-        equipo.dg = equipo.gf - equipo.gc;
-    });
-
-    // Ordenar por puntos, luego por diferencia de goles, luego por goles a favor
-    return Object.values(tabla).sort((a, b) => {
-        if (b.pts !== a.pts) return b.pts - a.pts;
-        if (b.dg !== a.dg) return b.dg - a.dg;
-        return b.gf - a.gf;
-    });
-};
 
 // =========================================================
 // COMPONENTE: MODAL PARTIDO
@@ -263,6 +189,8 @@ const PartidoModal = ({ isOpen, onClose, onSave, initialData, equipos, torneoId 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!window.confirm(isEditMode ? '¿Actualizar información del encuentro?' : '¿Confirmar creación de nuevo encuentro?')) return;
+
         if (formData.equipo_local_id === formData.equipo_visitante_id) {
             alert("El equipo local y visitante no pueden ser el mismo.");
             return;
@@ -294,7 +222,7 @@ const PartidoModal = ({ isOpen, onClose, onSave, initialData, equipos, torneoId 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={onClose}>
+        <div className="modal-overlay fade-in" style={{ zIndex: 1200 }}>
             <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(53, 110, 216, 0.1), rgba(16, 185, 129, 0.05))',
@@ -484,7 +412,7 @@ const EquipoModal = ({ isOpen, onClose, equipo, jugadores, tema }) => {
     if (!isOpen || !equipo) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={onClose}>
+        <div className="modal-overlay fade-in" style={{ zIndex: 1200 }}>
             <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05))',
@@ -534,8 +462,8 @@ const EquipoModal = ({ isOpen, onClose, equipo, jugadores, tema }) => {
                                 boxShadow: `0 10px 30px ${tema.colorPrimario}22`
                             }}
                         >
-                            {equipo.logo_url ? (
-                                <img src={equipo.logo_url} alt={equipo.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            {equipo.logo_url || equipo.logo ? (
+                                <img src={getAssetUrl(equipo.logo_url || equipo.logo)} alt={equipo.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             ) : (
                                 <span style={{ fontSize: "2.5rem", fontWeight: 900, color: tema.colorPrimario }}>{equipo.nombre.charAt(0)}</span>
                             )}
@@ -626,6 +554,8 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
         asistencias: 0,
         tarjetas_amarillas: 0,
         tarjetas_rojas: 0,
+        rebotes: 0,
+        bloqueos: 0,
     });
 
     const loadPlayersAndStats = useCallback(async () => {
@@ -672,6 +602,8 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
         e.preventDefault();
         if (!form.jugador_cedula) return;
 
+        if (!window.confirm('¿Registrar incidencia en el acta técnica?')) return;
+
         try {
             const resp = await api.post('/estadisticas', {
                 partido_id: partido.id,
@@ -679,7 +611,7 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
             });
 
             if (resp.status === 200 || resp.status === 201) {
-                setForm({ jugador_cedula: "", goles: 0, asistencias: 0, tarjetas_amarillas: 0, tarjetas_rojas: 0 });
+                setForm({ jugador_cedula: "", goles: 0, asistencias: 0, tarjetas_amarillas: 0, tarjetas_rojas: 0, rebotes: 0, bloqueos: 0 });
                 loadPlayersAndStats();
             }
         } catch (err) {
@@ -690,7 +622,7 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
     if (!isOpen || !partido) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={onClose}>
+        <div className="modal-overlay fade-in" style={{ zIndex: 1200 }}>
             <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
                 <div className="modal-header" style={{
                     background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(59, 130, 246, 0.05))',
@@ -723,7 +655,7 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
                         <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                             <label className="form-label" style={{ fontWeight: 800 }}>Competidor</label>
                             <select className="pro-input" value={form.jugador_cedula} onChange={e => setForm({ ...form, jugador_cedula: e.target.value })} required>
-                                <option value="">Seleccione un atleta...</option>
+                                <option value="">Seleccione un deportista...</option>
                                 <optgroup label={partido.equipo_local?.nombre || 'Local'}>
                                     {Array.isArray(playersLocal) && playersLocal.map(p => (
                                         <option key={p.cedula} value={p.cedula}>{p.persona?.nombres} {p.persona?.apellidos}</option>
@@ -753,6 +685,18 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
                             <div className="form-group">
                                 <label className="form-label" style={{ fontSize: '0.8rem', textAlign: 'center' }}>Rojas</label>
                                 <input type="number" className="pro-input" min="0" max="1" value={form.tarjetas_rojas} onChange={e => setForm({ ...form, tarjetas_rojas: parseInt(e.target.value) || 0 })} style={{ textAlign: 'center', fontWeight: 700, color: '#ef4444' }} />
+                            </div>
+                        </div>
+
+                        {/* Campos adicionales para otros deportes (Baloncesto, etc) */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div className="form-group">
+                                <label className="form-label" style={{ fontSize: '0.8rem', textAlign: 'center' }}>Rebotes</label>
+                                <input type="number" className="pro-input" min="0" value={form.rebotes} onChange={e => setForm({ ...form, rebotes: parseInt(e.target.value) || 0 })} style={{ textAlign: 'center', fontWeight: 700 }} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label" style={{ fontSize: '0.8rem', textAlign: 'center' }}>Bloqueos</label>
+                                <input type="number" className="pro-input" min="0" value={form.bloqueos} onChange={e => setForm({ ...form, bloqueos: parseInt(e.target.value) || 0 })} style={{ textAlign: 'center', fontWeight: 700 }} />
                             </div>
                         </div>
 
@@ -787,7 +731,7 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
                             <table className="glass-table">
                                 <thead>
                                     <tr>
-                                        <th>Atleta</th>
+                                        <th>Deportista</th>
                                         <th style={{ textAlign: 'center' }}>⚽ G</th>
                                         <th style={{ textAlign: 'center' }}>🎯 A</th>
                                         <th style={{ textAlign: 'center' }}>🟨</th>
@@ -803,6 +747,9 @@ const MatchStatsModal = ({ isOpen, onClose, partido, tema }) => {
                                             </td>
                                             <td style={{ textAlign: 'center', fontWeight: 900, color: tema.colorPrimario, fontSize: '1.1rem' }}>{s.goles}</td>
                                             <td style={{ textAlign: 'center', fontWeight: 600 }}>{s.asistencias}</td>
+                                            <td style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                {s.rebotes || 0}r / {s.bloqueos || 0}b
+                                            </td>
                                             <td style={{ textAlign: 'center' }}>
                                                 {s.tarjetas_amarillas > 0 && <span style={{ background: '#fbbf24', padding: '2px 6px', borderRadius: '4px', color: '#000', fontWeight: 800 }}>{s.tarjetas_amarillas}</span>}
                                                 {s.tarjetas_amarillas === 0 && '-'}
@@ -861,25 +808,31 @@ const TorneoDetalle = () => {
     const [selectedPartidos, setSelectedPartidos] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
 
+    const [tablaPosiciones, setTablaPosiciones] = useState([]);
+
     // Cargar datos del torneo
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const [torneoResp, equiposResp, partidosResp] = await Promise.all([
+            const [torneoResp, equiposResp, partidosResp, tablaResp] = await Promise.all([
                 api.get(`/torneos/${torneoId}`),
                 api.get(`/torneos/${torneoId}/equipos`),
                 api.get(`/partidos?torneo_id=${torneoId}&with=equipoLocal,equipoVisitante`),
+                api.get(`/torneos/${torneoId}/tabla-posiciones`),
             ]);
 
             const torneoData = torneoResp.data;
             const equiposData = equiposResp.data;
             const partidosData = partidosResp.data;
+            const tablaPosicionesData = tablaResp.data.tabla;
 
             setTorneo(torneoData);
             setEquipos(Array.isArray(equiposData) ? equiposData : equiposData.data || []);
             setPartidos(Array.isArray(partidosData) ? partidosData : partidosData.data || []);
+            setTablaPosiciones(Array.isArray(tablaPosicionesData) ? tablaPosicionesData : []);
+            console.log("Tabla de Posiciones cargada:", tablaPosicionesData);
         } catch (err) {
             console.error(err);
             setError(err.message || "Error al cargar datos del torneo");
@@ -917,10 +870,7 @@ const TorneoDetalle = () => {
         return getTemaDeporte(torneo.deporte?.nombre);
     }, [torneo]);
 
-    // Tabla de posiciones
-    const tablaPosiciones = useMemo(() => {
-        return calcularTablaPosiciones(equipos, partidos);
-    }, [equipos, partidos]);
+
 
     // Handlers para estado del torneo
     const handleIniciarTorneo = async () => {
@@ -1286,7 +1236,7 @@ const TorneoDetalle = () => {
                                         </thead>
                                         <tbody>
                                             {tablaPosiciones.map((item, index) => (
-                                                <tr key={item.id} style={
+                                                <tr key={item.equipo_id} style={
                                                     torneo?.estado === "Finalizado" && index === 0
                                                         ? { background: 'rgba(234, 179, 8, 0.1)', borderLeft: '4px solid #eab308' }
                                                         : {}
@@ -1296,6 +1246,9 @@ const TorneoDetalle = () => {
                                                     </td>
                                                     <td style={{ fontWeight: 600 }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            {(item.logo || item.logo_url) && (
+                                                                <img src={getAssetUrl(item.logo || item.logo_url)} alt={item.nombre} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                                                            )}
                                                             {item.nombre}
                                                             {index === 0 && torneo?.estado === "Finalizado" &&
                                                                 <span style={{ fontSize: '0.7rem', background: '#eab308', color: '#000', padding: '2px 8px', borderRadius: '10px', fontWeight: 900 }}>CAMPEÓN</span>
@@ -1597,8 +1550,8 @@ const TorneoDetalle = () => {
                                                     <td style={{ fontWeight: 600 }}>{jugador.nombre_jugador}</td>
                                                     <td>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            {jugador.equipo_logo ? (
-                                                                <img src={jugador.equipo_logo} alt={jugador.equipo_nombre} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                                                            {(jugador.equipo_logo || jugador.equipo_logo_url) ? (
+                                                                <img src={getAssetUrl(jugador.equipo_logo || jugador.equipo_logo_url)} alt={jugador.equipo_nombre} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
                                                             ) : (
                                                                 <div style={{ width: '24px', height: '24px', background: tema.gradiente, borderRadius: '50%', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                                                                     {jugador.equipo_nombre?.charAt(0)}

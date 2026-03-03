@@ -14,8 +14,8 @@ const ROUTES = {
 };
 
 const saveAuthData = (token, user) => {
-  localStorage.setItem("token", token);
-  localStorage.setItem("user", JSON.stringify(user));
+  sessionStorage.setItem("token", token);
+  sessionStorage.setItem("user", JSON.stringify(user));
 };
 
 const getRedirectPath = (userRole) => {
@@ -30,6 +30,31 @@ const getRedirectPath = (userRole) => {
   }
 };
 
+const validarCedulaEcuatoriana = (cedula) => {
+  if (!cedula || cedula.length !== 10) return false;
+
+  const provincia = parseInt(cedula.substring(0, 2), 10);
+  if (provincia < 1 || (provincia > 24 && provincia !== 30)) return false;
+
+  const tercerDigito = parseInt(cedula.substring(2, 3), 10);
+  if (tercerDigito >= 6) return false;
+
+  const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+  let suma = 0;
+
+  for (let i = 0; i < 9; i++) {
+    let valor = parseInt(cedula[i], 10) * coeficientes[i];
+    if (valor >= 10) valor -= 9;
+    suma += valor;
+  }
+
+  let digitoCalculado = 10 - (suma % 10);
+  if (digitoCalculado === 10) digitoCalculado = 0;
+
+  const digitoReal = parseInt(cedula[9], 10);
+  return digitoCalculado === digitoReal;
+};
+
 const Register = () => {
   const navigate = useNavigate();
 
@@ -40,7 +65,7 @@ const Register = () => {
     email: "",
     password: "",
     password_confirmation: "",
-    rol: "usuario", // o "representante" si deseas habilitarlo
+    rol: "jugador",
   });
 
   const [loading, setLoading] = useState(false);
@@ -62,6 +87,19 @@ const Register = () => {
     async (e) => {
       e.preventDefault();
       setError(null);
+
+      const cedulaLimpia = formData.cedula.trim();
+
+      if (!/^\d{10}$/.test(cedulaLimpia)) {
+        setError("La cédula debe contener exactamente 10 números.");
+        return;
+      }
+
+      if (!validarCedulaEcuatoriana(cedulaLimpia)) {
+        setError("La cédula ingresada no es válida para Ecuador. Revisa los números.");
+        return;
+      }
+
       setLoading(true);
 
       try {

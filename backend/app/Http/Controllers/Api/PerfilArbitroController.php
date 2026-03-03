@@ -140,40 +140,31 @@ class PerfilArbitroController extends Controller
         }
 
         // Nombre único del archivo
-        $extension = $request->file('foto')->getClientOriginalExtension();
-        $filename  = 'perfil_' . $usuario->cedula . '_' . Str::uuid() . '.' . $extension;
+    $extension = $request->file('foto')->getClientOriginalExtension();
+    $filename  = 'perfil_' . $usuario->cedula . '_' . time() . '.' . $extension;
 
-        // Guardar en storage/app/public/perfiles
-        try {
-            $path = $request->file('foto')->storeAs(
-                'perfiles',
-                $filename,
-                'public'
-            );
-        } catch (\Exception $e) {
-            \Log::error('Error al guardar la foto de perfil: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Error interno al guardar la foto. Por favor, inténtalo de nuevo más tarde.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+    // Guardar en storage/app/public/perfiles
+    try {
+        $path = $request->file('foto')->storeAs('perfiles', $filename, 'public');
+    } catch (\Exception $e) {
+        \Log::error('Error al guardar la foto de perfil: ' . $e->getMessage());
+        return response()->json(['message' => 'Error al guardar la imagen.'], 500);
+    }
 
-        // Guardar ruta en DB
-        $persona->update([
-            'foto' => $path,
-        ]);
+    // Guardar ruta en DB
+    $persona->update(['foto' => $path]);
 
-        $this->logAudit(
-            $usuario ? $usuario->cedula : 'SISTEMA',
-            'ACTUALIZAR_FOTO_PERFIL',
-            'Persona',
-            (string)$persona->cedula,
-            'Foto de perfil de árbitro actualizada'
-        );
+    $this->logAudit(
+        $usuario ? $usuario->cedula : 'SISTEMA',
+        'ACTUALIZAR_FOTO_PERFIL',
+        'Persona',
+        (string)$persona->cedula,
+        'Foto de perfil de árbitro actualizada'
+    );
 
-        return response()->json([
-            'message' => 'Foto de perfil actualizada correctamente.',
-            'foto_url' => 'storage/' . $path,
-        ]);
+    return response()->json([
+        'message' => 'Foto de perfil actualizada correctamente.',
+        'foto_url' => $persona->foto_url,
+    ]);
     }
 }

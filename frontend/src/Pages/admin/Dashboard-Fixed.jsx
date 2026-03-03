@@ -120,10 +120,10 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div style={{ 
-      width: '100%', 
-      maxWidth: '100%', 
-      padding: '0', 
+    <div style={{
+      width: '100%',
+      maxWidth: '100%',
+      padding: '0',
       margin: '0',
       boxSizing: 'border-box',
       overflow: 'hidden'
@@ -132,25 +132,25 @@ const AdminDashboard = () => {
       <div style={{ marginBottom: '2rem' }}>
         <div className="dashboard-header-layout">
           <div>
-            <span style={{ 
-              color: 'var(--primary)', 
-              fontWeight: 800, 
-              fontSize: '0.75rem', 
-              letterSpacing: '2px', 
-              textTransform: 'uppercase' 
+            <span style={{
+              color: 'var(--primary)',
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              letterSpacing: '2px',
+              textTransform: 'uppercase'
             }}>Sistema Integral</span>
-            <h1 style={{ 
-              fontSize: '2.5rem', 
-              fontWeight: 900, 
-              color: 'var(--text-primary)', 
+            <h1 style={{
+              fontSize: '2.5rem',
+              fontWeight: 900,
+              color: 'var(--text-primary)',
               margin: '0.5rem 0',
               background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text'
             }}>Panel Administrativo</h1>
-            <p style={{ 
-              color: 'var(--text-secondary)', 
+            <p style={{
+              color: 'var(--text-secondary)',
               fontSize: '1.1rem',
               margin: 0
             }}>Gestión centralizada de la actividad deportiva institucional</p>
@@ -159,11 +159,11 @@ const AdminDashboard = () => {
       </div>
 
       {/* QUICK ACTIONS SECTION */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: '1rem', 
-        marginBottom: '2rem' 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '1rem',
+        marginBottom: '2rem'
       }}>
         {quickActions.map((action, idx) => {
           const Icon = action.icon;
@@ -202,10 +202,10 @@ const AdminDashboard = () => {
                 <Icon size={24} />
               </div>
               <div style={{ flex: 1 }}>
-                <span style={{ 
-                  fontWeight: 700, 
-                  fontSize: '1rem', 
-                  color: 'var(--text-primary)' 
+                <span style={{
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  color: 'var(--text-primary)'
                 }}>{action.label}</span>
               </div>
               <ChevronRight size={18} style={{ color: 'var(--text-muted)' }} />
@@ -215,18 +215,18 @@ const AdminDashboard = () => {
       </div>
 
       {/* STATS SECTION (KPIs) */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '1rem', 
-        marginBottom: '2rem' 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '1rem',
+        marginBottom: '2rem'
       }}>
         <div className="pro-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            marginBottom: '1rem' 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '1rem'
           }}>
             <div style={{
               padding: '12px',
@@ -239,30 +239,30 @@ const AdminDashboard = () => {
               <Trophy size={24} style={{ color: 'white' }} />
             </div>
           </div>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: 900, 
-            color: '#3b82f6', 
-            marginBottom: '0.5rem' 
+          <div style={{
+            fontSize: '2.5rem',
+            fontWeight: 900,
+            color: '#3b82f6',
+            marginBottom: '0.5rem'
           }}>{stats.torneos.total}</div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: 600, 
-            color: 'var(--text-secondary)' 
+          <div style={{
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            color: 'var(--text-secondary)'
           }}>Torneos Totales</div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-muted)', 
-            marginTop: '0.25rem' 
+          <div style={{
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            marginTop: '0.25rem'
           }}>{stats.torneos.activos} activos</div>
         </div>
-        
+
         <div className="pro-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            marginBottom: '1rem' 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '1rem'
           }}>
             <div style={{
               padding: '12px',
@@ -275,30 +275,30 @@ const AdminDashboard = () => {
               <Calendar size={24} style={{ color: 'white' }} />
             </div>
           </div>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: 900, 
-            color: '#10b981', 
-            marginBottom: '0.5rem' 
+          <div style={{
+            fontSize: '2.5rem',
+            fontWeight: 900,
+            color: '#10b981',
+            marginBottom: '0.5rem'
           }}>{stats.partidos.pendientes}</div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: 600, 
-            color: 'var(--text-secondary)' 
+          <div style={{
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            color: 'var(--text-secondary)'
           }}>Partidos Pendientes</div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-muted)', 
-            marginTop: '0.25rem' 
+          <div style={{
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            marginTop: '0.25rem'
           }}>{stats.partidos.total} total</div>
         </div>
-        
+
         <div className="pro-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            marginBottom: '1rem' 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '1rem'
           }}>
             <div style={{
               padding: '12px',
@@ -311,30 +311,30 @@ const AdminDashboard = () => {
               <Users size={24} style={{ color: 'white' }} />
             </div>
           </div>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: 900, 
-            color: '#8b5cf6', 
-            marginBottom: '0.5rem' 
+          <div style={{
+            fontSize: '2.5rem',
+            fontWeight: 900,
+            color: '#8b5cf6',
+            marginBottom: '0.5rem'
           }}>{stats.equipos.total}</div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: 600, 
-            color: 'var(--text-secondary)' 
+          <div style={{
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            color: 'var(--text-secondary)'
           }}>Equipos Inscritos</div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-muted)', 
-            marginTop: '0.25rem' 
+          <div style={{
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            marginTop: '0.25rem'
           }}>En competencia</div>
         </div>
-        
+
         <div className="pro-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            marginBottom: '1rem' 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '1rem'
           }}>
             <div style={{
               padding: '12px',
@@ -347,47 +347,47 @@ const AdminDashboard = () => {
               <Zap size={24} style={{ color: 'white' }} />
             </div>
           </div>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: 900, 
-            color: '#f59e0b', 
-            marginBottom: '0.5rem' 
+          <div style={{
+            fontSize: '2.5rem',
+            fontWeight: 900,
+            color: '#f59e0b',
+            marginBottom: '0.5rem'
           }}>{stats.jugadores.total}</div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: 600, 
-            color: 'var(--text-secondary)' 
-          }}>Total Atletas</div>
-          <div style={{ 
-            fontSize: '0.75rem', 
-            color: 'var(--text-muted)', 
-            marginTop: '0.25rem' 
+          <div style={{
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            color: 'var(--text-secondary)'
+          }}>Total Deportistas</div>
+          <div style={{
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            marginTop: '0.25rem'
           }}>{stats.jugadores.activos} activos</div>
         </div>
       </div>
 
       {/* MAIN CONTENT GRID */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
         gap: '2rem'
       }}>
         {/* PROXIMOS PARTIDOS */}
         <div className="pro-card">
           <div className="pro-card-header">
-            <h2 style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem', 
-              margin: 0, 
-              fontSize: '1.25rem', 
+            <h2 style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              margin: 0,
+              fontSize: '1.25rem',
               fontWeight: 800,
               color: 'var(--text-primary)'
             }}>
-              <Activity size={24} style={{ color: '#3b82f6' }} /> 
+              <Activity size={24} style={{ color: '#3b82f6' }} />
               Próximos Encuentros
             </h2>
-            <button 
+            <button
               className="pro-btn btn-primary"
               style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
               onClick={() => navigate('/admin/partidos')}
@@ -399,12 +399,12 @@ const AdminDashboard = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {proximosPartidos.length > 0 ? (
               proximosPartidos.map((p) => (
-                <div 
-                  key={p.id} 
+                <div
+                  key={p.id}
                   className="pro-card"
-                  style={{ 
-                    padding: '1.25rem', 
-                    cursor: 'pointer', 
+                  style={{
+                    padding: '1.25rem',
+                    cursor: 'pointer',
                     marginBottom: 0,
                     transition: 'all 0.2s ease'
                   }}
@@ -418,33 +418,33 @@ const AdminDashboard = () => {
                     e.currentTarget.style.boxShadow = '';
                   }}
                 >
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: '1rem', 
-                    fontSize: '0.75rem', 
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1rem',
+                    fontSize: '0.75rem',
                     fontWeight: 700,
                     color: 'var(--text-muted)'
                   }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Clock size={14} /> 
+                      <Clock size={14} />
                       {p.fecha?.split('T')[0]} • {p.hora?.substring(0, 5)}
                     </span>
                     <span style={{ color: '#3b82f6' }}>{p.torneo?.nombre}</span>
                   </div>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between', 
-                    gap: '1rem' 
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem'
                   }}>
-                    <div style={{ 
-                      flex: 1, 
-                      textAlign: 'right', 
-                      fontWeight: 700, 
-                      color: 'var(--text-primary)' 
+                    <div style={{
+                      flex: 1,
+                      textAlign: 'right',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)'
                     }}>
                       {p.equipoLocal?.nombre || 'Local'}
                     </div>
@@ -458,40 +458,40 @@ const AdminDashboard = () => {
                     }}>
                       VS
                     </div>
-                    <div style={{ 
-                      flex: 1, 
-                      textAlign: 'left', 
-                      fontWeight: 700, 
-                      color: 'var(--text-primary)' 
+                    <div style={{
+                      flex: 1,
+                      textAlign: 'left',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)'
                     }}>
                       {p.equipoVisitante?.nombre || 'Visita'}
                     </div>
                   </div>
-                  
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.5rem', 
-                    marginTop: '1rem', 
-                    fontSize: '0.75rem', 
-                    color: 'var(--text-muted)' 
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginTop: '1rem',
+                    fontSize: '0.75rem',
+                    color: 'var(--text-muted)'
                   }}>
-                    <MapPin size={14} /> 
+                    <MapPin size={14} />
                     {p.lugar || 'Cancha Central'}
                   </div>
                 </div>
               ))
             ) : (
               <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-                <Calendar size={48} style={{ 
-                  margin: '0 auto 1rem', 
+                <Calendar size={48} style={{
+                  margin: '0 auto 1rem',
                   opacity: 0.2,
                   color: 'var(--text-muted)'
                 }} />
                 <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
                   No hay partidos próximos programados
                 </p>
-                <button 
+                <button
                   className="pro-btn btn-primary"
                   onClick={() => navigate('/admin/partidos')}
                 >
@@ -505,19 +505,19 @@ const AdminDashboard = () => {
         {/* TORNEOS RECIENTES */}
         <div className="pro-card">
           <div className="pro-card-header">
-            <h2 style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem', 
-              margin: 0, 
-              fontSize: '1.25rem', 
+            <h2 style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              margin: 0,
+              fontSize: '1.25rem',
               fontWeight: 800,
               color: 'var(--text-primary)'
             }}>
-              <Trophy size={24} style={{ color: '#f59e0b' }} /> 
+              <Trophy size={24} style={{ color: '#f59e0b' }} />
               Torneos Activos
             </h2>
-            <button 
+            <button
               className="pro-btn btn-primary"
               style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
               onClick={() => navigate('/admin/torneos-deportes')}
@@ -541,10 +541,10 @@ const AdminDashboard = () => {
                       <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                         {t.nombre}
                       </div>
-                      <div style={{ 
-                        fontSize: '0.75rem', 
-                        color: 'var(--text-muted)', 
-                        fontWeight: 500 
+                      <div style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        fontWeight: 500
                       }}>
                         {t.deporte?.nombre}
                       </div>
@@ -578,10 +578,10 @@ const AdminDashboard = () => {
                 ))}
                 {torneos.length === 0 && (
                   <tr>
-                    <td colSpan="2" style={{ 
-                      textAlign: 'center', 
-                      padding: '2rem', 
-                      color: 'var(--text-muted)' 
+                    <td colSpan="2" style={{
+                      textAlign: 'center',
+                      padding: '2rem',
+                      color: 'var(--text-muted)'
                     }}>
                       Sin torneos activos
                     </td>

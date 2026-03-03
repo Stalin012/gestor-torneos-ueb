@@ -420,10 +420,28 @@ class RepresentanteEquipoController extends Controller
             $handle = fopen($file->getRealPath(), 'r');
             if (!$handle) abort(400, 'No se pudo leer el CSV.');
 
+            // Detectar delimitador
+            $firstLine = fgets($handle);
+            $delimiters = [',', ';', "\t"];
+            $delimiter = ',';
+            $maxCount = 0;
+            foreach ($delimiters as $d) {
+                $count = substr_count($firstLine, $d);
+                if ($count > $maxCount) {
+                    $maxCount = $count;
+                    $delimiter = $d;
+                }
+            }
+            rewind($handle);
+
             $header = null;
-            while (($data = fgetcsv($handle, 0, ',')) !== false) {
+            while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
                 if (!$header) {
                     $header = array_map(fn($h) => strtolower(trim((string)$h)), $data);
+                    // Limpiar BOM si existe
+                    if (isset($header[0])) {
+                        $header[0] = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $header[0]);
+                    }
                     continue;
                 }
 
@@ -431,7 +449,6 @@ class RepresentanteEquipoController extends Controller
                 foreach ($header as $i => $key) {
                     $row[$key] = isset($data[$i]) ? trim((string)$data[$i]) : null;
                 }
-                // ignora fila vacía
                 if (implode('', array_map(fn($v) => (string)$v, $row)) === '') continue;
 
                 $rows[] = $row;
@@ -591,6 +608,61 @@ public function inscripciones(Request $request)
     return response()->json(
         $query->orderByDesc('created_at')->get()
     );
+}
+
+/**
+ * POST /api/representante/inscripcion
+ * Crea una solicitud de inscripción para un equipo del representante
+ */
+public function solicitarInscripcion(Request $request)
+{
+    $cedula = $this->representanteCedula($request);
+
+    $validated = $request->validate([
+        'equipo_id' => 'required|integer',
+        'torneo_id' => 'required|integer',
+    ]);
+
+    // Verificar que el equipo sea del representante
+    $equipo = Equipo::where('id', $validated['equipo_id'])
+        ->where('representante_cedula', $cedula)
+        ->first();
+
+    if (!$equipo) {
+        return response()->json(['message' => 'El equipo no pertenece a este representante o no existe.'], 403);
+    }
+
+    // Verificar si ya existe una inscripción para este equipo en este torneo
+    $existe = Inscripcion::where('equipo_id', $validated['equipo_id'])
+        ->where('torneo_id', $validated['torneo_id'])
+        ->first();
+
+    if ($existe) {
+        return response()->json([
+            'message' => 'Ya existe una solicitud de inscripción para este equipo en este torneo.',
+            'estado' => $existe->estado
+        ], 422);
+    }
+
+    $inscripcion = Inscripcion::create([
+        'equipo_id'         => $validated['equipo_id'],
+        'torneo_id'         => $validated['torneo_id'],
+        'estado'            => 'Pendiente',
+        'fecha_inscripcion' => now(),
+    ]);
+
+    $this->logAudit(
+        $cedula,
+        'SOLICITAR_INSCRIPCION',
+        'Inscripcion',
+        (string)$inscripcion->id,
+        "Solicitud de inscripción para el equipo '{$equipo->nombre}' al torneo ID {$validated['torneo_id']}"
+    );
+
+    return response()->json([
+        'message' => 'Inscripción solicitada correctamente. Pendiente de aprobación.',
+        'inscripcion' => $inscripcion->load(['torneo:id,nombre', 'equipo:id,nombre'])
+    ], 201);
 }
 
 /**

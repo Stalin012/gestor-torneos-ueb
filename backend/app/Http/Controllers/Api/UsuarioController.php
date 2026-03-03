@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class UsuarioController extends Controller
 {
@@ -46,7 +48,12 @@ class UsuarioController extends Controller
 
             return response()->json($usuarios);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error al obtener usuarios.'], 500);
+            return response()->json([
+                'message' => 'Error al obtener usuarios.',
+                'error_msg' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
         }
     }
 
@@ -56,39 +63,73 @@ class UsuarioController extends Controller
             return response()->json(['message' => 'Solo un administrador puede crear usuarios.'], 403);
         }
 
-        // ✅ PERSONA YA EXISTE
+        // Validamos la cédula pero NO forzamos a que exista previamente en `personas`
         $request->validate([
-            'cedula'   => 'required|string|size:10|exists:personas,cedula|unique:usuarios,cedula',
-            'email'    => 'required|string|email|max:100|unique:usuarios,email',
-            'rol'      => ['required', 'string', Rule::in($this->rolesValidos)], // 👈 AQUÍ
-            'estado'   => 'required|boolean',
-            'password' => 'nullable|string|min:8',
+            'cedula'    => 'required|string|size:10|unique:usuarios,cedula',
+            'email'     => 'required|string|email|max:100|unique:usuarios,email',
+            'rol'       => ['required', 'string', Rule::in($this->rolesValidos)],
+            'estado'    => 'required|boolean',
+            'password'  => 'nullable|string|min:8',
+            'nombres'   => 'nullable|string|max:100',
+            'apellidos' => 'nullable|string|max:100',
         ]);
 
         try {
-            DB::beginTransaction();
+            // 🛑 QUITAMOS LA TRANSACCIÓN PARA VER EL ERROR REAL SI FALLA
+            // DB::beginTransaction();
 
-            $persona = Persona::where('cedula', $request->cedula)->first();
+            $persona = Persona::where('cedula', (string)$request->cedula)->first();
+
+            if (!$persona) {
+                if (!$request->nombres || !$request->apellidos) {
+                    return response()->json(['message' => 'Nombres y apellidos son requeridos para un nuevo registro.'], 422);
+                }
+                $persona = Persona::create([
+                    'cedula'    => (string)$request->cedula,
+                    'nombres'   => (string)$request->nombres,
+                    'apellidos' => (string)$request->apellidos,
+                    'email'     => (string)$request->email,
+                ]);
+            }
 
             $passwordPlano = $request->password ?: $request->cedula;
 
-            $usuario = User::create([
-                'cedula'   => $request->cedula,
-                'email'    => $request->email,
-                'password' => Hash::make($passwordPlano),
-                'rol'      => $request->rol,
-                'estado'   => $request->estado,
+            // 🛡️ SOLUCIÓN HARD RAW PARA SUPABASE / POSTGRESQL
+            // No usamos el query builder porque con DB_PREPARED_STATEMENTS=false 
+            // Laravel intenta convertir booleano a entero (1/0) y Postgres lo rechaza.
+            $estadoStr = $request->estado ? 'TRUE' : 'FALSE';
+            $passwordHashed = Hash::make((string)$passwordPlano);
+            $now = now();
+
+            \Illuminate\Support\Facades\DB::statement("
+                INSERT INTO usuarios 
+                (cedula, email, nombres, apellidos, password, rol, estado, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, $estadoStr, ?, ?)
+            ", [
+                (string)$request->cedula,
+                (string)$request->email,
+                (string)$request->nombres,
+                (string)$request->apellidos,
+                $passwordHashed,
+                (string)$request->rol,
+                $now,
+                $now
             ]);
 
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
-                'CREAR',
-                'Usuario',
-                (string)$usuario->cedula,
-                'Creación de nuevo usuario: ' . $usuario->email . ' con rol ' . $usuario->rol
-            );
+            $usuario = User::where('cedula', (string)$request->cedula)->first();
 
-            DB::commit();
+            // 🛡️ ACCIONES SECUNDARIAS
+            try {
+                $this->logAudit(
+                    $request->user() ? (string)$request->user()->cedula : 'SISTEMA',
+                    'CREAR',
+                    'Usuario',
+                    (string)$usuario->cedula,
+                    'Creación de nuevo usuario: ' . $usuario->email
+                );
+            } catch (\Exception $ae) {}
+
+            // DB::commit();
 
             return response()->json([
                 'message' => 'Usuario registrado exitosamente.',
@@ -96,10 +137,11 @@ class UsuarioController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            // DB::rollBack();
             return response()->json([
-                'message' => 'Error al registrar el usuario.',
-                'error'   => $e->getMessage()
+                'message' => 'Error crítico en el servidor.',
+                'error'   => $e->getMessage(),
+                'line'    => $e->getLine()
             ], 500);
         }
     }
@@ -250,9 +292,108 @@ class UsuarioController extends Controller
             'persona_data'   => $persona ? [
                 'nombres'   => $persona->nombres,
                 'apellidos' => $persona->apellidos,
+                'email'     => $persona->email,
             ] : null,
             'message' => 'Estado de la cédula verificado.'
         ]);
+    }
+
+    // ==========================================
+    // CARNET DE USUARIO / ADMINISTRADOR
+    // ==========================================
+
+    public function generarCarnet($cedula)
+    {
+        $usuario = User::with('persona')->where('cedula', $cedula)->first();
+
+        if (!$usuario) {
+            return response()->json([
+                'message' => 'Usuario no encontrado.'
+            ], 404);
+        }
+
+        $data = $this->buildCarnetData($usuario);
+
+        return response()->json([
+            'message' => 'Datos del carnet generados correctamente.',
+            'data'    => $data, 
+        ]);
+    }
+
+    public function carnetPdf($cedula)
+    {
+        \Log::info("Intentando generar carnet PDF de USUARIO para cédula: {$cedula}");
+        try {
+            $usuario = User::with('persona')->where('cedula', $cedula)->first();
+
+            if (!$usuario) {
+                abort(404, 'Usuario no encontrado.');
+            }
+
+            $data = $this->buildCarnetData($usuario);
+
+            $pdf = Pdf::loadView('pdf.carnet_usuario', compact('usuario', 'data') + ['qrCode' => $data['qr_base64']])
+                ->setPaper([0, 0, 242.65, 153.07], 'landscape');
+
+            return $pdf->download('Carnet_Usuario_'.$usuario->cedula.'.pdf');
+        } catch (\Exception $e) {
+            \Log::error("Error al generar PDF de USUARIO para cédula {$cedula}: " . $e->getMessage());
+            
+            return response()->json([
+                'message' => 'Error al generar el PDF del carnet de usuario.',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    private function buildCarnetData(User $usuario): array
+    {
+        $persona = $usuario->persona;
+
+        // Asegurar que exista qr_token (lo usamos como clave única)
+        if (!$usuario->qr_token) {
+            // Nota: debes asegurar que exista 'qr_token' y 'qr_generated_at' en la tabla 'usuarios'
+            // O simplemente generamos uno al vuelo si no existe la columna
+            $usuario->qr_token = (string) \Illuminate\Support\Str::uuid();
+            // $usuario->qr_generated_at = now(); 
+            // $usuario->save();
+            // Update the user gracefully if the column exists, otherwise ignore persistence or create a migration later.
+            try {
+                $usuario->save();
+            } catch (\Exception $e) {}
+        }
+
+        $nombreCompleto = $persona
+            ? trim(($persona->nombres ?? '') . ' ' . ($persona->apellidos ?? ''))
+            : 'Sin nombre';
+
+        // Forzamos la URL del frontend oficial para evitar que el escaneo de JSON por error de configuración en .env
+        $frontendUrl = 'https://www.deportesueb.com';
+        $qrText = $frontendUrl . "/carnet/" . $usuario->cedula;
+
+        $qrSvgRaw = (string) QrCode::format('svg')
+            ->size(300)
+            ->errorCorrection('M')
+            ->margin(1)
+            ->generate($qrText);
+
+        return [
+            'cedula'           => $usuario->cedula,
+            'nombre_completo'  => $nombreCompleto,
+            'rol'              => $usuario->rol,
+            'email'            => $usuario->email,
+            'estado'           => $usuario->estado ? 'ACTIVO' : 'DENEGADO',
+            'facultad'         => $persona?->facultad ?? 'Administración Central',
+            'carrera'          => $persona?->carrera ?? 'Gestión Deportiva UEB',
+            'qr_token'         => $usuario->qr_token,
+            'qr_svg'           => $qrSvgRaw, 
+            'qr_base64'        => base64_encode($qrSvgRaw), 
+            'qr_text'          => $qrText,
+            'url_validacion'   => $qrText,
+            'foto'             => $persona?->foto_url ?? $persona?->foto,
+            'institucion'      => 'Gestor UEB - Acceso y Control',
+        ];
     }
 
     private function logAudit(string $usuarioCedula, string $accion, string $entidad, string $entidadId, string $detalle): void

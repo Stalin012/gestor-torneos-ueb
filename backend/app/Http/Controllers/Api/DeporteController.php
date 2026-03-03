@@ -28,22 +28,27 @@ class DeporteController extends Controller
     public function store(Request $request)
     {
         // Seguridad extra, además del middleware admin
-        if ($request->user()->rol !== 'admin, representante') {
+        if (!$request->user() || !in_array($request->user()->rol, ['admin', 'representante'])) {
             return response()->json(['message' => 'Acceso denegado.'], 403);
         }
 
-        $validated = $request->validate([
-            'nombre'      => 'required|string|max:100|unique:deportes,nombre',
-            'descripcion' => 'nullable|string',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nombre'      => 'required|string|max:100|unique:deportes,nombre',
+                'descripcion' => 'nullable|string',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Validacion Deporte CREATE fallo: ', $e->errors());
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        }
 
         $deporte = Deporte::create($validated);
 
         $this->logAudit(
-            $request->user()->cedula,
+            $request->user() ? $request->user()->cedula : 'SISTEMA',
             'CREAR',
             'Deporte',
-            $deporte->id,
+            (string)$deporte->id,
             'Creación de nuevo deporte: ' . $deporte->nombre
         );
 
@@ -83,18 +88,23 @@ class DeporteController extends Controller
             return response()->json(['message' => 'Deporte no encontrado.'], 404);
         }
 
-        $validated = $request->validate([
-            'nombre'      => 'required|string|max:100|unique:deportes,nombre,' . $id,
-            'descripcion' => 'nullable|string',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nombre'      => 'required|string|max:100|unique:deportes,nombre,' . $id,
+                'descripcion' => 'nullable|string',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Validacion Deporte UPDATE fallo: ', $e->errors());
+            throw $e;
+        }
 
         $deporte->update($validated);
 
         $this->logAudit(
-            $request->user()->cedula,
+            $request->user() ? $request->user()->cedula : 'SISTEMA',
             'ACTUALIZAR',
             'Deporte',
-            $deporte->id,
+            (string)$deporte->id,
             'Actualización de deporte: ' . $deporte->nombre
         );
 
@@ -132,10 +142,10 @@ class DeporteController extends Controller
         $deporte->delete();
 
         $this->logAudit(
-            $request->user()->cedula,
+            $request->user() ? $request->user()->cedula : 'SISTEMA',
             'ELIMINAR',
             'Deporte',
-            $deporte->id,
+            (string)$deporte->id,
             'Eliminación de deporte: ' . $deporte->nombre
         );
 

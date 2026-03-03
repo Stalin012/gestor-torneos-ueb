@@ -37,25 +37,35 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
+        'cedula' => 'string',
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        'estado' => 'boolean',
     ];
+
 
     protected $appends = ['foto_url', 'edad_calculada'];
 
     public function getFotoUrlAttribute()
     {
-        return $this->persona ? $this->persona->foto_url : null;
+        try {
+            return $this->persona ? $this->persona->foto_url : ($this->foto ?? null);
+        } catch (\Exception $e) {
+            return $this->foto ?? null;
+        }
     }
 
     public function getEdadCalculadaAttribute()
     {
-        return $this->persona ? $this->persona->edad_calculada : ($this->edad ?? null);
+        try {
+            return $this->persona ? $this->persona->edad_calculada : ($this->edad ?? null);
+        } catch (\Exception $e) {
+            return $this->edad ?? null;
+        }
     }
 
     public function persona()
     {
-        return $this->belongsTo(Persona::class, 'cedula', 'cedula');
+        return $this->hasOne(Persona::class, 'cedula', 'cedula');
     }
 
     public function jugador()

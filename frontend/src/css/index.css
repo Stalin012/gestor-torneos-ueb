@@ -27,6 +27,9 @@
 /* 8. UNIFIED NAVIGATION */
 @import './unified-navigation-new.css';
 
+/* 9. MOBILE ELITE - PROFESSIONAL RESPONSIVITY */
+@import './mobile-elite.css';
+
 /* Bloqueo de scroll global */
 .no-scroll,
 body.no-scroll,

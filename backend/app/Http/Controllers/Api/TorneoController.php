@@ -18,10 +18,19 @@ class TorneoController extends Controller
      */
     public function index()
     {
-        // Cargamos relaciones para que el frontend obtenga deporte y categoría
-        $torneos = Torneo::with(['deporte', 'categoria'])->get();
+        try {
+            // Cargamos relaciones para que el frontend obtenga deporte y categoría
+            $torneos = Torneo::with(['deporte', 'categoria'])->get();
 
-        return response()->json($torneos);
+            return response()->json($torneos);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error al cargar torneos (API Index)',
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ], 500);
+        }
     }
 
     /**
@@ -55,26 +64,41 @@ class TorneoController extends Controller
      * POST /api/torneos
      * Crear torneo.
      */
+    /**
+     * POST /api/torneos
+     * Crear torneo.
+     */
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'nombre'       => 'required|string|max:255',
-            'deporte_id'   => 'required|exists:deportes,id',
-            'categoria_id' => 'required|exists:categorias,id',
-            'fecha_inicio' => 'nullable|date', 
-            'fecha_fin'    => 'nullable|date|after_or_equal:fecha_inicio',
-            'ubicacion'    => 'nullable|string|max:255',
-            'descripcion'  => 'nullable|string',
-            'estado'       => ['required', 'string', Rule::in(['Activo', 'Finalizado'])],
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'nombre'                     => 'required|string|min:3|max:255',
+                'deporte_id'                 => 'required|exists:deportes,id',
+                'categoria_id'               => 'nullable|exists:categorias,id',
+                'categorias_incluidas'       => 'nullable|array',
+                'fecha_inicio'               => 'required|date', 
+                'fecha_fin'                  => 'required|date|after_or_equal:fecha_inicio',
+                'fecha_inicio_inscripciones' => 'nullable|date',
+                'fecha_fin_inscripciones'    => 'nullable|date|after_or_equal:fecha_inicio_inscripciones|before_or_equal:fecha_inicio',
+                'ubicacion'                  => 'nullable|string|max:255',
+                'ciudad_campus'              => 'nullable|string|max:255',
+                'limite_equipos'             => 'nullable|integer|min:1',
+                'limite_jugadores_equipo'    => 'nullable|integer|min:1',
+                'responsable_nombre'         => 'nullable|string|max:255',
+                'contacto'                   => 'nullable|string|max:255',
+                'descripcion'                => 'nullable|string|max:500',
+                'notas_internas'             => 'nullable|string',
+                'estado'                     => ['required', 'string'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Validacion Torneo CREATE fallo: ', $e->errors());
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        }
         
-        // Si usas creado_por y auth, aquí lo pones.
-        // if (auth()->check()) {
-        //     $validatedData['creado_por'] = auth()->user()->cedula;
-        // }
-
         try {
             DB::beginTransaction();
+
+            $validatedData['creado_por'] = $request->user() ? $request->user()->cedula : '0102030405';
 
             $torneo = Torneo::create($validatedData);
             
@@ -93,7 +117,7 @@ class TorneoController extends Controller
             );
         } catch (\Exception $e) {
             DB::rollBack();
-
+            Log::error('Error creating torneo: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error al crear el torneo',
                 'error'   => $e->getMessage(),
@@ -115,18 +139,37 @@ class TorneoController extends Controller
      * PUT/PATCH /api/torneos/{torneo}
      * Actualizar torneo.
      */
-    public function update(Request $request, Torneo $torneo)
+    public function update(Request $request, $id)
     {
-        $validatedData = $request->validate([
-            'nombre'       => 'sometimes|required|string|max:255',
-            'deporte_id'   => 'sometimes|required|exists:deportes,id',
-            'categoria_id' => 'sometimes|required|exists:categorias,id',
-            'fecha_inicio' => 'nullable|date',
-            'fecha_fin'    => 'nullable|date|after_or_equal:fecha_inicio',
-            'ubicacion'    => 'nullable|string|max:255',
-            'descripcion'  => 'nullable|string',
-            'estado'       => ['sometimes', 'required', 'string', Rule::in(['Activo', 'Finalizado'])],
-        ]);
+        $torneo = Torneo::find($id);
+        if (!$torneo) {
+            return response()->json(['message' => 'Torneo no encontrado'], 404);
+        }
+
+        try {
+            $validatedData = $request->validate([
+                'nombre'                     => 'sometimes|required|string|min:3|max:255',
+                'deporte_id'                 => 'sometimes|required|exists:deportes,id',
+                'categoria_id'               => 'sometimes|nullable',
+                'categorias_incluidas'       => 'nullable|array',
+                'fecha_inicio'               => 'sometimes|nullable',
+                'fecha_fin'                  => 'sometimes|nullable',
+                'fecha_inicio_inscripciones' => 'nullable|date',
+                'fecha_fin_inscripciones'    => 'nullable|date|after_or_equal:fecha_inicio_inscripciones',
+                'ubicacion'                  => 'nullable|string|max:255',
+                'ciudad_campus'              => 'nullable|string|max:255',
+                'limite_equipos'             => 'nullable|integer|min:1',
+                'limite_jugadores_equipo'    => 'nullable|integer|min:1',
+                'responsable_nombre'         => 'nullable|string|max:255',
+                'contacto'                   => 'nullable|string|max:255',
+                'descripcion'                => 'nullable|string|max:500',
+                'notas_internas'             => 'nullable|string',
+                'estado'                     => ['sometimes', 'required', 'string'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Validacion Torneo UPDATE fallo: ', $e->errors());
+            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        }
 
         try {
             DB::beginTransaction();
@@ -148,7 +191,7 @@ class TorneoController extends Controller
             );
         } catch (\Exception $e) {
             DB::rollBack();
-
+            Log::error('Error updating torneo: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error al actualizar el torneo',
                 'error'   => $e->getMessage(),

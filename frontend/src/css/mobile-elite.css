@@ -1,0 +1,167 @@
+/* =========================================
+   MOBILE ELITE - PROFESSIONAL RESPONSIVENESS
+   UEB DEPORTES PLATFORM
+   ========================================= */
+
+/* GLOBAL MOBILE OPTIMIZATION */
+@media (max-width: 1024px) {
+
+    .dashboard-main-grid,
+    .grid-cards-premium,
+    .news-grid,
+    .tournaments-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+        gap: 1.5rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+
+    /* 1. TYPOGRAPHY & HEADERS */
+    h1,
+    .hero-title {
+        font-size: clamp(2rem, 10vw, 3rem) !important;
+        text-align: center !important;
+    }
+
+    .section-header h2 {
+        font-size: 2rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .section-header p {
+        font-size: 0.9rem !important;
+        padding: 0 1rem;
+    }
+
+    /* 2. LAYOUT BOXING */
+    .container {
+        padding-left: 1.25rem !important;
+        padding-right: 1.25rem !important;
+    }
+
+    .page-content {
+        padding: 1rem !important;
+    }
+
+    /* 3. RESPONSIVE TABLES & CARDS */
+    .pro-card,
+    .tab-content,
+    .table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 1rem !important;
+        border-radius: 16px !important;
+    }
+
+    /* Force tables to be scrollable rather than smashed */
+    table.glass-table,
+    table.modern-table {
+        min-width: 650px !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* 4. NAVIGATION - TAB SCROLLING */
+    div[style*="display: flex"][style*="overflow-x: auto"]::-webkit-scrollbar {
+        display: none;
+        /* Hide scrollbar for a cleaner look */
+    }
+
+    /* 5. HERO & BANNERS */
+    .hero {
+        padding: 100px 1rem 3rem !important;
+        min-height: auto !important;
+    }
+
+    .hero-content {
+        transform: none !important;
+    }
+
+    /* 6. HORIZONTAL GALLERY MOBILE FIX */
+    .gallery-item {
+        width: 280px !important;
+        height: 180px !important;
+    }
+
+    .gallery-track {
+        gap: 1rem !important;
+    }
+
+    /* 7. MATCH CARDS - FULL STACK */
+    .match-card {
+        padding: 1rem !important;
+    }
+
+    /* 8. QUICK ACTIONS */
+    .quick-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 1rem !important;
+    }
+
+    .quick-action-btn {
+        min-width: 0 !important;
+        padding: 1rem !important;
+        font-size: 0.8rem !important;
+    }
+
+    .quick-action-btn svg {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* SMARTPHONE OPTIMIZATION */
+@media (max-width: 480px) {
+
+    /* 1. GRIDS TO SINGLE COLUMN */
+    .news-grid,
+    .tournaments-grid,
+    .stat-grid,
+    .dashboard-main-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* 2. BUTTONS TOUCH AREA */
+    .pro-btn,
+    .btn-primary,
+    .btn-secondary {
+        min-height: 48px !important;
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+    /* 3. HERO ACTIONS */
+    .hero-actions {
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    /* 4. MODAL CONTENT */
+    .modal-content {
+        width: 95% !important;
+        margin: 10px auto !important;
+        padding: 1.5rem !important;
+    }
+
+    .modal-header h2 {
+        font-size: 1.1rem !important;
+    }
+
+    /* 5. COMPONENT FIXES */
+    .user-info {
+        display: none !important;
+        /* Always hide in very small screens */
+    }
+
+    .header-title {
+        max-width: 150px;
+    }
+}
+
+/* ANIMATION OPTIMIZATION */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

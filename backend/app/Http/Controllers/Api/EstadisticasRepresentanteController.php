@@ -15,9 +15,11 @@ class EstadisticasRepresentanteController extends Controller
     {
         $user = $request->user();
         
+        $cedula = $user->cedula ?? $user->persona?->cedula;
+
         // Verificar que el equipo pertenece al representante
         $equipo = Equipo::where('id', $equipo_id)
-            ->where('representante_cedula', $user->persona->cedula)
+            ->where('representante_cedula', $cedula)
             ->firstOrFail();
 
         // 1. Balance de Partidos

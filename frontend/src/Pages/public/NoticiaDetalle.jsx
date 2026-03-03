@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Share2, Clock, Newspaper, ArrowRight } from 'lucide-react';
 import "../../css/home.css";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+import api from "../../api";
+import { getAssetUrl } from "../../utils/helpers";
 
 const NoticiaDetalle = () => {
     const { id } = useParams();
@@ -16,12 +17,12 @@ const NoticiaDetalle = () => {
         setLoading(true);
         try {
             const [newsResp, allNewsResp] = await Promise.all([
-                fetch(`${API_BASE}/noticias/${id}`),
-                fetch(`${API_BASE}/noticias`)
+                api.get(`/noticias/${id}`),
+                api.get(`/noticias`)
             ]);
 
-            const newsData = await newsResp.json();
-            const allNewsData = await allNewsResp.json();
+            const newsData = newsResp.data;
+            const allNewsData = allNewsResp.data;
 
             setNoticia(newsData);
             setRecentNews((Array.isArray(allNewsData) ? allNewsData : []).filter(n => n.id !== parseInt(id)).slice(0, 3));
@@ -83,7 +84,7 @@ const NoticiaDetalle = () => {
                                     COMUNICADO OFICIAL
                                 </span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '0.85rem' }}>
-                                    <Calendar size={14} /> {new Date(noticia.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    <Calendar size={14} /> {noticia.created_at ? new Date(noticia.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Publicación Reciente'}
                                 </span>
                             </div>
                             <h1 style={{ fontSize: '3.5rem', lineHeight: '1.1', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', marginBottom: '2rem' }}>
@@ -91,7 +92,7 @@ const NoticiaDetalle = () => {
                             </h1>
                             {noticia.imagen && (
                                 <div style={{ width: '100%', height: '500px', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <img src={noticia.imagen} alt={noticia.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img src={getAssetUrl(noticia.imagen)} alt={noticia.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
                             )}
                         </header>

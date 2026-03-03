@@ -31,6 +31,8 @@ class Equipo extends Model
         'representante_cedula',
     ];
 
+    protected $appends = ['logo_url'];
+
     // --- RELACIONES ---
 
     /**
@@ -92,5 +94,15 @@ class Equipo extends Model
     public function representante()
     {
         return $this->belongsTo(Persona::class, 'representante_cedula', 'cedula');
+    }
+
+    /**
+     * Accesor para obtener la URL completa del logo.
+     *
+     * @return string|null
+     */
+    public function getLogoUrlAttribute()
+    {
+        return $this->logo ? asset('storage/' . $this->logo) : null;
     }
 }

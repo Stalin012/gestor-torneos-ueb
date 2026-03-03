@@ -39,10 +39,11 @@ export default function InscripcionesRepresentante() {
   });
 
   // ================= FETCH =================
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (showFeedback = false) => {
     try {
       setLoading(true);
       setError("");
+      if (showFeedback) setSuccess("");
 
       const [eqsRes, torRes, insRes] = await Promise.all([
         api.get('/representante/equipos'),
@@ -51,14 +52,15 @@ export default function InscripcionesRepresentante() {
       ]);
 
       const normalize = (d) => Array.isArray(d) ? d : (d.data || []);
-
       setEquipos(normalize(eqsRes.data));
 
       const allTorneos = normalize(torRes.data);
-      // Filter tournaments that are active or open for registration
-      setTorneos(allTorneos.filter(t => t.estado === 'Activo' || t.inscripciones_abiertas));
+      setTorneos(allTorneos.filter(t => ['Programado', 'Activo'].includes(t.estado)));
 
       setInscripciones(normalize(insRes.data));
+      if (showFeedback) {
+        setSuccess("Inscripciones actualizadas correctamente.");
+      }
     } catch (e) {
       console.error(e);
       setError("Error al cargar los datos. Verifique su conexión.");
@@ -75,7 +77,20 @@ export default function InscripcionesRepresentante() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.equipo_id || !form.torneo_id) {
-      setError("Por favor selecciona equipo y torneo.");
+      setError("Por favor selecciona equipo y torneo para continuar.");
+      return;
+    }
+
+    // Comprobar duplicados en el historial local
+    const existe = inscripciones.find(i =>
+      String(i.equipo_id) === String(form.equipo_id) &&
+      String(i.torneo_id) === String(form.torneo_id)
+    );
+
+    if (existe) {
+      setError("Este equipo ya tiene una solicitud registrada para este torneo.");
+      // Hacer scroll hacia arriba para ver el error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -89,9 +104,11 @@ export default function InscripcionesRepresentante() {
       setSuccess("Inscripción solicitada correctamente. Pendiente de aprobación.");
       setForm({ equipo_id: "", torneo_id: "" });
       loadData();
+      // Scroll to show success
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       console.error(e);
-      setError(e.response?.data?.message || "No se pudo procesar la inscripción.");
+      setError(e.response?.data?.message || "No se pudo procesar la inscripción. Verifica los datos.");
     } finally {
       setIsSaving(false);
     }
@@ -145,10 +162,13 @@ export default function InscripcionesRepresentante() {
     <div className="rep-scope rep-screen-container rep-dashboard-fade">
       <header className="rep-header-main" style={{ marginBottom: '2.5rem' }}>
         <div className="header-info">
+          <small className="university-label" style={{ fontWeight: '700', letterSpacing: '0.5px', color: 'var(--accent-teal)' }}>Inscripciones Oficiales</small>
+          <h1 className="content-title" style={{ color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>Participación en Torneos</h1>
+          <p className="content-subtitle" style={{ color: '#cbd5e1' }}>Gestiona la entrada de tus equipos a las competencias vigentes</p>
         </div>
         <div className="header-actions">
-          <button onClick={loadData} className="btn-secondary" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <RefreshCcw size={18} /> Actualizar
+          <button onClick={() => loadData(true)} className="btn-secondary" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <RefreshCcw size={18} /> Actualizar Historial
           </button>
         </div>
       </header>
@@ -184,7 +204,12 @@ export default function InscripcionesRepresentante() {
                     <Shield size={18} style={{ position: 'absolute', top: '12px', left: '12px', color: '#94a3b8' }} />
                     <select
                       className="pro-input"
-                      style={{ ...inputStyle, width: '100%', paddingLeft: '2.5rem' }}
+                      style={{
+                        ...inputStyle,
+                        width: '100%',
+                        paddingLeft: '2.5rem',
+                        borderColor: !form.equipo_id && isSaving ? '#ef4444' : 'rgba(255,255,255,0.1)'
+                      }}
                       value={form.equipo_id}
                       onChange={e => setForm({ ...form, equipo_id: e.target.value })}
                     >
@@ -201,7 +226,12 @@ export default function InscripcionesRepresentante() {
                     <Calendar size={18} style={{ position: 'absolute', top: '12px', left: '12px', color: '#94a3b8' }} />
                     <select
                       className="pro-input"
-                      style={{ ...inputStyle, width: '100%', paddingLeft: '2.5rem' }}
+                      style={{
+                        ...inputStyle,
+                        width: '100%',
+                        paddingLeft: '2.5rem',
+                        borderColor: !form.torneo_id && isSaving ? '#ef4444' : 'rgba(255,255,255,0.1)'
+                      }}
                       value={form.torneo_id}
                       onChange={e => setForm({ ...form, torneo_id: e.target.value })}
                     >
@@ -214,8 +244,8 @@ export default function InscripcionesRepresentante() {
                 </div>
               </div>
               <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '1rem', fontWeight: '700', fontSize: '1rem' }} disabled={isSaving}>
-                {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
-                Confirmar Solicitud
+                {isSaving ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
+                {isSaving ? "Procesando..." : "Confirmar Solicitud de Inscripción"}
               </button>
             </form>
           </div>
@@ -229,13 +259,24 @@ export default function InscripcionesRepresentante() {
               <div className="search-box" style={{ ...inputStyle, padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Search size={16} color="#94a3b8" />
                 <input
-                  placeholder="Buscar..."
-                  style={{ background: 'transparent', border: 'none', color: '#fff', width: '150px', outline: 'none', fontSize: '0.9rem' }}
+                  placeholder="Buscar por equipo o torneo..."
+                  style={{ background: 'transparent', border: 'none', color: '#fff', width: '200px', outline: 'none', fontSize: '0.85rem' }}
                   value={filters.q}
                   onChange={e => setFilters({ ...filters, q: e.target.value })}
                 />
               </div>
             </div>
+
+            {(filters.equipo_id || filters.status || filters.q) && (
+              <div style={{ padding: '0.5rem 1.5rem', background: 'rgba(59, 130, 246, 0.1)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', color: '#93c5fd', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Mostrando {filtered.length} resultados filtrados
+                </span>
+                <button onClick={() => setFilters({ equipo_id: "", status: "", q: "" })} style={{ fontSize: '0.75rem', color: '#fff', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline', opacity: 0.8 }}>
+                  Limpiar filtros
+                </button>
+              </div>
+            )}
 
             <div style={{ overflowX: 'auto' }}>
               <table className="rep-table" style={{ width: '100%', borderCollapse: 'collapse' }}>

@@ -1,19 +1,33 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { useNotifications, NotificationCenter } from '../components/NotificationCenter';
 
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
-    const notification = useNotifications();
-    const { notifications, addNotification, loadNotifications, success, error, warning, info } = notification;
+    const {
+        notifications,
+        loading,
+        addNotification,
+        loadNotifications,
+        markAsRead,
+        markAllAsRead,
+        success,
+        error,
+        warning,
+        info,
+    } = useNotifications();
 
     const [isOpen, setIsOpen] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
 
-    // Cargar y refrescar notificaciones cuando cambia la sesion.
+    // Calcular notificaciones no leídas (reactivo a cambios de notifications)
+    const unreadCount = Array.isArray(notifications)
+        ? notifications.filter(n => !n.leida).length
+        : 0;
+
+    // Cargar y refrescar notificaciones al montar y cuando la sesión cambia
     useEffect(() => {
         const syncNotifications = () => {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) return;
             loadNotifications();
         };
@@ -28,19 +42,9 @@ export const NotificationProvider = ({ children }) => {
         };
     }, [loadNotifications]);
 
-    // Calcular notificaciones no leídas
-    useEffect(() => {
-        const safeNotifications = Array.isArray(notifications) ? notifications : [];
-        const count = safeNotifications.filter(n => !n.leida).length;
-        setUnreadCount(count);
-    }, [notifications]);
-
-    // Función para cargar notificaciones cuando el usuario se loguee
     const initializeNotifications = useCallback(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            loadNotifications();
-        }
+        const token = sessionStorage.getItem('token');
+        if (token) loadNotifications();
     }, [loadNotifications]);
 
     const toggleNotificationCenter = useCallback(() => {
@@ -50,6 +54,12 @@ export const NotificationProvider = ({ children }) => {
     const closeNotificationCenter = useCallback(() => {
         setIsOpen(false);
     }, []);
+
+    // Wrapper para markAllAsRead: marca todas y cierra el panel si no quedan pendientes
+    const handleMarkAllAsRead = useCallback(async () => {
+        if (!markAllAsRead) return;
+        await markAllAsRead();
+    }, [markAllAsRead]);
 
     return (
         <NotificationContext.Provider value={{
@@ -65,7 +75,9 @@ export const NotificationProvider = ({ children }) => {
             info,
             unreadCount,
             loadNotifications,
-            initializeNotifications
+            initializeNotifications,
+            markAsRead,
+            markAllAsRead: handleMarkAllAsRead,
         }}>
             {children}
             <NotificationCenter
@@ -73,9 +85,9 @@ export const NotificationProvider = ({ children }) => {
                 onClose={closeNotificationCenter}
                 notifications={notifications}
                 loadNotifications={loadNotifications}
-                markAsRead={notification.markAsRead}
-                markAllAsRead={notification.markAllAsRead}
-                loading={notification.loading}
+                markAsRead={markAsRead}
+                markAllAsRead={handleMarkAllAsRead}
+                loading={loading}
             />
         </NotificationContext.Provider>
     );

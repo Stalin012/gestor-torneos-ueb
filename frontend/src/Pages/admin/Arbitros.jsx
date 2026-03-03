@@ -1,335 +1,155 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
     Shield, Plus, Edit, Trash2, Search, X, Save, Star,
-    Award, UserCheck, ShieldAlert, Activity, ShieldCheck
+    Award, UserCheck, ShieldAlert, Activity, ShieldCheck,
+    Filter, MoreHorizontal, GraduationCap, ChevronRight,
+    Search as SearchIcon, Info, Users
 } from 'lucide-react';
-
 import LoadingScreen from '../../components/LoadingScreen';
 import api from '../../api';
-import { StatCard } from "../../components/StatsComponents";
+import { useNotification } from '../../context/NotificationContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+// ================= HELPERS / CONSTANTS =====================
+const ESPECIALIDADES = ['Fútbol', 'Básquet', 'Vóley', 'Ajeres', 'Tenis', 'Natación'];
+const ESTATUS = ['Certificado', 'En Formación', 'Suspendido', 'Retirado'];
 
-/* ============================================================
-   1. Opciones de especialidades
-   ============================================================ */
-const especialidadesOptions = ['Fútbol', 'Básquet', 'Vóley', 'Tenis', 'Natación'];
-
-/* ============================================================
-   2. Modal de creación / edición de árbitro
-   ============================================================ */
-const ArbitroModal = memo(({ isOpen, onClose, initialData, onSave }) => {
+// ================= MODALS =====================
+const ArbitroModal = ({ isOpen, onClose, initialData, onSave, loading }) => {
     const isEditMode = !!initialData;
-    const [formData, setFormData] = useState({
+    const [form, setForm] = useState({
         cedula: '',
-        experiencia: 0,
+        nombres: '',
+        apellidos: '',
+        email: '',
+        telefono: '',
+        fecha_nacimiento: '',
         especialidad: '',
-        estado: 'Certificado',
-        nombres: '', // Added for new form structure
-        apellidos: '', // Added for new form structure
-        fecha_nacimiento: '', // Added for new form structure
-        email: '', // Added for new form structure
-        telefono: '', // Added for new form structure
+        experiencia: 0,
+        estado: 'Certificado'
     });
-    const [personaData, setPersonaData] = useState({ nombres: '', apellidos: '', correo: '' });
-    const [verificando, setVerificando] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [statusType, setStatusType] = useState('');
-    const [statusText, setStatusText] = useState('');
-    const maxFechaNacimiento = useMemo(() => {
-        const d = new Date();
-        d.setFullYear(d.getFullYear() - 18);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-    }, []);
 
     useEffect(() => {
-        if (!isOpen) return;
-        setStatusType('');
-        setStatusText('');
         if (initialData) {
-            setFormData({
-                cedula: initialData.cedula,
-                experiencia: initialData.experiencia ?? 0,
-                especialidad: initialData.especialidad || '',
-                estado: initialData.estado || 'Certificado',
+            setForm({
+                cedula: initialData.cedula || '',
                 nombres: initialData.persona?.nombres || '',
                 apellidos: initialData.persona?.apellidos || '',
-                fecha_nacimiento: initialData.persona?.fecha_nacimiento || '',
-                email: initialData.persona?.email || initialData.persona?.correo || '',
+                email: initialData.persona?.email || '',
                 telefono: initialData.persona?.telefono || '',
-            });
-            setPersonaData({
-                nombres: initialData.persona?.nombres || '',
-                apellidos: initialData.persona?.apellidos || '',
-                correo: initialData.persona?.email || initialData.persona?.correo || '',
+                fecha_nacimiento: initialData.persona?.fecha_nacimiento?.split('T')[0] || '',
+                especialidad: initialData.especialidad || '',
+                experiencia: initialData.experiencia || 0,
+                estado: initialData.estado || 'Certificado'
             });
         } else {
-            setFormData({
-                cedula: '',
-                experiencia: 0,
-                especialidad: '',
-                estado: 'Certificado',
-                nombres: '',
-                apellidos: '',
-                fecha_nacimiento: '',
-                email: '',
-                telefono: '',
+            setForm({
+                cedula: '', nombres: '', apellidos: '', email: '', telefono: '',
+                fecha_nacimiento: '', especialidad: '', experiencia: 0, estado: 'Certificado'
             });
-            setPersonaData({ nombres: '', apellidos: '', correo: '' });
         }
-        document.body.classList.add('modal-open');
-        return () => {
-            document.body.classList.remove('modal-open');
-        };
     }, [initialData, isOpen]);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (name === 'cedula' && value.length === 10 && !isEditMode) {
-            verificarCedula(value);
-        } else if (name === 'cedula' && value.length < 10) {
-            setPersonaData({ nombres: '', apellidos: '', correo: '' });
+    useEffect(() => {
+        if (isOpen) {
+            document.body.classList.add('modal-open');
+            return () => document.body.classList.remove('modal-open');
         }
-    };
-
-    const verificarCedula = async (cedula) => {
-        setVerificando(true);
-        try {
-            const resp = await api.get(`/personas/${cedula}`);
-            const data = resp.data?.data || resp.data;
-            setPersonaData({
-                nombres: data.nombres || '',
-                apellidos: data.apellidos || '',
-                correo: data.email || data.correo || '',
-            });
-            setFormData(prev => ({
-                ...prev,
-                nombres: data.nombres || '',
-                apellidos: data.apellidos || '',
-                email: data.email || data.correo || '',
-                fecha_nacimiento: data.fecha_nacimiento || '',
-                telefono: data.telefono || '',
-            }));
-        } catch (err) {
-            console.error('Error verificando cédula:', err);
-            setPersonaData({ nombres: 'No encontrada', apellidos: '', correo: '' });
-            setFormData(prev => ({
-                ...prev,
-                nombres: '',
-                apellidos: '',
-                email: '',
-                fecha_nacimiento: '',
-                telefono: '',
-            }));
-        } finally {
-            setVerificando(false);
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (isSubmitting) return;
-
-        const confirmar = window.confirm(
-            isEditMode
-                ? "¿Desea guardar los cambios realizados en el perfil del oficial?"
-                : "¿Desea registrar este nuevo oficial?"
-        );
-        if (!confirmar) return;
-
-        const dob = new Date(formData.fecha_nacimiento);
-        const limit = new Date();
-        limit.setFullYear(limit.getFullYear() - 18);
-        if (!formData.fecha_nacimiento || dob > limit) {
-            setStatusType('danger');
-            setStatusText('La fecha de nacimiento debe indicar 18 años o más');
-            return;
-        }
-
-        setStatusType('info');
-        setStatusText('Guardando datos del oficial...');
-        setIsSubmitting(true);
-        try {
-            const payload = {
-                cedula: formData.cedula,
-                experiencia: Number(formData.experiencia) || 0,
-                especialidad: formData.especialidad,
-                estado: formData.estado,
-                nombres: formData.nombres,
-                apellidos: formData.apellidos,
-                fecha_nacimiento: formData.fecha_nacimiento,
-                email: formData.email,
-                telefono: formData.telefono,
-            };
-            const result = await onSave(payload, isEditMode);
-            if (result && result.ok) {
-                setStatusType('success');
-                setStatusText('Los datos han sido guardados correctamente');
-                setTimeout(() => onClose(), 600);
-            }
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="modal-overlay fade-in" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-content modal-lg scale-in" onClick={e => e.stopPropagation()}>
-                <div className="modal-header" style={{
-                    background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(16, 185, 129, 0.05))',
-                    borderBottom: '2px solid var(--primary)'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{
-                            padding: '12px',
-                            borderRadius: '16px',
-                            background: 'linear-gradient(135deg, var(--primary), #3b82f6)',
-                            color: 'white',
-                            boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)'
-                        }}>
+        <div className="modal-overlay">
+            <div className="modal-content modal-lg" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15.px' }}>
+                        <div className="modal-icon" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}>
                             <ShieldCheck size={28} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>{isEditMode ? "Perfil de Árbitro" : "Nuevo Oficial"}</h2>
-                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Gestión de credenciales y habilitaciones</p>
-                            {statusText && (
-                                <span className={`modal-badge ${statusType}`} style={{ marginTop: '6px' }}>
-                                    {statusText}
-                                </span>
-                            )}
+                            <h2 className="modal-title">{isEditMode ? "Expediente de Oficial" : "Registro de Autoridad"}</h2>
+                            <p className="modal-subtitle" style={{ color: '#94a3b8' }}>Certificación y habilitación de jueces</p>
                         </div>
                     </div>
-                    <button className="btn-icon-close" onClick={onClose}>
-                        <X size={24} />
-                    </button>
+                    <button className="btn-icon-close" type="button" onClick={onClose}><X size={24} /></button>
                 </div>
 
-                <div className="modal-body">
-                    <form id="arbitro-form" onSubmit={handleSubmit}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Cédula de Identidad</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input
-                                            type="text"
-                                            name="cedula"
-                                            value={formData.cedula}
-                                            onChange={handleChange}
-                                            required
-                                            disabled={isEditMode}
-                                            className="pro-input"
-                                            placeholder="0000000000"
-                                            style={{ fontSize: '1.1rem', fontWeight: 700 }}
-                                        />
-                                        {verificando && (
-                                            <div className="spinner" style={{ position: 'absolute', right: '12px', top: '12px', width: '22px', height: '22px' }}></div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Nombres Completos</label>
-                                    <input type="text" value={formData.nombres} onChange={e => setFormData({ ...formData, nombres: e.target.value.toUpperCase() })} required className="pro-input" placeholder="JUAN PEREZ" />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Apellidos Completos</label>
-                                    <input type="text" value={formData.apellidos} onChange={e => setFormData({ ...formData, apellidos: e.target.value.toUpperCase() })} required className="pro-input" placeholder="GARCIA LOPEZ" />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Fecha de Nacimiento</label>
-                                    <input type="date" value={formData.fecha_nacimiento} onChange={e => setFormData({ ...formData, fecha_nacimiento: e.target.value })} max={maxFechaNacimiento} required className="pro-input" />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Correo Institucional</label>
-                                    <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required className="pro-input" placeholder="arbitro@ejemplo.com" />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label" style={{ fontWeight: 800 }}>Teléfono de Contacto</label>
-                                    <input type="tel" value={formData.telefono} onChange={e => setFormData({ ...formData, telefono: e.target.value })} required className="pro-input" placeholder="0987654321" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem', marginTop: '2rem' }}>
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    if (window.confirm(isEditMode ? '¿Actualizar expediente de autoridad?' : '¿Registrar nueva autoridad?')) {
+                        onSave(form, isEditMode);
+                    }
+                }}>
+                    <div className="modal-body">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
                             <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Especialidad / DISCIPLINA</label>
-                                <select name="especialidad" value={formData.especialidad} onChange={handleChange} required className="pro-input">
-                                    <option value="">Seleccione especialidad...</option>
-                                    {especialidadesOptions.map((esp) => (
-                                        <option key={esp} value={esp}>{esp}</option>
-                                    ))}
+                                <label className="form-label">Identificación (Cédula)</label>
+                                <input className="pro-input" required value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })} disabled={isEditMode} placeholder="0000000000" />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Correo Electrónico</label>
+                                <input type="email" className="pro-input" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="oficial@ueb.edu.ec" />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Nombres</label>
+                                <input className="pro-input" required value={form.nombres} onChange={e => setForm({ ...form, nombres: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Apellidos</label>
+                                <input className="pro-input" required value={form.apellidos} onChange={e => setForm({ ...form, apellidos: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Disciplina Principal</label>
+                                <select className="pro-input" required value={form.especialidad} onChange={e => setForm({ ...form, especialidad: e.target.value })}>
+                                    <option value="">Seleccione...</option>
+                                    {ESPECIALIDADES.map(esp => <option key={esp} value={esp}>{esp}</option>)}
                                 </select>
                             </div>
-
                             <div className="form-group">
-                                <label className="form-label" style={{ fontWeight: 800 }}>Años de Experiencia</label>
-                                <input type="number" name="experiencia" min="0" value={formData.experiencia} onChange={handleChange} required className="pro-input" style={{ textAlign: 'center', fontWeight: 800 }} />
+                                <label className="form-label">Años de Trayectoria</label>
+                                <input type="number" className="pro-input" required value={form.experiencia} onChange={e => setForm({ ...form, experiencia: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Estatus</label>
+                                <select className="pro-input" required value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value })}>
+                                    {ESTATUS.map(est => <option key={est} value={est}>{est}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Teléfono</label>
+                                <input className="pro-input" required value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} />
                             </div>
                         </div>
+                    </div>
 
-                        <div className="form-group">
-                            <label className="form-label" style={{ fontWeight: 800 }}>Estatus Profesional</label>
-                            <select name="estado" value={formData.estado} onChange={handleChange} required className="pro-input">
-                                <option value="Certificado">Certificado / Activo</option>
-                                <option value="En Formación">En Formación / Aspirante</option>
-                                <option value="Suspendido">Retirado / Suspendido</option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-
-                <div className="modal-footer">
-                    <button type="button" className="pro-btn btn-secondary" onClick={onClose}>Descartar</button>
-                    <button type="submit" form="arbitro-form" disabled={isSubmitting} className="pro-btn btn-primary" style={{ minWidth: '200px' }}>
-                        {isSubmitting ? <div className="spinner" style={{ width: '18px', height: '18px' }} /> : <><Save size={18} /> {isEditMode ? 'Actualizar Expediente' : 'Finalizar Registro'}</>}
-                    </button>
-                </div>
+                    <div className="modal-footer" style={{ background: 'rgba(0,0,0,0.1)', padding: '1.5rem 2rem' }}>
+                        <button type="button" className="pro-btn btn-secondary" onClick={onClose} style={{ border: 'none' }}>Cancelar</button>
+                        <button type="submit" className="pro-btn btn-primary" disabled={loading} style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', padding: '0.9rem 2.5rem', borderRadius: '16px' }}>
+                            {loading ? <div className="spinner-sm" /> : <Save size={18} />} Guardar Expediente
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>,
         document.body
     );
-});
+};
 
-/* ============================================================
-   3. Componente Principal
-============================================================ */
+// ================= MAIN COMPONENT =====================
 const Arbitros = () => {
+    const { addNotification } = useNotification();
     const [arbitros, setArbitros] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentArbitro, setCurrentArbitro] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
+    const [editingArbitro, setEditingArbitro] = useState(null);
 
-    const loadArbitros = useCallback(async (page = 1) => {
+    const fetchData = useCallback(async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const resp = await api.get(`/arbitros?page=${page}`);
-            const json = resp.data;
-
-            console.log('Datos de árbitros:', json);
-
-            if (Array.isArray(json)) {
-                setArbitros(json);
-                setPagination({ current_page: 1, last_page: 1, total: json.length });
-            } else {
-                setArbitros(json.data || []);
-                setPagination({
-                    current_page: json.current_page || 1,
-                    last_page: json.last_page || 1,
-                    total: json.total || (json.data ? json.data.length : 0),
-                });
-            }
+            const resp = await api.get('/arbitros');
+            setArbitros(Array.isArray(resp.data) ? resp.data : (resp.data?.data || []));
         } catch (err) {
             console.error(err);
         } finally {
@@ -337,160 +157,165 @@ const Arbitros = () => {
         }
     }, []);
 
-    useEffect(() => { loadArbitros(1); }, [loadArbitros]);
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
-    const stats = useMemo(() => ({
-        total: arbitros.length,
-        expertos: arbitros.filter(a => (a.experiencia || 0) >= 10).length,
-        activos: arbitros.filter(a => a.estado === 'Certificado').length
-    }), [arbitros]);
-
-    const handleSave = async (data, isEditMode) => {
+    const handleSave = async (form, isEdit) => {
+        setLoading(true);
         try {
-            const method = isEditMode ? 'put' : 'post';
-            const url = isEditMode ? `/arbitros/${data.cedula}` : `/arbitros`;
-            await api[method](url, data);
-            await loadArbitros(pagination.current_page);
-            setCurrentArbitro(null);
-            return { ok: true };
+            const url = isEdit ? `/arbitros/${form.cedula}` : '/arbitros';
+            const method = isEdit ? 'put' : 'post';
+            await api[method](url, form);
+            addNotification(isEdit ? 'Expediente actualizado' : 'Autoridad registrada con éxito', 'success');
+            setIsModalOpen(false);
+            fetchData();
         } catch (err) {
-            alert(err.response?.data?.message || 'Error al procesar la solicitud.');
-            return { ok: false };
+            addNotification('Error al procesar registro arbitral.', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleDelete = async (cedula) => {
-        if (!window.confirm("¿Seguro que desea eliminar este registro arbitral?")) return;
+        if (!confirm("¿Eliminar autoridad del sistema? Esto anulará sus designaciones pendientes.")) return;
+        setLoading(true);
         try {
             await api.delete(`/arbitros/${cedula}`);
-            loadArbitros(pagination.current_page);
+            addNotification('Autoridad removida del sistema', 'success');
+            fetchData();
         } catch (err) {
-            alert('Error al eliminar registro.');
+            addNotification('Error al eliminar registro.', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const filteredArbitros = useMemo(() => {
-        const term = searchTerm.toLowerCase();
-        return arbitros.filter(a => {
-            const nombre = `${a.persona?.nombres || ''} ${a.persona?.apellidos || ''}`.toLowerCase();
-            return nombre.includes(term) || a.cedula.includes(term) || a.especialidad?.toLowerCase().includes(term);
-        });
-    }, [arbitros, searchTerm]);
+    const filteredArbitros = arbitros.filter(a =>
+        a.persona?.nombres?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.persona?.apellidos?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.cedula.includes(searchTerm)
+    );
 
-    if (loading && arbitros.length === 0) return <LoadingScreen message="Sincronizando cuerpo arbitral..." />;
+    if (loading && arbitros.length === 0) return <LoadingScreen message="Garantizando Neutralidad..." />;
 
     return (
-        <div className="admin-page-container module-entrance">
-            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="pro-btn btn-primary" onClick={() => { setCurrentArbitro(null); setIsModalOpen(true); }} style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', width: 'fit-content', flex: 'none' }}>
-                    <Plus size={16} /> Registrar Oficial
-                </button>
-            </div>
+        <div className="rep-scope rep-screen-container rep-dashboard-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-                <StatCard title="Total Réferis" value={stats.total} icon={Shield} color="#356ed8" />
-                <StatCard title="Nivel Experto (+10a)" value={stats.expertos} icon={Award} color="#f59e0b" />
-                <StatCard title="Oficialmente Certificados" value={stats.activos} icon={UserCheck} color="#10b981" />
-            </div>
+            {/* HEADER */}
+            <header className="rep-header-main" style={{ marginBottom: '0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                    <div className="header-info">
+                        <small className="university-label" style={{ color: '#3b82f6', fontWeight: 800 }}>Cuerpo Colegiado</small>
+                        <h1 className="content-title" style={{ color: '#fff', fontSize: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <Shield size={42} color="#3b82f6" /> Jueces & Árbitros
+                        </h1>
+                        <p className="content-subtitle" style={{ color: '#94a3b8' }}>Supervisión de autoridades deportivas y asignación de credenciales federativas</p>
+                    </div>
 
-            <div className="pro-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-darkest)', padding: '0.5rem 1.25rem', borderRadius: '12px', border: '1px solid var(--border)', width: '100%', maxWidth: '400px' }}>
-                        <Search size={18} style={{ color: 'var(--text-muted)' }} />
-                        <input
-                            className="pro-search-input"
-                            style={{ background: 'transparent', border: 'none', color: '#fff', padding: '0.5rem 0', width: '100%', outline: 'none' }}
-                            type="text"
-                            placeholder="Filtrar por nombre o especialidad..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button className="pro-btn btn-secondary" style={{ padding: '0.8rem 1.2rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <Filter size={18} /> Filtrar
+                        </button>
+                        <button className="pro-btn btn-primary" onClick={() => { setEditingArbitro(null); setIsModalOpen(true); }} style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', padding: '0.8rem 1.5rem', borderRadius: '14px', boxShadow: '0 8px 20px rgba(59, 130, 241, 0.3)' }}>
+                            <Plus size={20} /> Registrar Oficial
+                        </button>
                     </div>
                 </div>
+            </header>
 
-                <div className="table-container">
-                    <table className="modern-table">
-                        <thead>
-                            <tr>
-                                <th>Cédula</th>
-                                <th>Autoridad / Réferi</th>
-                                <th>Disciplina</th>
-                                <th>Trayectoria</th>
-                                <th>Estatus</th>
-                                <th style={{ textAlign: 'right' }}>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredArbitros.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-muted)' }}>
-                                        <ShieldAlert size={48} style={{ marginBottom: '1rem', opacity: 0.1, margin: '0 auto' }} />
-                                        <p>No se registran réferis con los criterios de búsqueda</p>
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredArbitros.map((a) => (
-                                    <tr key={a.cedula}>
-                                        <td><span style={{ color: 'var(--primary)', fontWeight: 800 }}>{a.cedula}</span></td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(53, 110, 216, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
-                                                    {a.persona?.nombres?.charAt(0)}
-                                                </div>
-                                                <div style={{ fontWeight: 800, color: '#fff' }}>{a.persona ? `${a.persona.nombres} ${a.persona.apellidos}` : 'N/A'}</div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span className="status-pill info" style={{ textTransform: 'uppercase', fontSize: '0.75rem', display: 'inline-block' }}>
-                                                {a.especialidad || 'N/A'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <Star size={14} style={{ fill: 'var(--warning)', color: 'var(--warning)' }} />
-                                                <span style={{ fontWeight: 700 }}>{a.experiencia || 0} Años</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span className={`status-pill ${a.estado === 'Certificado' ? 'success' : a.estado === 'Suspendido' ? 'danger' : 'info'}`}>
-                                                {a.estado}
-                                            </span>
-                                        </td>
-                                        <td style={{ textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                <button className="icon-btn" onClick={() => { setCurrentArbitro(a); setIsModalOpen(true); }} title="Editar Perfil">
-                                                    <Edit size={18} />
-                                                </button>
-                                                <button className="icon-btn" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(a.cedula)} title="Eliminar Registro">
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+            {/* SEARCH AND KPI */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'center' }}>
+                <div className="search-wrapper" style={{ margin: 0 }}>
+                    <SearchIcon size={20} className="search-icon" style={{ color: '#3b82f6' }} />
+                    <input
+                        className="pro-input"
+                        placeholder="Buscar por cédula o nombre..."
+                        style={{ paddingLeft: '3.5rem', height: '54px', borderRadius: '20px' }}
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
                 </div>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    {[
+                        { label: 'Total Oficiales', value: arbitros.length, icon: Award, color: '#3b82f6' },
+                        { label: 'Certificados', value: arbitros.filter(a => a.estado === 'Certificado').length, icon: ShieldCheck, color: '#10b981' },
+                        { label: 'En Formación', value: arbitros.filter(a => a.estado === 'En Formación').length, icon: Activity, color: '#f59e0b' }
+                    ].map((stat, i) => (
+                        <div key={i} style={{ flex: 1, padding: '1rem 1.5rem', background: 'rgba(30, 41, 59, 0.4)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${stat.color}15`, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <stat.icon size={20} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff' }}>{stat.value}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>{stat.label}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
-                {pagination.last_page > 1 && (
-                    <div className="pagination-footer" style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                        <button className="pro-btn btn-secondary" disabled={pagination.current_page === 1} onClick={() => loadArbitros(pagination.current_page - 1)}>Anterior</button>
-                        <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>Página {pagination.current_page} de {pagination.last_page}</span>
-                        <button className="pro-btn btn-secondary" disabled={pagination.current_page === pagination.last_page} onClick={() => loadArbitros(pagination.current_page + 1)}>Siguiente</button>
-                    </div>
-                )}
+            {/* GRID OF REFEREES */}
+            <div className="rep-content-wrapper">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+                    {filteredArbitros.map(a => (
+                        <div key={a.cedula} className="pro-card" style={{
+                            padding: '1.5rem',
+                            borderRadius: '28px',
+                            background: 'rgba(30, 41, 59, 0.4)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            transition: '0.4s'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.2rem' }}>
+                                        {a.persona?.nombres?.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h3 style={{ margin: 0, color: '#fff', fontSize: '1.1rem', fontWeight: 800 }}>{a.persona?.nombres} {a.persona?.apellidos}</h3>
+                                        <div style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700 }}>CI: {a.cedula}</div>
+                                    </div>
+                                </div>
+                                <span style={{ padding: '4px 10px', background: a.estado === 'Certificado' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: a.estado === 'Certificado' ? '#10b981' : '#f59e0b', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 800 }}>
+                                    {a.estado}
+                                </span>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.15)', borderRadius: '18px', marginBottom: '1.5rem' }}>
+                                <div>
+                                    <small style={{ color: '#64748b', textTransform: 'uppercase', fontSize: '0.65rem', fontWeight: 800 }}>Disciplina</small>
+                                    <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 700 }}>{a.especialidad || 'General'}</div>
+                                </div>
+                                <div>
+                                    <small style={{ color: '#64748b', textTransform: 'uppercase', fontSize: '0.65rem', fontWeight: 800 }}>Trayectoria</small>
+                                    <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 700 }}>{a.experiencia || 0} Años exp.</div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                    <Users size={16} /> 12 Partidos
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="pro-btn btn-secondary" style={{ padding: '10px', borderRadius: '12px' }} onClick={() => { setEditingArbitro(a); setIsModalOpen(true); }}><Edit size={16} /></button>
+                                    <button className="pro-btn btn-danger" style={{ padding: '10px', borderRadius: '12px' }} onClick={() => handleDelete(a.cedula)}><Trash2 size={16} /></button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <ArbitroModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                initialData={currentArbitro}
+                initialData={editingArbitro}
                 onSave={handleSave}
+                loading={loading}
             />
+
         </div>
     );
 };
 
 export default Arbitros;
-
