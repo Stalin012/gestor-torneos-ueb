@@ -9,21 +9,14 @@ use Exception;
 use App\Models\Torneo;
 use App\Models\Partido;
 use App\Models\Auditoria;
+use App\Models\Inscripcion;
+use Illuminate\Support\Facades\DB;
 // ⬆️ FIN DE CORRECCIONES
 
 class FixtureController extends Controller
 {
-    private function logAudit(string $usuarioCedula, string $accion, string $entidad, string $entidadId, string $detalle): void
-    {
-        Auditoria::create([
-            'timestamp'      => now(),
-            'usuario_cedula' => $usuarioCedula,
-            'accion'         => $accion,
-            'entidad'        => $entidad,
-            'entidad_id'     => $entidadId,
-            'detalle'        => $detalle,
-        ]);
-    }
+    // El método logAudit ya no es necesario aquí puesto que usaremos Auditoria::log()
+
     // Asegúrate de usar un middleware de autenticación/autorización aquí
     // Por ejemplo:
     // public function __construct()
@@ -37,32 +30,40 @@ class FixtureController extends Controller
      */
     public function generar(int $torneoId)
     {
-        // 🛡️ Nota: Sería buena práctica envolver toda la lógica de creación en una 
-        // transacción de base de datos para revertir si algo falla.
-
         try {
+            DB::beginTransaction();
             $torneo = Torneo::findOrFail($torneoId);
 
-            // 1. Obtener los equipos inscritos en el torneo
-            // Asumiendo que Torneo.php tiene la relación 'equipos()'
-            $equipos = $torneo->equipos()->pluck('id')->toArray();
+            // 1. Obtener los equipos cuya inscripción esté APROBADA en este torneo
+            // Esto es más robusto que usar solo la relación equipos() del modelo Torneo
+            $equipoIds = Inscripcion::where('torneo_id', $torneoId)
+                ->where('estado', 'Aprobada')
+                ->pluck('equipo_id')
+                ->unique()
+                ->toArray();
             
-            if (count($equipos) < 2) {
+            // Si no hay inscripciones aprobadas, intentamos con la relación directa por si acaso
+            if (empty($equipoIds)) {
+                $equipoIds = $torneo->equipos()->pluck('id')->toArray();
+            }
+
+            if (count($equipoIds) < 2) {
                 return response()->json([
-                    'message' => 'Se necesitan al menos dos equipos para generar el fixture.'
+                    'message' => 'Se necesitan al menos dos equipos aprobados para generar el fixture.'
                 ], 400);
             }
 
             // 2. Ejecutar la lógica de generación del Round-Robin
-            $partidosGenerados = $this->generarRoundRobin($equipos, $torneoId);
+            $partidosGenerados = $this->generarRoundRobin($equipoIds, $torneoId);
 
-            $this->logAudit(
-                request()->user()->cedula,
+            Auditoria::log(
                 'GENERAR_FIXTURE',
                 'Torneo',
-                $torneoId,
-                'Generación de fixture para el torneo: ' . $torneo->nombre . '. Total de partidos: ' . count($partidosGenerados)
+                (string)$torneoId,
+                'Generación automática de fixture para el torneo: ' . $torneo->nombre . '. Total de encuentros creados: ' . count($partidosGenerados)
             );
+
+            DB::commit();
 
             return response()->json([
                 'message' => count($partidosGenerados) . ' partidos generados exitosamente para el torneo: ' . $torneo->nombre,
@@ -70,7 +71,7 @@ class FixtureController extends Controller
             ]);
 
         } catch (Exception $e) {
-            // Un error 500 puede ocurrir aquí si la relación 'equipos' no existe en Torneo.php
+            DB::rollBack();
             return response()->json([
                 'message' => 'Error al generar el fixture: ' . $e->getMessage()
             ], 500);
@@ -87,18 +88,36 @@ class FixtureController extends Controller
     {
         $partidos = [];
         $n = count($equipoIds);
+        $torneo = Torneo::find($torneoId);
+        $fechaBase = $torneo && $torneo->fecha_inicio ? $torneo->fecha_inicio : now();
         
         // Algoritmo Round-Robin simplificado (solo una vuelta, A vs B)
         for ($i = 0; $i < $n; $i++) {
             for ($j = $i + 1; $j < $n; $j++) {
-                // Generar partido A vs B
-                $partidos[] = Partido::create([
-                    'torneo_id' => $torneoId,
-                    'equipo_local_id' => $equipoIds[$i],
-                    'equipo_visitante_id' => $equipoIds[$j],
-                    'estado' => 'Programado',
-                    'fecha' => now()->addDays(rand(1, 30)), // Fechas ficticias
-                ]);
+                $localId = $equipoIds[$i];
+                $visitanteId = $equipoIds[$j];
+
+                // Evitar duplicados: Verificar si ya existe el encuentro en este torneo
+                $existe = Partido::where('torneo_id', $torneoId)
+                    ->where(function($q) use ($localId, $visitanteId) {
+                        $q->where(function($sq) use ($localId, $visitanteId) {
+                            $sq->where('equipo_local_id', $localId)
+                               ->where('equipo_visitante_id', $visitanteId);
+                        })->orWhere(function($sq) use ($localId, $visitanteId) {
+                            $sq->where('equipo_local_id', $visitanteId)
+                               ->where('equipo_visitante_id', $localId);
+                        });
+                    })->exists();
+
+                if (!$existe) {
+                    $partidos[] = Partido::create([
+                        'torneo_id' => $torneoId,
+                        'equipo_local_id' => $localId,
+                        'equipo_visitante_id' => $visitanteId,
+                        'estado' => 'Programado',
+                        'fecha' => (clone $fechaBase)->addDays(rand(1, 30)), 
+                    ]);
+                }
             }
         }
         return $partidos;

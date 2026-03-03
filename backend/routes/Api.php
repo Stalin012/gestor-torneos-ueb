@@ -109,8 +109,8 @@ Route::get('/estadisticas', [EstadisticaController::class, 'index']);
 Route::get('/estadisticas/partido/{partidoId}', [EstadisticaController::class, 'porPartido']);
 Route::get('/estadisticas/torneo/{torneoId}', [EstadisticaController::class, 'porTorneo']);
 
-// Fixture público
-Route::get('/fixtures/generar/{torneoId}', [FixtureController::class, 'generar']);
+// Fixture público (Cambiado a POST y movido a Admin)
+
 
 use App\Http\Controllers\Api\NotificacionController;
 
@@ -286,6 +286,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('inscripciones/{id}', [InscripcionController::class, 'destroy']);
         Route::post('inscripciones/{inscripcion}/aprobar', [InscripcionController::class, 'aprobar']);
         Route::post('inscripciones/{inscripcion}/rechazar',[InscripcionController::class, 'rechazar']);
+
+        // -------- FIXTURE (ADMIN) --------
+        Route::post('fixtures/generar/{torneoId}', [FixtureController::class, 'generar']);
     });
 
 });

@@ -373,7 +373,7 @@ const PartidosFixtures = () => {
     const handleGenerateFixture = async (torneoId) => {
         setLoading(true);
         try {
-            const resp = await api.get(`/fixtures/generar/${torneoId}`);
+            const resp = await api.post(`/fixtures/generar/${torneoId}`);
             addNotification(resp.data.message || 'Fixture generado correctamente', 'success');
             setIsGenerateModalOpen(false);
             fetchData();

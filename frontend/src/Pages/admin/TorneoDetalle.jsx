@@ -900,7 +900,7 @@ const TorneoDetalle = () => {
         }
         if (!confirm("¿Generar fixtures automáticamente para este torneo? Esto creará todos los partidos pendientes.")) return;
         try {
-            const resp = await api.get(`/fixtures/generar/${torneoId}`);
+            const resp = await api.post(`/fixtures/generar/${torneoId}`);
             if (resp.status === 200) {
                 alert("Fixtures generados exitosamente.");
                 loadData();
