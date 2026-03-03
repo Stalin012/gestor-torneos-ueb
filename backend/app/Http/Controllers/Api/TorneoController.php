@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use App\Models\Auditoria;
+use App\Models\Notificacion;
+use App\Models\User;
 
 class TorneoController extends Controller 
 {
@@ -103,13 +105,8 @@ class TorneoController extends Controller
             $torneo = Torneo::create($validatedData);
             
             DB::commit();
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
-                'CREAR',
-                'Torneo',
-                (string)$torneo->id,
-                "Torneo '{$torneo->nombre}' (ID: {$torneo->id}) creado."
-            );
+            Auditoria::log('CREAR', 'Torneo', (string)$torneo->id, "Se creó el torneo '{$torneo->nombre}' con fecha de inicio {$torneo->fecha_inicio}.");
+
 
             return response()->json(
                 $torneo->load(['deporte', 'categoria']),
@@ -177,13 +174,8 @@ class TorneoController extends Controller
             $torneo->update($validatedData);
 
             DB::commit();
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
-                'ACTUALIZAR',
-                'Torneo',
-                (string)$torneo->id,
-                "Torneo '{$torneo->nombre}' (ID: {$torneo->id}) actualizado."
-            );
+            Auditoria::log('ACTUALIZAR', 'Torneo', (string)$torneo->id, "Se actualizaron los datos del torneo '{$torneo->nombre}'.");
+
 
             return response()->json(
                 $torneo->load(['deporte', 'categoria']),
@@ -206,13 +198,8 @@ class TorneoController extends Controller
     {
         try {
             $torneo->delete();
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
-                'ELIMINAR',
-                'Torneo',
-                (string)$torneo->id,
-                "Torneo '{$torneo->nombre}' (ID: {$torneo->id}) eliminado."
-            );
+            Auditoria::log('ELIMINAR', 'Torneo', (string)$torneo->id, "Torneo '{$torneo->nombre}' eliminado definitivamente.");
+
 
             return response()->json([
                 'message' => 'Torneo eliminado exitosamente.',
@@ -232,13 +219,14 @@ class TorneoController extends Controller
     {
         $torneo = Torneo::findOrFail($id);
         $torneo->update(['estado' => 'Activo']);
-        $this->logAudit(
-            $request->user() ? $request->user()->cedula : 'SISTEMA',
-            'INICIAR',
-            'Torneo',
-            (string)$torneo->id,
-            "Torneo '{$torneo->nombre}' (ID: {$torneo->id}) iniciado."
-        );
+        Auditoria::log('INICIAR', 'Torneo', (string)$torneo->id, "Torneo '{$torneo->nombre}' ha comenzado oficialmente.");
+        
+        // Notificar a todos los usuarios del sistema sobre el inicio del torneo
+        $usuarios = User::all();
+        foreach($usuarios as $u) {
+            Notificacion::send($u->cedula, "Torneo Iniciado", "¡El torneo '{$torneo->nombre}' ha comenzado! Revisa el calendario de partidos.", 'info');
+        }
+
         return response()->json([
             'message' => 'El torneo ha sido iniciado.',
             'torneo' => $torneo->load(['deporte', 'categoria'])
@@ -252,13 +240,13 @@ class TorneoController extends Controller
     {
         $torneo = Torneo::findOrFail($id);
         $torneo->update(['estado' => 'Finalizado']);
-        $this->logAudit(
-            $request->user() ? $request->user()->cedula : 'SISTEMA',
-            'FINALIZAR',
-            'Torneo',
-            (string)$torneo->id,
-            "Torneo '{$torneo->nombre}' (ID: {$torneo->id}) finalizado."
-        );
+        Auditoria::log('FINALIZAR', 'Torneo', (string)$torneo->id, "Torneo '{$torneo->nombre}' ha finalizado exitosamente.");
+        
+        $usuarios = User::all();
+        foreach($usuarios as $u) {
+            Notificacion::send($u->cedula, "Torneo Finalizado", "El torneo '{$torneo->nombre}' ha concluido. ¡Gracias a todos los participantes!", 'success');
+        }
+
         return response()->json([
             'message' => 'El torneo ha finalizado.',
             'torneo' => $torneo->load(['deporte', 'categoria'])
@@ -285,18 +273,6 @@ class TorneoController extends Controller
         return response()->json($equipos);
     }
 
-    /**
-     * Registra una acción de auditoría.
-     */
-    private function logAudit(string $usuarioCedula, string $accion, string $entidad, string $entidadId, string $detalle): void
-    {
-        Auditoria::create([
-            'timestamp'      => now(),
-            'usuario_cedula' => $usuarioCedula,
-            'accion'         => $accion,
-            'entidad'        => $entidad,
-            'entidad_id'     => $entidadId,
-            'detalle'        => $detalle,
-        ]);
-    }
+    // Eliminado logAudit privado ya que usamos el estático del modelo
+
 }

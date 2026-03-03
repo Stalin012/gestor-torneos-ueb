@@ -27,4 +27,29 @@ class Notificacion extends Model
     {
         return $this->belongsTo(User::class, 'usuario_cedula', 'cedula');
     }
+
+    /**
+     * Enviar una notificación a un usuario.
+     */
+    public static function send(string $usuarioCedula, string $titulo, string $mensaje, string $tipo = 'info'): self
+    {
+        return self::create([
+            'usuario_cedula' => $usuarioCedula,
+            'titulo'         => $titulo,
+            'mensaje'        => $mensaje,
+            'tipo'           => $tipo,
+            'leida'          => false,
+        ]);
+    }
+
+    /**
+     * Notificar a todos los administradores.
+     */
+    public static function notifyAdmins(string $titulo, string $mensaje, string $tipo = 'warning'): void
+    {
+        $admins = User::where('rol', 'admin')->get();
+        foreach ($admins as $admin) {
+            self::send($admin->cedula, $titulo, $mensaje, $tipo);
+        }
+    }
 }

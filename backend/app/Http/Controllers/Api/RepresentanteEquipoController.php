@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\DB;
 
 use App\Models\Equipo;
 use App\Models\Inscripcion;
-use App\Models\Auditoria;
-use App\Models\Jugador;
 use App\Models\Persona;
+use App\Models\Auditoria;
+use App\Models\Notificacion;
 
 class RepresentanteEquipoController extends Controller
 {
@@ -116,15 +116,10 @@ class RepresentanteEquipoController extends Controller
             return $equipo;
         });
 
-        $this->logAudit(
-            $request->user() ? $request->user()->cedula : 'SISTEMA',
-            'CREAR',
-            'Equipo',
-            (string)$equipo->id,
-            "Equipo '{$equipo->nombre}' (ID: {$equipo->id}) creado por el representante."
-        );
-
         $equipo->load(['torneo:id,nombre', 'deporte:id,nombre', 'categoria:id,nombre']);
+
+        Auditoria::log('CREAR', 'Equipo', (string)$equipo->id, "Representante registró el equipo '{$equipo->nombre}' en el torneo '{$equipo->torneo?->nombre}'.");
+        Notificacion::notifyAdmins("Nuevo Equipo Registrado", "El representante {$cedula} ha registrado al equipo '{$equipo->nombre}'.", 'info');
 
         return response()->json($equipo, 201);
     }
@@ -158,14 +153,9 @@ class RepresentanteEquipoController extends Controller
         ]);
 
         $equipo->update($validated);
-        $this->logAudit(
-            $request->user() ? $request->user()->cedula : 'SISTEMA',
-            'ACTUALIZAR',
-            'Equipo',
-            (string)$equipo->id,
-            "Equipo '{$equipo->nombre}' (ID: {$equipo->id}) actualizado por el representante."
-        );
         $equipo->load(['torneo:id,nombre', 'deporte:id,nombre', 'categoria:id,nombre']);
+
+        Auditoria::log('ACTUALIZAR', 'Equipo', (string)$equipo->id, "Representante actualizó datos del equipo '{$equipo->nombre}'. Datos: " . json_encode($validated));
 
         return response()->json($equipo);
     }
@@ -335,17 +325,11 @@ class RepresentanteEquipoController extends Controller
         $jugador->load(['persona:cedula,nombres,apellidos,telefono,foto', 'equipo:id,nombre']);
 
         $action = $jugadorExistia ? 'ACTUALIZAR' : 'CREAR';
-        $description = $jugadorExistia ?
-            "Jugador '{$persona->nombres} {$persona->apellidos}' actualizado en la nómina del equipo '{$equipo->nombre}'." :
-            "Jugador '{$persona->nombres} {$persona->apellidos}' agregado a la nómina del equipo '{$equipo->nombre}'.";
+        $desc = $jugadorExistia ? 
+            "Actualización manual de '{$persona->nombres} {$persona->apellidos}' (Dorsal: {$jugador->numero}) en equipo '{$equipo->nombre}'." :
+            "Registro manual de '{$persona->nombres} {$persona->apellidos}' al equipo '{$equipo->nombre}'.";
         
-        $this->logAudit(
-            $request->user() ? $request->user()->cedula : 'SISTEMA',
-            $action,
-            'JugadorNomina',
-            (string)$cedulaJugador,
-            $description
-        );
+        Auditoria::log($action, 'Jugador', (string)$cedulaJugador, $desc);
 
         return response()->json([
             'message' => $jugadorExistia ? 'Jugador actualizado correctamente.' : 'Jugador agregado correctamente.',
@@ -560,13 +544,16 @@ class RepresentanteEquipoController extends Controller
             }
 
             DB::commit();
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
-                'IMPORTAR',
-                'Nomina',
-                (string)$equipo->id,
-                "Importación de nómina para el equipo '{$equipo->nombre}'. Insertados: {$inserted}, Actualizados: {$updated}, Errores: " . count($errors) . "."
-            );
+            
+            $msg = "Importación masiva finalizada para '{$equipo->nombre}'. Total: " . ($inserted + $updated) . " procesados (" . count($errors) . " errores).";
+            Auditoria::log('IMPORTAR', 'Equipo', (string)$equipo->id, $msg);
+            
+            if (count($errors) > 0) {
+                Notificacion::send($cedulaRep, "Importación con Observaciones", "Se procesaron deportistas para '{$equipo->nombre}', pero hubo " . count($errors) . " errores.", 'warning');
+            } else {
+                Notificacion::send($cedulaRep, "Importación Exitosa", "Se importaron correctamente todos los deportistas para '{$equipo->nombre}'.", 'success');
+            }
+
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;

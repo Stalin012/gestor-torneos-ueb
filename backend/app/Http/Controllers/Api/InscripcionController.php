@@ -4,23 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Inscripcion;
-use App\Models\Auditoria;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\Notificacion;
+use App\Models\Auditoria;
 
 class InscripcionController extends Controller
 {
-    private function logAudit(string $usuarioCedula, string $accion, string $entidad, string $entidadId, string $detalle): void
-    {
-        Auditoria::create([
-            'timestamp'      => now(),
-            'usuario_cedula' => $usuarioCedula,
-            'accion'         => $accion,
-            'entidad'        => $entidad,
-            'entidad_id'     => $entidadId,
-            'detalle'        => $detalle,
-        ]);
-    }
+    // Eliminado el método privado logAudit ya que usaremos el helper del modelo
+
 
     /**
      * GET /api/inscripciones
@@ -79,13 +70,7 @@ class InscripcionController extends Controller
 
             $inscripcion = Inscripcion::create($validated);
             
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
-                'CREAR',
-                'Inscripcion',
-                (string)$inscripcion->id,
-                'Nueva inscripción creada para el equipo ID: ' . $inscripcion->equipo_id
-            );
+            Auditoria::log('CREAR', 'Inscripcion', (string)$inscripcion->id, "Se registró una nueva inscripción para el equipo '{$inscripcion->equipo?->nombre}' en el torneo '{$inscripcion->torneo?->nombre}'.");
 
             return response()->json($inscripcion->load(['torneo', 'equipo']), 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -112,8 +97,7 @@ class InscripcionController extends Controller
 
             $inscripcion->update($validated);
 
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
+            Auditoria::log(
                 'ACTUALIZAR',
                 'Inscripcion',
                 (string)$inscripcion->id,
@@ -138,8 +122,7 @@ class InscripcionController extends Controller
             $inscripcion = Inscripcion::findOrFail($id);
             $inscripcion->delete();
 
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
+            Auditoria::log(
                 'ELIMINAR',
                 'Inscripcion',
                 (string)$id,
@@ -205,13 +188,19 @@ class InscripcionController extends Controller
                 'estado' => 'Aprobada',
             ]);
 
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
-                'APROBAR',
-                'Inscripcion',
-                (string)$inscripcion->id,
-                'Inscripción aprobada para el equipo: ' . ($inscripcion->equipo->nombre ?? 'N/A') . ' en el torneo: ' . ($inscripcion->torneo->nombre ?? 'N/A')
-            );
+            $equipoNombre = $inscripcion->equipo->nombre ?? 'N/A';
+            $torneoNombre = $inscripcion->torneo->nombre ?? 'N/A';
+
+            Auditoria::log('APROBAR', 'Inscripcion', (string)$inscripcion->id, "Inscripción aprobada para equipo '{$equipoNombre}' en '{$torneoNombre}'.");
+            
+            if ($inscripcion->equipo?->representante_cedula) {
+                Notificacion::send(
+                    $inscripcion->equipo->representante_cedula,
+                    "Inscripción Aprobada",
+                    "¡Buenas noticias! Tu solicitud para el equipo '{$equipoNombre}' en el torneo '{$torneoNombre}' ha sido aprobada.",
+                    'success'
+                );
+            }
 
             return response()->json([
                 'message'     => 'Inscripción aprobada correctamente.',
@@ -248,13 +237,19 @@ class InscripcionController extends Controller
                 'estado' => 'Rechazada',
             ]);
 
-            $this->logAudit(
-                $request->user() ? $request->user()->cedula : 'SISTEMA',
-                'RECHAZAR',
-                'Inscripcion',
-                (string)$inscripcion->id,
-                'Inscripción rechazada para el equipo: ' . ($inscripcion->equipo->nombre ?? 'N/A') . ' en el torneo: ' . ($inscripcion->torneo->nombre ?? 'N/A')
-            );
+            $equipoNombre = $inscripcion->equipo->nombre ?? 'N/A';
+            $torneoNombre = $inscripcion->torneo->nombre ?? 'N/A';
+
+            Auditoria::log('RECHAZAR', 'Inscripcion', (string)$inscripcion->id, "Inscripción rechazada para equipo '{$equipoNombre}' en '{$torneoNombre}'.");
+
+            if ($inscripcion->equipo?->representante_cedula) {
+                Notificacion::send(
+                    $inscripcion->equipo->representante_cedula,
+                    "Inscripción Rechazada",
+                    "Lo sentimos, la solicitud para el equipo '{$equipoNombre}' en el torneo '{$torneoNombre}' ha sido rechazada.",
+                    'error'
+                );
+            }
 
             return response()->json([
                 'message'     => 'Inscripción rechazada correctamente.',
